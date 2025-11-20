@@ -7,7 +7,7 @@
     <hlm-menu-bar class="w-fit">
       <button hlmMenuBarItem [brnMenuTriggerFor]="target">Target</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">Scripts</button>
-      <button hlmMenuBarItem [brnMenuTriggerFor]="utils">Utils</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="utils">Tools</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">Documentation</button>
     </hlm-menu-bar>
   </div>
@@ -40,10 +40,11 @@
   <ng-template #utils>
     <hlm-menu variant="menubar" class="w-64">
       <hlm-menu-group>
-        <button hlmMenuItem>Tools: NMAP</button>
-        <button hlmMenuItem>Tools: Gobuster</button>
-        <button hlmMenuItem>Tools: Nikto</button>
-        <button hlmMenuItem>Tools: Burp</button>
+        <!-- Single Tools entry that opens a sub-menu like Edit did before -->
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="tools_sub">
+          Tools
+          <hlm-menu-item-sub-indicator />
+        </button>
       </hlm-menu-group>
 
       <hlm-menu-separator />
@@ -54,6 +55,15 @@
         <button hlmMenuItem>Notre documentation</button>
       </hlm-menu-group>
     </hlm-menu>
+  </ng-template>
+
+  <ng-template #tools_sub>
+    <hlm-sub-menu>
+      <button hlmMenuItem>NMAP</button>
+      <button hlmMenuItem>Gobuster</button>
+      <button hlmMenuItem>Nikto</button>
+      <button hlmMenuItem>Burp</button>
+    </hlm-sub-menu>
   </ng-template>
 
   <ng-template #documentation>

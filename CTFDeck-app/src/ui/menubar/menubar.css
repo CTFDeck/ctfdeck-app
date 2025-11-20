@@ -13,7 +13,7 @@
   /* Keep the menubar pinned and above content */
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 1;
   /* translucent, theme-aware background + blur
      Mix the popover with the page background (not `transparent`) so the bar
      gains a visible tint over the page content in both light and dark modes.
