@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
 
 import {
@@ -16,6 +17,8 @@ import {
   HlmMenuShortcut,
   HlmSubMenu,
 } from '@ctfdeck/helm/menu';
+import { HlmButtonImports } from '@ctfdeck/helm/button';
+
 import { ThemeToggle } from './theme-toggle';
 
 @Component({
@@ -28,16 +31,22 @@ import { ThemeToggle } from './theme-toggle';
     HlmSubMenu,
     HlmMenuItem,
     HlmMenuItemSubIndicator,
-    HlmMenuShortcut,
     HlmMenuSeparator,
     HlmMenuBarItem,
-    HlmMenuItemCheck,
-    HlmMenuItemRadio,
     HlmMenuGroup,
-    HlmMenuItemCheckbox,
     ThemeToggle,
   ],
   templateUrl: './menubar.html',
   styleUrls: ['./menubar.css'],
 })
-export class Menubar {}
+export class Menubar {
+  constructor(private router: Router) {}
+
+  navigate(path: string) {
+    this.router.navigate([path]);
+  }
+
+  openExternal(url: string) {
+    window.open(url, '_blank', 'noopener');
+  }
+}
