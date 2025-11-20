@@ -5,6 +5,17 @@ import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmSidebarImports } from '@ctfdeck/helm/sidebar';
 import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  lucideSend,
+  lucideSearch,
+  lucideInfo,
+  lucidePlus,
+  lucideArrowUp,
+  lucideCheck,
+  lucideMessageCircleDashed,
+  lucideFolder,
+} from '@ng-icons/lucide';
 
 @Component({
   selector: 'ctf-chat-sidebar',
@@ -12,11 +23,23 @@ import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
   imports: [
     CommonModule,
     FormsModule,
+    NgIcon,
     HlmSidebarImports,
     HlmButtonImports,
     HlmScrollAreaImports,
     HlmInputGroupImports,
   ],
+  providers: [
+    provideIcons({
+      lucideSearch,
+      lucidePlus,
+      lucideArrowUp,
+      lucideCheck,
+      lucideMessageCircleDashed,
+      lucideFolder,
+    }),
+  ],
+
   templateUrl: './chat-sidebar.html',
   styleUrls: ['./chat-sidebar.css'],
 })
