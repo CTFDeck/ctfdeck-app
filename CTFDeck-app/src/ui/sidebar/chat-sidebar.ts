@@ -4,11 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmSidebarImports } from '@ctfdeck/helm/sidebar';
 import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
+import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
 
 @Component({
   selector: 'ctf-chat-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, HlmSidebarImports, HlmButtonImports, HlmScrollAreaImports],
+  imports: [
+    CommonModule,
+    FormsModule,
+    HlmSidebarImports,
+    HlmButtonImports,
+    HlmScrollAreaImports,
+    HlmInputGroupImports,
+  ],
   templateUrl: './chat-sidebar.html',
   styleUrls: ['./chat-sidebar.css'],
 })
@@ -40,5 +48,10 @@ export class ChatSidebar {
     const term = this.search?.toLowerCase().trim();
     if (!term) return this.chats;
     return this.chats.filter((c) => c.title.toLowerCase().includes(term));
+  }
+
+  /** Number of results currently shown by the search filter */
+  get resultsCount(): number {
+    return this.filteredChats.length;
   }
 }
