@@ -1,5 +1,3 @@
-/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
-/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
 {
   "compileOnSave": false,
   "compilerOptions": {
@@ -13,7 +11,36 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "preserve",
+    "paths": {
+      "@ctfdeck/helm/sidebar": [
+        "./libs/ui/sidebar/src/index.ts"
+      ],
+      "@ctfdeck/helm/utils": [
+        "./libs/ui/utils/src/index.ts"
+      ],
+      "@ctfdeck/helm/button": [
+        "./libs/ui/button/src/index.ts"
+      ],
+      "@ctfdeck/helm/icon": [
+        "./libs/ui/icon/src/index.ts"
+      ],
+      "@ctfdeck/helm/input": [
+        "./libs/ui/input/src/index.ts"
+      ],
+      "@ctfdeck/helm/separator": [
+        "./libs/ui/separator/src/index.ts"
+      ],
+      "@ctfdeck/helm/sheet": [
+        "./libs/ui/sheet/src/index.ts"
+      ],
+      "@ctfdeck/helm/tooltip": [
+        "./libs/ui/tooltip/src/index.ts"
+      ],
+      "@ctfdeck/helm/menu": [
+        "./libs/ui/menu/src/index.ts"
+      ]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
