@@ -7,9 +7,7 @@ import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideSend,
   lucideSearch,
-  lucideInfo,
   lucidePlus,
   lucideArrowUp,
   lucideCheck,
