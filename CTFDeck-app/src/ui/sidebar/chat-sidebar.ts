@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmSidebarImports } from '@ctfdeck/helm/sidebar';
+import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 
 @Component({
   selector: 'ctf-chat-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, HlmSidebarImports, HlmButtonImports],
+  imports: [CommonModule, FormsModule, HlmSidebarImports, HlmButtonImports, HlmScrollAreaImports],
   templateUrl: './chat-sidebar.html',
   styleUrls: ['./chat-sidebar.css'],
 })

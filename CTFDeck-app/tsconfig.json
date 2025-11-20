@@ -42,6 +42,9 @@
       ],
       "@ctfdeck/helm/skeleton": [
         "./libs/ui/skeleton/src/index.ts"
+      ],
+      "@ctfdeck/helm/scroll-area": [
+        "./libs/ui/scroll-area/src/index.ts"
       ]
     }
   },

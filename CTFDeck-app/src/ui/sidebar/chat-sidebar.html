@@ -7,7 +7,8 @@
   </hlm-sidebar-header>
 
   <hlm-sidebar-content>
-    <hlm-sidebar-group>
+    <ng-scrollbar hlm class="h-full ">
+      <hlm-sidebar-group>
       <div class="px-3 py-2 flex gap-2 items-center">
         <button hlmButton (click)="newChat()" class="w-full">New chat</button>
       </div>
@@ -45,7 +46,8 @@
           </button>
         </div>
       </div>
-    </hlm-sidebar-group>
+      </hlm-sidebar-group>
+    </ng-scrollbar>
   </hlm-sidebar-content>
 
   <hlm-sidebar-footer>
