@@ -13,7 +13,11 @@
   /* Keep the menubar pinned and above content */
   position: sticky;
   top: 0;
-  z-index: 1;
+  /* use the global menubar height defined in `:root` so the whole app
+     can align to the same value. The menubar will be at least this tall. */
+  min-height: var(--menubar-height, 3rem);
+  /* ensure the menubar always stacks above other page chrome (sidebar, panels) */
+  z-index: 50;
   /* translucent, theme-aware background + blur
      Mix the popover with the page background (not `transparent`) so the bar
      gains a visible tint over the page content in both light and dark modes.
@@ -22,8 +26,6 @@
   background-color: color-mix(in srgb, var(--popover) 85%, var(--background) 15%);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid color-mix(in srgb, var(--sidebar-border) 85%, transparent);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--sidebar-border) 6%, transparent);
   color: var(--sidebar-foreground);
 }
 

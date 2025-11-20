@@ -1,0 +1,54 @@
+<hlm-sidebar class="ctf-chat-sidebar">
+  <hlm-sidebar-header>
+    <div class="px-4 py-3">
+      <div class="font-semibold text-sm">Chat History</div>
+      <div class="text-xs text-muted-foreground">Your recent conversations</div>
+    </div>
+  </hlm-sidebar-header>
+
+  <hlm-sidebar-content>
+    <hlm-sidebar-group>
+      <div class="px-3 py-2 flex gap-2 items-center">
+        <button hlmButton (click)="newChat()" class="w-full">New chat</button>
+      </div>
+
+      <div class="px-3 py-2">
+        <input
+          class="w-full rounded px-2 py-1 bg-input text-sm"
+          placeholder="Search chats..."
+          [(ngModel)]="search"
+        />
+      </div>
+
+      <hlm-sidebar-separator />
+
+      <div class="px-3 py-2">
+        <div class="text-xs font-medium mb-2">Projects</div>
+        <div class="flex flex-col gap-1">
+          <button hlmSidebarMenuButton *ngFor="let p of projects" class="text-sm text-left">{{ p.name }}</button>
+        </div>
+      </div>
+
+      <hlm-sidebar-separator />
+
+      <div class="px-3 py-2">
+        <div class="text-xs font-medium mb-2">Chats</div>
+        <div class="flex flex-col gap-1">
+          <button
+            hlmSidebarMenuButton
+            *ngFor="let c of filteredChats"
+            (click)="openChat(c)"
+            class="text-sm text-left truncate"
+            title="{{ c.title }}"
+          >
+            {{ c.title }}
+          </button>
+        </div>
+      </div>
+    </hlm-sidebar-group>
+  </hlm-sidebar-content>
+
+  <hlm-sidebar-footer>
+    <div class="px-3 py-3 text-xs text-muted-foreground">Tip: Create projects to organize chats.</div>
+  </hlm-sidebar-footer>
+</hlm-sidebar>

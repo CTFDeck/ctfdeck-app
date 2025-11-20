@@ -39,6 +39,9 @@
       ],
       "@ctfdeck/helm/menu": [
         "./libs/ui/menu/src/index.ts"
+      ],
+      "@ctfdeck/helm/skeleton": [
+        "./libs/ui/skeleton/src/index.ts"
       ]
     }
   },

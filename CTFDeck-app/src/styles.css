@@ -6,6 +6,9 @@
 
 :root {
 	--radius: 0.625rem;
+	/* Global menubar height that other components can reference. Adjust to
+	   control the top offset for sticky headers and layout padding. */
+	--menubar-height: 3rem;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
 	--card: oklch(1 0 0);

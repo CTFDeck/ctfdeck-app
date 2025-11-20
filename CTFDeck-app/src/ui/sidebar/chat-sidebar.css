@@ -1,0 +1,36 @@
+.ctf-chat-sidebar {
+  width: 18rem;
+  min-width: 14rem;
+  max-width: 22rem;
+  /* let the parent layout control height; take full available height */
+  height: 100%;
+  background: var(--sidebar);
+  color: var(--sidebar-foreground);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.ctf-chat-sidebar hlm-sidebar-content {
+  /* content scrolls inside the available sidebar height */
+  overflow: auto;
+  flex: 1 1 auto;
+}
+
+.ctf-chat-sidebar input {
+  background: var(--input);
+  border: 1px solid var(--sidebar-border);
+  color: var(--sidebar-foreground);
+}
+
+.ctf-chat-sidebar button[hlmSidebarMenuButton] {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  text-align: left;
+}
+
+.ctf-chat-sidebar .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
