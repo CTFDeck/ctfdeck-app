@@ -6,7 +6,7 @@ import { Menubar } from '../ui/menubar/menubar';
   selector: 'app-root',
   imports: [RouterOutlet, Menubar],
   templateUrl: './app.html',
-  styleUrl: './app.css',
+  styleUrls: ['./app.css'],
 })
 export class App {
   protected readonly title = signal('CTFDeck-app');

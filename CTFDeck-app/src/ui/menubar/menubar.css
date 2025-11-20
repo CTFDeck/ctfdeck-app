@@ -9,6 +9,22 @@
   width: 100%;
   padding-left: 1rem;
   padding-right: 1rem;
+  padding-block: 0.5rem;
+  /* Keep the menubar pinned and above content */
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* translucent, theme-aware background + blur
+     Mix the popover with the page background (not `transparent`) so the bar
+     gains a visible tint over the page content in both light and dark modes.
+     Provide a simple fallback for older browsers. */
+  background-color: var(--popover);
+  background-color: color-mix(in srgb, var(--popover) 85%, var(--background) 15%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid color-mix(in srgb, var(--sidebar-border) 85%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--sidebar-border) 6%, transparent);
+  color: var(--sidebar-foreground);
 }
 
 .ctf-menu-left {
@@ -20,12 +36,13 @@
   font-weight: 700;
   font-size: 1.125rem;
   color: var(--sidebar-foreground);
+  display: inline-block;
 }
 
 .ctf-menu-center {
   display: flex;
   align-items: center;
-  justify-content: center;
+  /* justify-content: center; */
   flex: 1 1 auto;
 }
 
@@ -58,15 +75,18 @@ button[hlmMenuBarItem] {
   background: transparent;
   color: inherit;
   border: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius);
+  padding: 0.25rem 0.6rem;
+  border-radius: calc(var(--radius) / 2);
   cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
+/* subtle, theme-aware hover/active states using foreground mixing so it's readable
+   in both light and dark modes (avoids white-on-white or black-on-black issues) */
 button[hlmMenuBarItem]:hover,
 button[hlmMenuBarItem][aria-expanded="true"] {
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
+  color: var(--foreground);
 }
 
 /* Menus and sub-menus inherit popover colors from the theme */
@@ -91,8 +111,8 @@ button[hlmMenuItemRadio] {
 }
 
 button[hlmMenuItem]:hover {
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  color: var(--popover-foreground);
 }
 
 /* Shortcuts and separators should respect theme colors */
