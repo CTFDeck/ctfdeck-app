@@ -6,7 +6,8 @@
   height: 100%;
   background: var(--sidebar);
   color: var(--sidebar-foreground);
-  border-right: 1px solid var(--sidebar-border);
+  position: relative;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
 }
@@ -33,4 +34,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ensure the visual vertical separator sits at the exact host edge */
+.ctf-chat-sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--sidebar-border);
+  pointer-events: none;
+}
+
+/* make any internal sidebar separators span full content width */
+.ctf-chat-sidebar hlm-sidebar-separator {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+}
+
+/* Remove framework wrapper borders that add the extra vertical line.
+   Uses ::ng-deep to override styles applied outside this component. */
+:host ::ng-deep [data-slot="sidebar-container"],
+:host ::ng-deep [data-slot="sidebar-container"] [data-sidebar="sidebar"] {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
 }
