@@ -1,0 +1,104 @@
+/* Minimal menubar wrapper styles.
+   Color and theme variables come from the global source-of-truth: `src/styles.css`.
+   Keep only layout/padding here so the menubar inherits Spartan UI colors. */
+.ctf-menu-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.ctf-menu-left {
+  display: flex;
+  align-items: center;
+}
+
+.ctf-logo {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--sidebar-foreground);
+}
+
+.ctf-menu-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+}
+
+.ctf-menu-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ctf-menu-right button[themeToggle] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+/* Use Spartan theme variables from `src/styles.css` as the source-of-truth for colors.
+   Keep these rules minimal and only map component elements to variables so
+   colors are not duplicated or hard-coded in component CSS. */
+
+hlm-menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sidebar-foreground);
+  background: transparent;
+}
+
+button[hlmMenuBarItem] {
+  background: transparent;
+  color: inherit;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+button[hlmMenuBarItem]:hover,
+button[hlmMenuBarItem][aria-expanded="true"] {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* Menus and sub-menus inherit popover colors from the theme */
+hlm-menu,
+hlm-sub-menu {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.75);
+}
+
+/* Menu items should use inherited colors and simple hover state */
+button[hlmMenuItem],
+button[hlmMenuItemCheckbox],
+button[hlmMenuItemRadio] {
+  background: transparent;
+  color: inherit;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+}
+
+button[hlmMenuItem]:hover {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* Shortcuts and separators should respect theme colors */
+hlm-menu-shortcut,
+hlm-menu-separator {
+  color: var(--muted-foreground);
+}
+
+/* Keep any additional layout-only helpers here (no color overrides) */
