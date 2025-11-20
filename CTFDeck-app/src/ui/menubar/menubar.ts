@@ -35,7 +35,6 @@ import { ThemeToggle } from './theme-toggle';
     HlmMenuItemRadio,
     HlmMenuGroup,
     HlmMenuItemCheckbox,
-    HlmMenuItemRadioIndicator,
     ThemeToggle,
   ],
   templateUrl: './menubar.html',

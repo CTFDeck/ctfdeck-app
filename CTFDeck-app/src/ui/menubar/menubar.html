@@ -5,10 +5,10 @@
 
   <div class="ctf-menu-center">
     <hlm-menu-bar class="w-fit">
-      <button hlmMenuBarItem [brnMenuTriggerFor]="file">File</button>
-      <button hlmMenuBarItem [brnMenuTriggerFor]="create_file">Edit</button>
-      <button hlmMenuBarItem [brnMenuTriggerFor]="view">View</button>
-      <button hlmMenuBarItem [brnMenuTriggerFor]="profiles">Profiles</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="target">Target</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">Scripts</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="utils">Utils</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">Documentation</button>
     </hlm-menu-bar>
   </div>
 
@@ -16,126 +16,52 @@
     <button themeToggle></button>
   </div>
 
-  <ng-template #file>
+  <ng-template #target>
+    <hlm-menu variant="menubar" class="w-56">
+      <hlm-menu-group>
+        <button hlmMenuItem>Configuration</button>
+        <button hlmMenuItem>Ajout d’une cible</button>
+        <button hlmMenuItem>Retrait d’une cible</button>
+        <button hlmMenuItem>Sauvegarde d’une cible</button>
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+
+  <ng-template #scripts>
     <hlm-menu variant="menubar" class="w-48">
       <hlm-menu-group>
-        <button hlmMenuItem>
-          New Tab
-          <hlm-menu-shortcut>⌘T</hlm-menu-shortcut>
-        </button>
-        <button hlmMenuItem>
-          New Window
-          <hlm-menu-shortcut>⌘N</hlm-menu-shortcut>
-        </button>
-        <button hlmMenuItem disabled>New Incognito Window</button>
+        <button hlmMenuItem>Web</button>
+        <button hlmMenuItem>Reverse shell</button>
+        <button hlmMenuItem>Reverse engineering</button>
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+
+  <ng-template #utils>
+    <hlm-menu variant="menubar" class="w-64">
+      <hlm-menu-group>
+        <button hlmMenuItem>Tools: NMAP</button>
+        <button hlmMenuItem>Tools: Gobuster</button>
+        <button hlmMenuItem>Tools: Nikto</button>
+        <button hlmMenuItem>Tools: Burp</button>
       </hlm-menu-group>
 
       <hlm-menu-separator />
 
-      <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="share">
-        Share
-        <hlm-menu-item-sub-indicator />
-      </button>
-
-      <hlm-menu-separator />
-
-      <button hlmMenuItem>
-        Print...
-        <hlm-menu-shortcut>⌘P</hlm-menu-shortcut>
-      </button>
-    </hlm-menu>
-  </ng-template>
-
-  <ng-template #share>
-    <hlm-sub-menu>
-      <button hlmMenuItem>Email link</button>
-      <button hlmMenuItem>Messages</button>
-      <button hlmMenuItem>Notes</button>
-    </hlm-sub-menu>
-  </ng-template>
-
-  <ng-template #create_file>
-    <hlm-menu variant="menubar" class="w-48">
       <hlm-menu-group>
-        <button hlmMenuItem>
-          Undo
-          <hlm-menu-shortcut>⌘Z</hlm-menu-shortcut>
-        </button>
-        <button hlmMenuItem>
-          Redo
-          <hlm-menu-shortcut>⇧⌘Z</hlm-menu-shortcut>
-        </button>
+        <button hlmMenuItem>CVE.org</button>
+        <button hlmMenuItem>ExploitDB</button>
+        <button hlmMenuItem>Notre documentation</button>
       </hlm-menu-group>
-
-      <hlm-menu-separator />
-
-      <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="find">
-        Share
-        <hlm-menu-item-sub-indicator />
-      </button>
-
-      <hlm-menu-separator />
-
-      <button hlmMenuItem>Cut</button>
-      <button hlmMenuItem>Copy</button>
-      <button hlmMenuItem>Paste</button>
     </hlm-menu>
   </ng-template>
 
-  <ng-template #find>
-    <hlm-sub-menu>
-      <button hlmMenuItem>Search the web</button>
-      <hlm-menu-separator />
-      <button hlmMenuItem>Find...</button>
-      <button hlmMenuItem>Find Next</button>
-      <button hlmMenuItem>Find Previous</button>
-    </hlm-sub-menu>
-  </ng-template>
-
-  <ng-template #view>
-    <hlm-menu variant="menubar">
-      <button hlmMenuItemCheckbox>
-        <hlm-menu-item-check />
-        Always Show Bookmarks Bar
-      </button>
-      <button hlmMenuItemCheckbox checked>
-        <hlm-menu-item-check />
-        Always Show Full URLs
-      </button>
-      <hlm-menu-separator />
-      <button inset hlmMenuItem>
-        Reload
-        <hlm-menu-shortcut>⌘R</hlm-menu-shortcut>
-      </button>
-      <button inset disabled hlmMenuItem>
-        Force Reload
-        <hlm-menu-shortcut>⇧⌘R</hlm-menu-shortcut>
-      </button>
-      <hlm-menu-separator />
-      <button inset hlmMenuItem>Toggle Fullscreen</button>
-      <hlm-menu-separator />
-      <button inset hlmMenuItem>Hide Sidebar</button>
-    </hlm-menu>
-  </ng-template>
-
-  <ng-template #profiles>
-    <hlm-menu variant="menubar" class="w-48">
-      <button hlmMenuItemRadio>
-        <hlm-menu-item-radio />
-        Andy
-      </button>
-      <button hlmMenuItemRadio checked>
-        <hlm-menu-item-radio />
-        Benoit
-      </button>
-      <button hlmMenuItemRadio>
-        <hlm-menu-item-radio />
-        Lewis
-      </button>
-      <hlm-menu-separator />
-      <button inset hlmMenuItem>Edit...</button>
-      <hlm-menu-separator />
-      <button inset hlmMenuItem>Add Profile...</button>
+  <ng-template #documentation>
+    <hlm-menu variant="menubar" class="w-56">
+      <hlm-menu-group>
+        <button hlmMenuItem>Documentation développeur</button>
+        <button hlmMenuItem>Documentation utilisateur</button>
+      </hlm-menu-group>
     </hlm-menu>
   </ng-template>
 </div>
