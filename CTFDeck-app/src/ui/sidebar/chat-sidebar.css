@@ -1,5 +1,4 @@
 .ctf-chat-sidebar {
-  width: 18rem;
   min-width: 14rem;
   max-width: 22rem;
   /* let the parent layout control height; take full available height */
@@ -65,14 +64,4 @@
   margin-left: 0;
   margin-right: 0;
   width: 100%;
-}
-
-/* Remove framework wrapper borders that add the extra vertical line.
-   Uses ::ng-deep to override styles applied outside this component. */
-:host ::ng-deep [data-slot="sidebar-container"],
-:host ::ng-deep [data-slot="sidebar-container"] [data-sidebar="sidebar"] {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  box-shadow: none !important;
 }
