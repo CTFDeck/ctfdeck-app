@@ -8,6 +8,7 @@
   color: var(--sidebar-foreground);
   position: relative;
   box-sizing: border-box;
+  /* Don't shift the entire host (can get clipped). Instead move the header itself. */
   display: flex;
   flex-direction: column;
 }
@@ -46,6 +47,17 @@
   width: 1px;
   background: var(--sidebar-border);
   pointer-events: none;
+}
+
+/* Move the header down by the menubar height so it isn't hidden.
+   Using margin on the header (not on the host) avoids clipping when the
+   parent layout constrains the sidebar. We keep the header in normal flow
+   so it doesn't overlap the scrollable content. */
+.ctf-chat-sidebar hlm-sidebar-header {
+  margin-top: var(--menubar-height);
+  position: relative;
+  z-index: 5;
+  background: var(--sidebar);
 }
 
 /* make any internal sidebar separators span full content width */
