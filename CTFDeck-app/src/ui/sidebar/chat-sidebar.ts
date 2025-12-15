@@ -51,7 +51,7 @@ export class ChatSidebar {
     return !this.isCollapsed();
   }
 
-  @HostBinding('class.w-16') // 4rem = 64px
+  @HostBinding('class.w-20') // 5rem = 80px
   get collapsed() {
     return this.isCollapsed();
   }
