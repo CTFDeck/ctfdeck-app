@@ -11,7 +11,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebSocketService, CommandResponse } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
-import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideServer, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
@@ -25,7 +24,7 @@ interface TerminalLine {
 @Component({
   selector: 'app-terminal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmInputImports, HlmButtonImports],
+  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports],
   providers: [
     provideIcons({
       lucideServer,
