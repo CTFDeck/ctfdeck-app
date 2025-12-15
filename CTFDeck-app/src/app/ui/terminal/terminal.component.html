@@ -1,0 +1,25 @@
+
+<div class="terminal-container" (click)="focusInput()">
+  <div class="terminal-header">
+    <div class="status-indicator" [class.connected]="isConnected"></div>
+    <span class="status-text">{{ isConnected ? 'Connected' : 'Disconnected' }}</span>
+  </div>
+  
+  <div class="terminal-output" #scrollContainer>
+    <div *ngFor="let line of lines" class="line" [ngClass]="line.type">
+      <span class="content">{{ line.content }}</span>
+    </div>
+    
+    <div class="input-line">
+      <span class="prompt">$</span>
+      <input #commandInput
+             type="text" 
+             [(ngModel)]="currentCommand" 
+             (keydown.enter)="executeCommand()"
+             (keydown.arrowup)="navigateHistory('up', $event)"
+             (keydown.arrowdown)="navigateHistory('down', $event)"
+             autocomplete="off"
+             spellcheck="false">
+    </div>
+  </div>
+</div>
