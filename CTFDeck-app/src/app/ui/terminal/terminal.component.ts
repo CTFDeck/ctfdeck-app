@@ -5,6 +5,7 @@ import {
   ViewChild,
   ElementRef,
   AfterViewChecked,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -36,7 +37,10 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   private commandHistory: string[] = [];
   private historyIndex: number = -1;
 
-  constructor(private wsService: WebSocketService) {}
+  constructor(
+    private wsService: WebSocketService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     // Subscribe to connection status
@@ -134,6 +138,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       content,
       timestamp: new Date(),
     });
+    this.cdr.detectChanges();
   }
 
   private scrollToBottom(): void {
