@@ -1,12 +1,14 @@
 <hlm-sidebar class="ctf-chat-sidebar">
-  <hlm-sidebar-header class="flex items-center justify-between px-4 py-3">
-    <div *ngIf="!isCollapsed()" class="overflow-hidden whitespace-nowrap">
-      <div class="font-semibold text-sm">Chat History</div>
-      <div class="text-xs text-muted-foreground">Your recent conversations</div>
+  <hlm-sidebar-header>
+    <div class="flex w-full items-center justify-between px-4 py-3">
+      <div *ngIf="!isCollapsed()" class="overflow-hidden whitespace-nowrap">
+        <div class="font-semibold text-sm">Chat History</div>
+        <div class="text-xs text-muted-foreground">Your recent conversations</div>
+      </div>
+      <button hlmSidebarMenuButton (click)="toggleSidebar()" class="ml-auto p-1 h-8 w-8 flex items-center justify-center shrink-0">
+        <ng-icon name="lucidePanelLeft" />
+      </button>
     </div>
-    <button hlmSidebarMenuButton (click)="toggleSidebar()" class="p-1 h-8 w-8 flex items-center justify-center shrink-0">
-      <ng-icon name="lucidePanelLeft" />
-    </button>
   </hlm-sidebar-header>
 
   <hlm-sidebar-content>
