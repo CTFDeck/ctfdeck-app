@@ -133,6 +133,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private addLine(type: 'command' | 'output' | 'error' | 'info', content: string) {
+    console.log('[DEBUG addLine]', type, content);
     this.lines.push({
       type,
       content,
