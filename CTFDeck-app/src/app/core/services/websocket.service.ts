@@ -34,16 +34,32 @@ export class WebSocketService {
   private messagesSubject = new Subject<TerminalMessage>();
   public messages$ = this.messagesSubject.asObservable();
 
+  private _currentUrl: string = 'ws://localhost:42712';
+
   constructor(private ngZone: NgZone) {}
 
-  connect(url: string = 'ws://localhost:42712'): Promise<void> {
+  setUrl(url: string) {
+    this._currentUrl = url;
+  }
+
+  getUrl(): string {
+    return this._currentUrl;
+  }
+
+  connect(url?: string): Promise<void> {
+    const targetUrl = url || this._currentUrl;
+    // update current if a new one is passed specifically
+    if (url) {
+      this._currentUrl = url;
+    }
+
     return new Promise((resolve, reject) => {
       try {
         if (this.ws) {
           this.ws.close();
         }
 
-        this.ws = new WebSocket(url);
+        this.ws = new WebSocket(targetUrl);
         this.ws.binaryType = 'arraybuffer'; // IMPORTANT for binary protocol
 
         this.ws.onopen = () => {

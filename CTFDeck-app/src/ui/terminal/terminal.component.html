@@ -1,8 +1,55 @@
 
 <div class="terminal-container" (click)="focusInput()">
-  <div class="terminal-header">
-    <div class="status-indicator" [class.connected]="isConnected"></div>
-    <span class="status-text">{{ isConnected ? 'Connected' : 'Disconnected' }}</span>
+  <div class="terminal-header" (click)="$event.stopPropagation()">
+    <div class="relative inline-block">
+      <button hlmBtn variant="ghost" class="h-6 p-1 gap-2 text-xs font-normal hover:bg-zinc-800"
+              (click)="toggleServerSelection($event)">
+        <div class="status-indicator" [class.connected]="isConnected"></div>
+        <span class="status-text">{{ isConnected ? 'Connected to ' + serverUrl : 'Disconnected' }}</span>
+      </button>
+
+      <!-- Manual Popover -->
+      <div *ngIf="showServerSelection" 
+           class="absolute top-full left-0 mt-2 w-80 z-50 p-4 rounded-md border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2">
+        
+        <div class="space-y-2 mb-4">
+          <h4 class="font-medium leading-none">Connection Settings</h4>
+          <p class="text-sm text-muted-foreground">
+            Configure the WebSocket server URL.
+          </p>
+        </div>
+        
+        <div class="grid gap-2 mb-4">
+          <div class="grid grid-cols-3 items-center gap-4">
+            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="url">Server URL</label>
+            <input hlmInput id="url" [(ngModel)]="serverUrl" class="col-span-2 h-8 text-xs" />
+          </div>
+          <div class="flex justify-end gap-2">
+            <button hlmBtn size="sm" variant="outline" (click)="saveServer()">Save</button>
+            <button hlmBtn size="sm" (click)="reconnect(); showServerSelection = false;">Connect</button>
+          </div>
+        </div>
+        
+        <div class="grid gap-2" *ngIf="savedServers.length > 0">
+           <h4 class="font-medium text-xs text-muted-foreground mt-2">Saved Servers</h4>
+           <!-- DB SAVE COMMENT: The savedServers array should be persisted in a user database table (e.g., UserSettings) -->
+           <div class="flex flex-col gap-1">
+             <div *ngFor="let server of savedServers" 
+                  class="flex items-center justify-between p-2 rounded hover:bg-accent hover:text-accent-foreground cursor-pointer group"
+                  (click)="selectServer(server); showServerSelection = false;">
+               <span class="text-xs truncate flex-1">{{ server }}</span>
+               <button hlmBtn size="icon" variant="ghost" class="h-6 w-6 opacity-0 group-hover:opacity-100" 
+                       (click)="removeServer(server, $event)">
+                 <ng-icon name="lucideTrash2" size="sm" class="text-destructive"/>
+               </button>
+             </div>
+           </div>
+        </div>
+      </div>
+    
+      <!-- Backdrop to close on click outside (optional/simple approach) -->
+      <div *ngIf="showServerSelection" class="fixed inset-0 z-40 bg-transparent" (click)="showServerSelection = false"></div>
+    </div>
   </div>
   
   <div class="terminal-output" #scrollContainer>
