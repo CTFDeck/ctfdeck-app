@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { WebSocketService, CommandResponse } from '../../core/services/websocket.service';
+import { WebSocketService, CommandResponse } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
 
 interface TerminalLine {
