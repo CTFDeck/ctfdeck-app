@@ -133,16 +133,18 @@ jobs:
         NOTES="${{ steps.version.outputs.notes }}"
         TARGET="${{ steps.version.outputs.target_commitish }}"
         
-        # Gather all files from the download directory
-        FILES=$(find ./artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.blockmap" \))
-        
         echo "Creating release $TAG_NAME targeting $TARGET"
         echo "Files to upload:"
-        echo "$FILES"
+        find ./artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.blockmap" \) -print
         
         # Create release (using --prerelease since these are dev/stage builds)
+        # Use process substitution to properly handle filenames with spaces
+        while IFS= read -r -d '' file; do
+          FILES_ARRAY+=("$file")
+        done < <(find ./artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.blockmap" \) -print0)
+        
         gh release create "$TAG_NAME" \
-          $FILES \
+          "${FILES_ARRAY[@]}" \
           --title "$TITLE" \
           --notes "$NOTES" \
           --target "$TARGET" \
