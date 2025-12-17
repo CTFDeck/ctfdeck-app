@@ -1,3 +1,8 @@
 import { Routes } from '@angular/router';
 
-export const routes: Routes = [];
+import { TerminalComponent } from '../ui/terminal/terminal.component';
+
+export const routes: Routes = [
+  { path: 'terminal', component: TerminalComponent },
+  { path: '', redirectTo: 'terminal', pathMatch: 'full' },
+];

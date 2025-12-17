@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -13,6 +13,7 @@ import {
   lucideCheck,
   lucideMessageCircleDashed,
   lucideFolder,
+  lucidePanelLeft,
 } from '@ng-icons/lucide';
 
 @Component({
@@ -35,6 +36,7 @@ import {
       lucideCheck,
       lucideMessageCircleDashed,
       lucideFolder,
+      lucidePanelLeft,
     }),
   ],
 
@@ -42,6 +44,18 @@ import {
   styleUrls: ['./chat-sidebar.css'],
 })
 export class ChatSidebar {
+  isCollapsed = signal(false);
+
+  @HostBinding('class.w-64')
+  get expanded() {
+    return !this.isCollapsed();
+  }
+
+  @HostBinding('class.w-20') // 5rem = 80px
+  get collapsed() {
+    return this.isCollapsed();
+  }
+
   search = '';
 
   projects = [
@@ -74,5 +88,9 @@ export class ChatSidebar {
   /** Number of results currently shown by the search filter */
   get resultsCount(): number {
     return this.filteredChats.length;
+  }
+
+  toggleSidebar() {
+    this.isCollapsed.set(!this.isCollapsed());
   }
 }
