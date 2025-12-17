@@ -44,26 +44,26 @@ jobs:
 
     - name: Package Electron App
       working-directory: ./CTFDeck-app
-      # Run for PRs or tags containing [TEST]
-      if: github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]'))
+      # Run for PRs, tags containing [TEST], or branch commits containing [TEST]
+      if: github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]'))
       run: npm run package -- --publish never
 
     # Clean up artifacts before upload to save space and avoid confusion
     - name: Cleanup Artifacts (Unix)
       working-directory: ./CTFDeck-app/release
-      if: runner.os != 'Windows' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')))
+      if: runner.os != 'Windows' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]')))
       run: |
         rm -rf win-unpacked linux-unpacked mac mac-arm64 builder-debug.yml .icon-icns || true
 
     - name: Cleanup Artifacts (Windows)
       working-directory: ./CTFDeck-app/release
-      if: runner.os == 'Windows' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')))
+      if: runner.os == 'Windows' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]')))
       run: |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue win-unpacked, linux-unpacked, mac, mac-arm64, builder-debug.yml, .icon-icns
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
-      if: github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]'))
+      if: github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]'))
       with:
         name: artifacts-${{ matrix.os }}
         path: |
@@ -76,8 +76,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    # Only run release if build succeeded AND (it is a PR OR tag name has [TEST])
-    if: always() && needs.build.result == 'success' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')))
+    # Only run release if build succeeded AND (it is a PR OR tag name has [TEST] OR commit message has [TEST])
+    if: always() && needs.build.result == 'success' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]')))
     
     steps:
     - name: Checkout code
@@ -98,11 +98,17 @@ jobs:
           echo "title=CTFDeck Release #${{ github.event.pull_request.number }} to stage" >> $GITHUB_OUTPUT
           echo "notes=Automated release build for PR #${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           echo "target_commitish=${{ github.head_ref }}" >> $GITHUB_OUTPUT
-        else
+        elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
           TAG_NAME="${{ github.ref_name }}"
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "title=CTFDeck Tag Release ${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "notes=Automated release build for tag ${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "target_commitish=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        else
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "tag=stage-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "title=CTFDeck Stage Release ${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "notes=Automated release build for commit ${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "target_commitish=${{ github.ref_name }}" >> $GITHUB_OUTPUT
         fi
 
