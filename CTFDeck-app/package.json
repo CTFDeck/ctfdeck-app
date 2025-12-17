@@ -1,6 +1,7 @@
 {
   "name": "ctfdeck-app",
   "version": "0.0.0",
+  "main": "dist-electron/main.js",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -8,7 +9,9 @@
     "watch": "ng build --watch --configuration development",
     "format": "prettier --write \"src/**/*.{ts,js,json,html,css}\"",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "electron:build": "tsc -p tsconfig.electron.json",
+    "electron:start": "ng build --base-href ./ && npm run electron:build && electron ."
   },
   "prettier": {
     "printWidth": 100,
@@ -48,6 +51,7 @@
     "@spartan-ng/cli": "^0.0.1-alpha.564",
     "@tailwindcss/postcss": "^4.1.12",
     "angular-eslint": "20.6.0",
+    "electron": "^39.2.7",
     "eslint": "^9.39.0",
     "jsdom": "^27.1.0",
     "postcss": "^8.5.3",

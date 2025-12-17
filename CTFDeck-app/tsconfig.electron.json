@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2018",
+    "outDir": "dist-electron",
+    "sourceMap": true,
+    "strict": true,
+    "lib": ["es2018", "dom"],
+    "types": ["node"]
+  },
+  "include": [
+    "electron/**/*.ts"
+  ]
+}
