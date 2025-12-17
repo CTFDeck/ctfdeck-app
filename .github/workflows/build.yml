@@ -2,9 +2,10 @@ name: Build and Release
 
 on:
   push:
-    branches: [ main, master, stage ]
+    branches: ['**']
   pull_request:
-    branches: [ main, master, stage ]
+    branches: ['**']
+
 
 permissions:
   contents: write
