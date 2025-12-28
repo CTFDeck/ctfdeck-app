@@ -1,0 +1,158 @@
+name: Build and Release
+
+on:
+  push:
+    branches: ['**']
+    tags: ['**']
+  pull_request:
+    branches: ['**']
+
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: CTFDeck-app/package-lock.json
+
+    - name: Install Dependencies
+      working-directory: ./CTFDeck-app
+      run: npm install
+
+    - name: Build Angular App
+      working-directory: ./CTFDeck-app
+      run: npm run build
+
+    - name: Build Electron Main
+      working-directory: ./CTFDeck-app
+      run: npm run electron:build
+
+    - name: Package Electron App
+      working-directory: ./CTFDeck-app
+      # Run for PRs, tags containing [TEST], or branch commits containing [TEST]
+      if: github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]'))
+      run: npm run package -- --publish never
+
+    # Clean up artifacts before upload to save space and avoid confusion
+    - name: Cleanup Artifacts (Unix)
+      working-directory: ./CTFDeck-app/release
+      if: runner.os != 'Windows' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]')))
+      run: |
+        rm -rf win-unpacked linux-unpacked mac mac-arm64 builder-debug.yml .icon-icns || true
+
+    - name: Cleanup Artifacts (Windows)
+      working-directory: ./CTFDeck-app/release
+      if: runner.os == 'Windows' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]')))
+      run: |
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue win-unpacked, linux-unpacked, mac, mac-arm64, builder-debug.yml, .icon-icns
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      if: github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]'))
+      with:
+        name: artifacts-${{ matrix.os }}
+        path: |
+          ./CTFDeck-app/release/*.exe
+          ./CTFDeck-app/release/*.dmg
+          ./CTFDeck-app/release/*.AppImage
+          ./CTFDeck-app/release/*.blockmap
+        retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    # Only run release if build succeeded AND (it is a PR OR tag name has [TEST] OR commit message has [TEST])
+    if: always() && needs.build.result == 'success' && (github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/tags/') && contains(github.ref_name, '[TEST]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[TEST]')))
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+        merge-multiple: true
+
+    - name: Get Version/Tag Info
+      id: version
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "tag=pr-${{ github.event.pull_request.number }}-stage" >> $GITHUB_OUTPUT
+          echo "title=CTFDeck Release #${{ github.event.pull_request.number }} to stage" >> $GITHUB_OUTPUT
+          echo "notes=Automated release build for PR #${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          echo "target_commitish=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          TAG_NAME="${{ github.ref_name }}"
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "title=CTFDeck Tag Release ${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "notes=Automated release build for tag ${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "target_commitish=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        else
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "tag=stage-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "title=CTFDeck Stage Release ${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "notes=Automated release build for commit ${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "target_commitish=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Delete Existing Release/Tag
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TAG_NAME="${{ steps.version.outputs.tag }}"
+        echo "Checking for existing release: $TAG_NAME"
+        
+        if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+          echo "Deleting existing release: $TAG_NAME"
+          gh release delete "$TAG_NAME" --cleanup-tag --yes
+        elif git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+          echo "Deleting existing tag: $TAG_NAME"
+          git push --delete origin "$TAG_NAME" || true
+        fi
+
+    # Small delay to ensure GitHub consistency after deletion
+    - name: Wait for deletion propagation
+      run: sleep 5
+
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TAG_NAME="${{ steps.version.outputs.tag }}"
+        TITLE="${{ steps.version.outputs.title }}"
+        NOTES="${{ steps.version.outputs.notes }}"
+        TARGET="${{ steps.version.outputs.target_commitish }}"
+        
+        echo "Creating release $TAG_NAME targeting $TARGET"
+        echo "Files to upload:"
+        find ./artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.blockmap" \) -print
+        
+        # Create release (using --prerelease since these are dev/stage builds)
+        # Use process substitution to properly handle filenames with spaces
+        while IFS= read -r -d '' file; do
+          FILES_ARRAY+=("$file")
+        done < <(find ./artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.blockmap" \) -print0)
+        
+        gh release create "$TAG_NAME" \
+          "${FILES_ARRAY[@]}" \
+          --title "$TITLE" \
+          --notes "$NOTES" \
+          --target "$TARGET" \
+          --prerelease

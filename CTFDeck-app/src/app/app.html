@@ -1,0 +1,12 @@
+<div class="app-root flex flex-col h-screen">
+  <spartan-menubar></spartan-menubar>
+
+  <div class="app-layout flex-1 flex overflow-hidden">
+    <ctf-chat-sidebar class="flex-none border-r border-border transition-[width] duration-300 ease-in-out"></ctf-chat-sidebar>
+
+    <main class="app-main flex-1 overflow-auto">
+      <!-- Routed pages will render here -->
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

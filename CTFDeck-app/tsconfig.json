@@ -1,0 +1,72 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "paths": {
+      "@ctfdeck/helm/sidebar": [
+        "./libs/ui/sidebar/src/index.ts"
+      ],
+      "@ctfdeck/helm/utils": [
+        "./libs/ui/utils/src/index.ts"
+      ],
+      "@ctfdeck/helm/button": [
+        "./libs/ui/button/src/index.ts"
+      ],
+      "@ctfdeck/helm/icon": [
+        "./libs/ui/icon/src/index.ts"
+      ],
+      "@ctfdeck/helm/input": [
+        "./libs/ui/input/src/index.ts"
+      ],
+      "@ctfdeck/helm/separator": [
+        "./libs/ui/separator/src/index.ts"
+      ],
+      "@ctfdeck/helm/sheet": [
+        "./libs/ui/sheet/src/index.ts"
+      ],
+      "@ctfdeck/helm/tooltip": [
+        "./libs/ui/tooltip/src/index.ts"
+      ],
+      "@ctfdeck/helm/menu": [
+        "./libs/ui/menu/src/index.ts"
+      ],
+      "@ctfdeck/helm/skeleton": [
+        "./libs/ui/skeleton/src/index.ts"
+      ],
+      "@ctfdeck/helm/scroll-area": [
+        "./libs/ui/scroll-area/src/index.ts"
+      ],
+      "@ctfdeck/helm/input-group": [
+        "./libs/ui/input-group/src/index.ts"
+      ],
+      "@ctfdeck/helm/textarea": [
+        "./libs/ui/textarea/src/index.ts"
+      ]
+    }
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ]
+}
