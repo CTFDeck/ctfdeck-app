@@ -44,5 +44,6 @@ Thumbs.db
 .angular
 .vscode
 .idea/
+dist
 dist-electron
 
