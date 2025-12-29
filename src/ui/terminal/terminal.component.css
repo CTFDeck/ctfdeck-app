@@ -1,28 +1,8 @@
-
-/* Make the component host element fill the parent flex container */
 :host {
   display: block;
   width: 100%;
   height: 100%;
-  min-width: 0; /* Important: allows flex child to shrink below content size */
-  overflow: hidden;
-}
-
-/* Make the component host element fill the parent flex container */
-:host {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-width: 0; /* Important: allows flex child to shrink below content size */
-  overflow: hidden;
-}
-
-/* Make the component host element fill the parent flex container */
-:host {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-width: 0; /* Important: allows flex child to shrink below content size */
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -30,9 +10,27 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  /* background-color handled by utility classes in HTML */
   margin-right: 8px;
   transition: background-color 0.3s ease;
 }
 
+.ls-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: baseline;
+}
 
+.ls-item {
+  white-space: nowrap;
+}
+
+.ft-dir { color: #60a5fa; } /* blue */
+.ft-arc { color: #fbbf24; } /* yellow */
+.ft-bin { color: #f87171; } /* red */
+.ft-lnk { color: #a78bfa; } /* purple */
+.ft-txt { color: #d1d5db; } /* light grey */
+.ft-img { color: #34d399; } /* green */
+.ft-vid { color: #fb7185; } /* pink */
+.ft-aud { color: #22c55e; } /* green */
+.ft-unk { color: #9ca3af; } /* grey */
