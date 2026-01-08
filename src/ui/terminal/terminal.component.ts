@@ -15,10 +15,18 @@ import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideServer, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
 
+type FilePrefix = 'dir' | 'arc' | 'bin' | 'lnk' | 'txt' | 'img' | 'vid' | 'aud' | 'unk';
+
+interface LsEntry {
+  prefix: FilePrefix;
+  name: string;
+}
+
 interface TerminalLine {
-  type: 'command' | 'output' | 'error' | 'info';
+  type: 'command' | 'output' | 'error' | 'info' | 'ls';
   content: string;
   timestamp: Date;
+  lsEntries?: LsEntry[];
 }
 
 @Component({
@@ -37,13 +45,17 @@ interface TerminalLine {
 })
 export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
-  @ViewChild('commandInput') private commandInput!: ElementRef;
+  @ViewChild('commandInput') private commandInput!: ElementRef<HTMLInputElement>;
 
   lines: TerminalLine[] = [];
   currentCommand: string = '';
   isConnected: boolean = false;
 
-  // Server Selection State
+  prompt: string = '$';
+  private lastPwd: string = '';
+
+  private lastLsEntries: LsEntry[] = [];
+
   showServerSelection: boolean = false;
   serverUrl: string = '';
   savedServers: string[] = ['ws://localhost:42712', 'wss://echo.websocket.org'];
@@ -65,7 +77,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   ngOnInit(): void {
-    // Subscribe to connection status
     this.subscriptions.add(
       this.wsService.isConnected$.subscribe((connected) => {
         this.isConnected = connected;
@@ -75,7 +86,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       }),
     );
 
-    // Initial connection
     this.connect();
   }
 
@@ -84,9 +94,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.wsService.disconnect();
   }
 
-  ngAfterViewChecked(): void {
-    // Removed auto-scroll on every check to allow manual scrolling and history reading
-  }
+  ngAfterViewChecked(): void {}
 
   private connect() {
     this.wsService
@@ -94,9 +102,10 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       .then(() => {
         this.addLine('info', 'Connected to WebSocket server.');
         this.addLine('info', 'Type "help" for a list of available commands or just type away!');
+        this.scrollToBottom();
       })
       .catch((err) => {
-        this.addLine('error', `Connection failed: ${err.message || 'Unknown error'}`);
+        this.addLine('error', `Connection failed: ${err?.message || 'Unknown error'}`);
       });
   }
 
@@ -104,15 +113,12 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     const cmd = this.currentCommand.trim();
     if (!cmd) return;
 
-    // Add to history
     this.commandHistory.push(cmd);
     this.historyIndex = this.commandHistory.length;
 
-    // Display command
-    this.addLine('command', `$ ${cmd}`);
+    this.addLine('command', `${this.prompt} ${cmd}`);
     this.currentCommand = '';
 
-    // Handle local commands
     if (cmd === 'clear' || cmd === 'cls') {
       this.lines = [];
       return;
@@ -135,27 +141,172 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    // Execute via WebSocket
     this.wsService
       .executeCommand(cmd)
       .then((response: CommandResponse) => {
-        if (response.output) {
-          this.addLine('output', response.output);
+        this.updatePwd(response.pwdOutput ?? '');
+        this.updateLsCache(response.lsOutput ?? '');
+
+        if (this.isPlainLsCommand(cmd)) {
+          if (response.lsOutput) {
+            this.addLsGrid(response.lsOutput);
+          } else if (response.output) {
+            this.addLine('output', response.output);
+          }
+        } else {
+          if (response.output) {
+            this.addLine('output', response.output);
+          }
         }
+
         if (response.error) {
           this.addLine('error', response.error);
         }
+
         if (response.exitCode !== 0 && !response.error) {
           this.addLine('error', `Program exited with code ${response.exitCode}`);
         }
+
+        this.scrollToBottom();
       })
       .catch((err) => {
-        this.addLine('error', `Execution failed: ${err.message}`);
+        this.addLine('error', `Execution failed: ${err?.message || err}`);
       });
   }
 
+
+  private updatePwd(pwdOutput: string) {
+    const pwd = (pwdOutput || '').trim();
+    if (!pwd) return;
+
+    this.lastPwd = pwd;
+    this.prompt = `${pwd} $`;
+    this.cdr.detectChanges();
+  }
+
+
+  private updateLsCache(lsOutput: string) {
+    this.lastLsEntries = this.parseLs(lsOutput);
+  }
+
+  private parseLs(lsOutput: string): LsEntry[] {
+    const lines = (lsOutput || '')
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const out: LsEntry[] = [];
+    for (const line of lines) {
+      const m = line.match(/^\[(dir|arc|bin|lnk|txt|img|vid|aud|unk)\]\s+(.+)$/i);
+      if (!m) continue;
+      out.push({
+        prefix: m[1].toLowerCase() as FilePrefix,
+        name: m[2],
+      });
+    }
+    return out;
+  }
+
+  classForPrefix(prefix: FilePrefix): string {
+    switch (prefix) {
+      case 'dir': return 'ft-dir';
+      case 'arc': return 'ft-arc';
+      case 'bin': return 'ft-bin';
+      case 'lnk': return 'ft-lnk';
+      case 'txt': return 'ft-txt';
+      case 'img': return 'ft-img';
+      case 'vid': return 'ft-vid';
+      case 'aud': return 'ft-aud';
+      default: return 'ft-unk';
+    }
+  }
+
+  private addLsGrid(lsOutput: string) {
+    const entries = this.parseLs(lsOutput);
+
+    this.lines.push({
+      type: 'ls',
+      content: '',
+      timestamp: new Date(),
+      lsEntries: entries,
+    });
+
+    this.cdr.detectChanges();
+  }
+
+  private isPlainLsCommand(cmd: string): boolean {
+    const trimmed = cmd.trim();
+    if (!trimmed) return false;
+
+    const parts = trimmed.split(/\s+/);
+    const base = (parts[0] || '').toLowerCase();
+
+    return (base === 'ls' || base === 'dir') && parts.length === 1;
+  }
+
+  onTabAutocomplete(event: Event) {
+    const e = event as KeyboardEvent;
+    e.preventDefault();
+
+    if (this.lastLsEntries.length === 0) return;
+
+    const raw = this.currentCommand;
+    const hasTrailingSpace = /\s$/.test(raw);
+    const trimmed = raw.trim();
+
+    if (!trimmed) return;
+
+    const tokens = trimmed.split(/\s+/);
+
+    if (tokens.length === 1 && !hasTrailingSpace) {
+      this.currentCommand = raw + ' ';
+      return;
+    }
+
+    const lastToken = hasTrailingSpace ? '' : (tokens[tokens.length - 1] ?? '');
+
+    const candidates = this.lastLsEntries
+      .map((x) => x.name)
+      .filter((name) => name.startsWith(lastToken));
+
+    if (candidates.length === 0) return;
+
+    const prefixText = hasTrailingSpace
+      ? raw
+      : raw.replace(new RegExp(`${this.escapeRegex(lastToken)}$`), '');
+
+    if (candidates.length === 1) {
+      this.currentCommand = prefixText + candidates[0] + ' ';
+      return;
+    }
+
+    const common = this.commonPrefix(candidates);
+    if (common.length > lastToken.length) {
+      this.currentCommand = prefixText + common;
+      return;
+    }
+
+    this.addLine('info', candidates.join('    '));
+    this.scrollToBottom();
+  }
+
+  private commonPrefix(items: string[]): string {
+    if (items.length === 0) return '';
+    let prefix = items[0];
+    for (let i = 1; i < items.length; i++) {
+      while (!items[i].startsWith(prefix)) {
+        prefix = prefix.slice(0, -1);
+        if (!prefix) return '';
+      }
+    }
+    return prefix;
+  }
+
+  private escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   private addLine(type: 'command' | 'output' | 'error' | 'info', content: string) {
-    console.log('[DEBUG addLine]', type, content);
     this.lines.push({
       type,
       content,
@@ -166,15 +317,12 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private scrollToBottom(): void {
     try {
-      // Use scrollIntoView on the input to ensure the bottom-most active element is visible
-      // Using 'block: nearest' or 'end' prevents unnecessary jumping if already visible
       this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } catch (err) {}
+    } catch {}
   }
 
-  // History navigation
   navigateHistory(direction: 'up' | 'down', event: Event) {
-    event.preventDefault(); // Prevent cursor moving to start/end
+    event.preventDefault();
 
     if (this.commandHistory.length === 0) return;
 
@@ -196,18 +344,14 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   focusInput(event?: Event) {
     const selection = window.getSelection();
-    if (selection && selection.toString().length > 0) {
-      return;
-    }
-    // Prevent stealing focus if user is interacting with inputs or buttons
+    if (selection && selection.toString().length > 0) return;
+
     if (event && event.target instanceof HTMLElement) {
       const tag = event.target.tagName.toLowerCase();
-      if (tag === 'input' || tag === 'button' || tag === 'textarea') {
-        return;
-      }
+      if (tag === 'input' || tag === 'button' || tag === 'textarea') return;
     }
 
-    this.commandInput.nativeElement.focus();
+    this.commandInput?.nativeElement?.focus();
   }
 
   reconnect() {
@@ -219,15 +363,12 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   saveServer() {
     if (this.serverUrl && !this.savedServers.includes(this.serverUrl)) {
       this.savedServers.push(this.serverUrl);
-      // TODO: Save this to a database for the user configuration
-      // e.g., this.configService.saveUserConfig({ key: 'saved_ws_servers', value: this.savedServers })
     }
   }
 
   removeServer(url: string, event: Event) {
     event.stopPropagation();
     this.savedServers = this.savedServers.filter((s) => s !== url);
-    // TODO: Update database
   }
 
   selectServer(url: string) {
