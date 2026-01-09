@@ -183,25 +183,45 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    // Track streaming output with a buffer
+    // High-performance streaming with requestAnimationFrame throttling
     let outputLineIndex = -1;
     let outputBuffer = '';
     let errorBuffer = '';
+    let pendingRender = false;
+    let lastRenderTime = 0;
+    const MIN_RENDER_INTERVAL = 16; // ~60fps
+
+    // Throttled render function using requestAnimationFrame
+    const scheduleRender = () => {
+      if (pendingRender) return;
+
+      const now = performance.now();
+      const timeSinceLastRender = now - lastRenderTime;
+
+      if (timeSinceLastRender < MIN_RENDER_INTERVAL) {
+        // Schedule for next frame
+        pendingRender = true;
+        requestAnimationFrame(() => {
+          pendingRender = false;
+          lastRenderTime = performance.now();
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
+        });
+      } else {
+        // Render immediately
+        lastRenderTime = now;
+        this.renderOutputBuffer(outputLineIndex, outputBuffer);
+      }
+    };
 
     // Use streaming execution
     this.wsService
       .executeCommandStreaming(
         cmd,
-        // onOutput callback - called for each stdout chunk
+        // onOutput callback - batched and throttled
         (data: string) => {
           outputBuffer += data;
 
-          // Update autocomplete cache if this looks like directory listing
-          if (this.looksLikeDirectoryListing(cmd)) {
-            this.updateLsCache(outputBuffer);
-          }
-
-          // Create output line if first chunk, otherwise update existing
+          // Create output line if first chunk
           if (outputLineIndex === -1) {
             outputLineIndex = this.lines.length;
             this.lines.push({
@@ -211,20 +231,26 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
             });
           }
 
-          // Update the output line with the full buffer (re-render ANSI each time)
-          const html = this.ansiConverter.toHtml(outputBuffer);
-          this.lines[outputLineIndex].content = this.sanitizer.bypassSecurityTrustHtml(html);
-          this.cdr.detectChanges();
-          this.scrollToBottom();
+          // Schedule throttled render
+          scheduleRender();
         },
-        // onError callback - called for each stderr chunk
+        // onError callback
         (data: string) => {
           errorBuffer += data;
           this.appendToLastError(data);
-          this.scrollToBottom();
         },
       )
       .then((result) => {
+        // Final render with complete buffer
+        if (outputLineIndex >= 0) {
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
+        }
+
+        // Update autocomplete cache if directory listing
+        if (this.looksLikeDirectoryListing(cmd)) {
+          this.updateLsCache(outputBuffer);
+        }
+
         // Stream completed
         if (result.workingDirectory) {
           this.updatePwd(result.workingDirectory);
@@ -244,6 +270,18 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       .catch((err) => {
         this.addLine('error', `Execution failed: ${err?.message || err}`);
       });
+  }
+
+  /**
+   * Efficiently render output buffer to the DOM
+   */
+  private renderOutputBuffer(lineIndex: number, buffer: string): void {
+    if (lineIndex < 0 || lineIndex >= this.lines.length) return;
+
+    const html = this.ansiConverter.toHtml(buffer);
+    this.lines[lineIndex].content = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.cdr.detectChanges();
+    this.scrollToBottom();
   }
 
   /**
