@@ -67,7 +67,9 @@
       </ng-container>
 
       <ng-template #normalLine>
-        <span class="content whitespace-pre-wrap">{{ line.content }}</span>
+        <!-- For output type, use innerHTML to render ANSI-converted HTML -->
+        <span *ngIf="line.type === 'output'" class="content whitespace-pre-wrap" [innerHTML]="line.content"></span>
+        <span *ngIf="line.type !== 'output'" class="content whitespace-pre-wrap">{{ line.content }}</span>
       </ng-template>
     </div>
 

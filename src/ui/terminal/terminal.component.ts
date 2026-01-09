@@ -9,11 +9,13 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { WebSocketService, CommandResponse } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideServer, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
+import AnsiToHtml from 'ansi-to-html';
 
 type FilePrefix = 'dir' | 'arc' | 'bin' | 'lnk' | 'txt' | 'img' | 'vid' | 'aud' | 'unk';
 
@@ -24,7 +26,7 @@ interface LsEntry {
 
 interface TerminalLine {
   type: 'command' | 'output' | 'error' | 'info' | 'ls';
-  content: string;
+  content: any; // Allow SafeHtml
   timestamp: Date;
   lsEntries?: LsEntry[];
 }
@@ -63,10 +65,20 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   private subscriptions: Subscription = new Subscription();
   private commandHistory: string[] = [];
   private historyIndex: number = -1;
+  private ansiConverter = new AnsiToHtml({
+    fg: '#d4d4d4',
+    bg: '#1e1e1e',
+    newline: true,
+    colors: {
+      4: '#61afef', // Softer blue
+      34: '#61afef', // Softer blue
+    },
+  });
 
   constructor(
     private wsService: WebSocketService,
     private cdr: ChangeDetectorRef,
+    private sanitizer: DomSanitizer,
   ) {
     this.serverUrl = this.wsService.getUrl();
   }
@@ -144,19 +156,15 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.wsService
       .executeCommand(cmd)
       .then((response: CommandResponse) => {
-        this.updatePwd(response.pwdOutput ?? '');
-        this.updateLsCache(response.lsOutput ?? '');
+        this.updatePwd(''); // response.pwdOutput is not supported by backend
 
-        if (this.isPlainLsCommand(cmd)) {
-          if (response.lsOutput) {
-            this.addLsGrid(response.lsOutput);
-          } else if (response.output) {
-            this.addLine('output', response.output);
+        // Unified output handling - all commands rendered the same way
+        if (response.output) {
+          // Update autocomplete cache if it looks like a directory listing
+          if (this.looksLikeDirectoryListing(cmd)) {
+            this.updateLsCache(response.output);
           }
-        } else {
-          if (response.output) {
-            this.addLine('output', response.output);
-          }
+          this.addLine('output', response.output);
         }
 
         if (response.error) {
@@ -174,7 +182,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       });
   }
 
-
   private updatePwd(pwdOutput: string) {
     const pwd = (pwdOutput || '').trim();
     if (!pwd) return;
@@ -183,7 +190,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.prompt = `${pwd} $`;
     this.cdr.detectChanges();
   }
-
 
   private updateLsCache(lsOutput: string) {
     this.lastLsEntries = this.parseLs(lsOutput);
@@ -198,26 +204,106 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     const out: LsEntry[] = [];
     for (const line of lines) {
       const m = line.match(/^\[(dir|arc|bin|lnk|txt|img|vid|aud|unk)\]\s+(.+)$/i);
-      if (!m) continue;
-      out.push({
-        prefix: m[1].toLowerCase() as FilePrefix,
-        name: m[2],
-      });
+      if (m) {
+        out.push({
+          prefix: m[1].toLowerCase() as FilePrefix,
+          name: m[2],
+        });
+        continue;
+      }
+
+      // Fallback: guess type from name/extension
+      // For Windows 'dir', we might want to skip headers, but for 'ls' it's usually just names
+      // Simple heuristic for now: check extension
+      const name = line;
+      let prefix: FilePrefix = 'unk';
+
+      if (name.endsWith('/') || name.endsWith('\\')) {
+        prefix = 'dir';
+      } else {
+        const ext = name.split('.').pop()?.toLowerCase();
+        switch (ext) {
+          case 'zip':
+          case 'tar':
+          case 'gz':
+          case '7z':
+          case 'rar':
+            prefix = 'arc';
+            break;
+          case 'exe':
+          case 'dll':
+          case 'so':
+          case 'sh':
+          case 'bat':
+          case 'cmd':
+            prefix = 'bin';
+            break;
+          case 'txt':
+          case 'md':
+          case 'json':
+          case 'js':
+          case 'ts':
+          case 'css':
+          case 'html':
+          case 'xml':
+          case 'log':
+            prefix = 'txt';
+            break;
+          case 'png':
+          case 'jpg':
+          case 'jpeg':
+          case 'gif':
+          case 'bmp':
+          case 'svg':
+          case 'webp':
+            prefix = 'img';
+            break;
+          case 'mp4':
+          case 'avi':
+          case 'mkv':
+          case 'mov':
+          case 'webm':
+            prefix = 'vid';
+            break;
+          case 'mp3':
+          case 'wav':
+          case 'ogg':
+          case 'flac':
+            prefix = 'aud';
+            break;
+          case 'lnk':
+            prefix = 'lnk';
+            break;
+          default:
+            prefix = 'unk';
+        }
+      }
+
+      out.push({ prefix, name });
     }
     return out;
   }
 
   classForPrefix(prefix: FilePrefix): string {
     switch (prefix) {
-      case 'dir': return 'ft-dir';
-      case 'arc': return 'ft-arc';
-      case 'bin': return 'ft-bin';
-      case 'lnk': return 'ft-lnk';
-      case 'txt': return 'ft-txt';
-      case 'img': return 'ft-img';
-      case 'vid': return 'ft-vid';
-      case 'aud': return 'ft-aud';
-      default: return 'ft-unk';
+      case 'dir':
+        return 'ft-dir';
+      case 'arc':
+        return 'ft-arc';
+      case 'bin':
+        return 'ft-bin';
+      case 'lnk':
+        return 'ft-lnk';
+      case 'txt':
+        return 'ft-txt';
+      case 'img':
+        return 'ft-img';
+      case 'vid':
+        return 'ft-vid';
+      case 'aud':
+        return 'ft-aud';
+      default:
+        return 'ft-unk';
     }
   }
 
@@ -234,14 +320,14 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.cdr.detectChanges();
   }
 
-  private isPlainLsCommand(cmd: string): boolean {
+  private looksLikeDirectoryListing(cmd: string): boolean {
     const trimmed = cmd.trim();
     if (!trimmed) return false;
 
     const parts = trimmed.split(/\s+/);
     const base = (parts[0] || '').toLowerCase();
 
-    return (base === 'ls' || base === 'dir') && parts.length === 1;
+    return base === 'ls' || base === 'dir';
   }
 
   onTabAutocomplete(event: Event) {
@@ -307,9 +393,21 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private addLine(type: 'command' | 'output' | 'error' | 'info', content: string) {
+    // Convert ANSI codes to HTML for output lines
+    if (type === 'output') {
+      console.log('Received output content:', JSON.stringify(content));
+    }
+
+    let renderedContent: SafeHtml | string = content;
+
+    if (type === 'output') {
+      const html = this.ansiConverter.toHtml(content);
+      renderedContent = this.sanitizer.bypassSecurityTrustHtml(html);
+    }
+
     this.lines.push({
       type,
-      content,
+      content: renderedContent as string, // Cast to string to satisfy interface (or update interface)
       timestamp: new Date(),
     });
     this.cdr.detectChanges();

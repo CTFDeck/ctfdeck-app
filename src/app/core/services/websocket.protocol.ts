@@ -6,8 +6,6 @@ export interface CommandResponse {
   exitCode: number;
   commandOutput: string;
   output: string;
-  lsOutput: string;
-  pwdOutput: string;
   error: string;
   messageId: string;
 }
@@ -83,17 +81,17 @@ export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResp
 
   let o = 0;
 
-  const exitCode = v.getInt32(o, true); o += 4;
+  const exitCode = v.getInt32(o, true);
+  o += 4;
 
   const readString = () => {
-    const len = v.getInt32(o, true); o += 4;
+    const len = v.getInt32(o, true);
+    o += 4;
     const str = dec.decode(u8.slice(o, o + len));
     o += len;
     return str;
   };
 
-  const lsOutput = readString();
-  const pwdOutput = readString();
   const commandOutput = readString();
   const error = readString();
 
@@ -103,8 +101,6 @@ export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResp
     exitCode,
     commandOutput,
     output: commandOutput,
-    lsOutput,
-    pwdOutput,
     error,
     messageId,
   };
