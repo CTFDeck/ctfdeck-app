@@ -1,12 +1,9 @@
-/**
- * Binary Protocol Utilities for CtfDeck
- */
-
 export interface CommandResponse {
   exitCode: number;
   commandOutput: string;
   output: string;
   error: string;
+  workingDirectory: string;
   messageId: string;
 }
 
@@ -94,6 +91,7 @@ export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResp
 
   const commandOutput = readString();
   const error = readString();
+  const workingDirectory = readString();
 
   const messageId = bytesToUuid(u8.slice(o, o + 16));
 
@@ -102,6 +100,7 @@ export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResp
     commandOutput,
     output: commandOutput,
     error,
+    workingDirectory,
     messageId,
   };
 }

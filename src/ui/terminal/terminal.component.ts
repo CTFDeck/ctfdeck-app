@@ -22,13 +22,15 @@ type FilePrefix = 'dir' | 'arc' | 'bin' | 'lnk' | 'txt' | 'img' | 'vid' | 'aud' 
 interface LsEntry {
   prefix: FilePrefix;
   name: string;
+  coloredName: string; // Original ANSI-colored name from ls output
 }
 
 interface TerminalLine {
-  type: 'command' | 'output' | 'error' | 'info' | 'ls';
+  type: 'command' | 'output' | 'error' | 'info' | 'ls' | 'autocomplete';
   content: any; // Allow SafeHtml
   timestamp: Date;
   lsEntries?: LsEntry[];
+  autocompleteCandidates?: LsEntry[]; // For colored autocomplete display
 }
 
 @Component({
@@ -115,9 +117,31 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.addLine('info', 'Connected to WebSocket server.');
         this.addLine('info', 'Type "help" for a list of available commands or just type away!');
         this.scrollToBottom();
+
+        // Initialize prompt and autocomplete cache
+        this.initializeTerminalState();
       })
       .catch((err) => {
         this.addLine('error', `Connection failed: ${err?.message || 'Unknown error'}`);
+      });
+  }
+
+  /**
+   * Initialize terminal state: get current directory and populate autocomplete cache
+   */
+  private initializeTerminalState() {
+    // Run pwd to get initial working directory and ls to populate autocomplete
+    this.wsService
+      .executeCommand('pwd')
+      .then((response) => {
+        if (response.workingDirectory) {
+          this.updatePwd(response.workingDirectory);
+        }
+        // Also refresh autocomplete cache
+        this.refreshAutocompleteCache();
+      })
+      .catch(() => {
+        // Silently fail
       });
   }
 
@@ -156,7 +180,10 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.wsService
       .executeCommand(cmd)
       .then((response: CommandResponse) => {
-        this.updatePwd(''); // response.pwdOutput is not supported by backend
+        // Update prompt with current working directory
+        if (response.workingDirectory) {
+          this.updatePwd(response.workingDirectory);
+        }
 
         // Unified output handling - all commands rendered the same way
         if (response.output) {
@@ -175,6 +202,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.addLine('error', `Program exited with code ${response.exitCode}`);
         }
 
+        // Auto-refresh autocomplete cache after directory changes
+        if (this.looksLikeDirectoryChange(cmd)) {
+          this.refreshAutocompleteCache();
+        }
+
         this.scrollToBottom();
       })
       .catch((err) => {
@@ -182,13 +214,57 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       });
   }
 
-  private updatePwd(pwdOutput: string) {
-    const pwd = (pwdOutput || '').trim();
+  /**
+   * Silently refreshes the autocomplete cache by running ls in the background
+   */
+  private refreshAutocompleteCache() {
+    this.wsService
+      .executeCommand('ls')
+      .then((response) => {
+        if (response.output) {
+          this.updateLsCache(response.output);
+        }
+      })
+      .catch(() => {
+        // Silently fail - autocomplete cache will just be stale
+      });
+  }
+
+  private looksLikeDirectoryChange(cmd: string): boolean {
+    const trimmed = cmd.trim();
+    if (!trimmed) return false;
+    const parts = trimmed.split(/\s+/);
+    const base = (parts[0] || '').toLowerCase();
+    return base === 'cd' || base === 'pushd' || base === 'popd';
+  }
+
+  private updatePwd(workingDirectory: string) {
+    const pwd = (workingDirectory || '').trim();
     if (!pwd) return;
 
+    // Convert Windows path to Unix-style for display if needed
+    const displayPath = pwd.replace(/\\/g, '/');
+
+    // Shorten home directory to ~
+    const home = this.getHomePath();
+    const shortPath =
+      home && displayPath.startsWith(home) ? '~' + displayPath.slice(home.length) : displayPath;
+
     this.lastPwd = pwd;
-    this.prompt = `${pwd} $`;
+    this.prompt = `${shortPath} $`;
     this.cdr.detectChanges();
+  }
+
+  private getHomePath(): string {
+    // Try to detect home directory from the path pattern
+    // This is a heuristic - works for common cases
+    const match = this.lastPwd.match(
+      /^(\/[a-z]\/Users\/[^\/]+|\/home\/[^\/]+|C:\\Users\\[^\\/]+)/i,
+    );
+    if (match) {
+      return match[1].replace(/\\/g, '/');
+    }
+    return '';
   }
 
   private updateLsCache(lsOutput: string) {
@@ -196,26 +272,22 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private parseLs(lsOutput: string): LsEntry[] {
-    const lines = (lsOutput || '')
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
+    // Build a map of stripped name -> original colored segment
+    const coloredMap = this.buildColoredNameMap(lsOutput);
+
+    // Strip ANSI codes for parsing
+    const cleanOutput = this.stripAnsi(lsOutput);
+
+    // Split by whitespace to handle both single-column and multi-column (wide) output
+    const items = cleanOutput
+      .split(/\s+/)
+      .map((item) => item.trim())
+      .filter((item) => item && item !== 'total' && !/^\d+$/.test(item));
 
     const out: LsEntry[] = [];
-    for (const line of lines) {
-      const m = line.match(/^\[(dir|arc|bin|lnk|txt|img|vid|aud|unk)\]\s+(.+)$/i);
-      if (m) {
-        out.push({
-          prefix: m[1].toLowerCase() as FilePrefix,
-          name: m[2],
-        });
-        continue;
-      }
+    for (const name of items) {
+      if (name === '.' || name === '..') continue;
 
-      // Fallback: guess type from name/extension
-      // For Windows 'dir', we might want to skip headers, but for 'ls' it's usually just names
-      // Simple heuristic for now: check extension
-      const name = line;
       let prefix: FilePrefix = 'unk';
 
       if (name.endsWith('/') || name.endsWith('\\')) {
@@ -279,9 +351,44 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         }
       }
 
-      out.push({ prefix, name });
+      // Get the original colored name if available, otherwise use plain name
+      const coloredName = coloredMap.get(name) || name;
+      out.push({ prefix, name, coloredName });
     }
     return out;
+  }
+
+  /**
+   * Builds a map from stripped name -> original ANSI-colored segment.
+   * This extracts colored segments from ls output and maps them to their plain text equivalents.
+   */
+  private buildColoredNameMap(lsOutput: string): Map<string, string> {
+    const map = new Map<string, string>();
+
+    // Match ANSI-colored segments: sequences of ANSI codes followed by text
+    // Pattern: optional ANSI codes, then non-whitespace text, then optional reset
+    const ansiPattern = /((?:\x1B\[[0-9;]*m)+)?([^\s\x1B]+)((?:\x1B\[[0-9;]*m)*)/g;
+
+    let match;
+    while ((match = ansiPattern.exec(lsOutput)) !== null) {
+      const prefix = match[1] || '';
+      const text = match[2];
+      const suffix = match[3] || '';
+
+      // Skip 'total' and pure numbers (from ls -l output)
+      if (text === 'total' || /^\d+$/.test(text)) continue;
+      if (text === '.' || text === '..') continue;
+
+      // Store the full colored segment
+      const coloredSegment = prefix + text + suffix;
+      map.set(text, coloredSegment);
+    }
+
+    return map;
+  }
+
+  private stripAnsi(text: string): string {
+    return text.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
   }
 
   classForPrefix(prefix: FilePrefix): string {
@@ -372,7 +479,9 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    this.addLine('info', candidates.join('    '));
+    // Get full LsEntry objects for colored display
+    const candidateEntries = this.lastLsEntries.filter((e) => e.name.startsWith(lastToken));
+    this.addAutocompleteLine(candidateEntries);
     this.scrollToBottom();
   }
 
@@ -407,8 +516,22 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     this.lines.push({
       type,
-      content: renderedContent as string, // Cast to string to satisfy interface (or update interface)
+      content: renderedContent as string,
       timestamp: new Date(),
+    });
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Adds an autocomplete suggestions line with colored entries.
+   * Uses CSS class-based colors for consistent display.
+   */
+  private addAutocompleteLine(candidates: LsEntry[]) {
+    this.lines.push({
+      type: 'autocomplete',
+      content: '',
+      timestamp: new Date(),
+      autocompleteCandidates: candidates,
     });
     this.cdr.detectChanges();
   }

@@ -34,3 +34,17 @@
 .ft-vid { color: #fb7185; } /* pink */
 .ft-aud { color: #22c55e; } /* green */
 .ft-unk { color: #9ca3af; } /* grey */
+
+/* Autocomplete suggestions grid */
+.autocomplete-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  padding: 0.25rem 0;
+}
+
+.autocomplete-item {
+  white-space: nowrap;
+  font-style: italic;
+}

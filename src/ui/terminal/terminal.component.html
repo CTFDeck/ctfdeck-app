@@ -58,13 +58,25 @@
            'text-primary italic': line.type === 'info'
          }">
 
-      <ng-container *ngIf="line.type === 'ls' && line.lsEntries?.length; else normalLine">
-        <div class="ls-grid">
-          <span *ngFor="let e of line.lsEntries" class="ls-item" [ngClass]="classForPrefix(e.prefix)">
-            {{ e.name }}
-          </span>
+      <!-- Autocomplete suggestions with colors -->
+      <ng-container *ngIf="line.type === 'autocomplete' && line.autocompleteCandidates?.length; else checkLs">
+        <div class="autocomplete-grid">
+          <span *ngFor="let e of line.autocompleteCandidates"
+                class="autocomplete-item"
+                [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
         </div>
       </ng-container>
+
+      <!-- LS grid display -->
+      <ng-template #checkLs>
+        <ng-container *ngIf="line.type === 'ls' && line.lsEntries?.length; else normalLine">
+          <div class="ls-grid">
+            <span *ngFor="let e of line.lsEntries" class="ls-item" [ngClass]="classForPrefix(e.prefix)">
+              {{ e.name }}
+            </span>
+          </div>
+        </ng-container>
+      </ng-template>
 
       <ng-template #normalLine>
         <!-- For output type, use innerHTML to render ANSI-converted HTML -->
