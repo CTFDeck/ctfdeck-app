@@ -6,6 +6,15 @@
   overflow: hidden;
 }
 
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.line-animated {
+  animation: fadeIn 0.1s ease-out forwards;
+}
+
 .status-indicator {
   width: 10px;
   height: 10px;

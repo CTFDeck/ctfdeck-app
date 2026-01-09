@@ -55,7 +55,8 @@
            'font-bold text-foreground mt-2': line.type === 'command',
            'text-muted-foreground': line.type === 'output',
            'text-destructive': line.type === 'error',
-           'text-primary italic': line.type === 'info'
+           'text-primary italic': line.type === 'info',
+           'line-animated': line.type === 'output' || line.type === 'ls'
           }">
 
       <!-- LS grid display -->
@@ -93,6 +94,7 @@
              (keydown.arrowup)="navigateHistory('up', $event)"
              (keydown.arrowdown)="navigateHistory('down', $event)"
              (keydown.tab)="onTabAutocomplete($event)"
+             (input)="onInput()"
              autocomplete="off"
              spellcheck="false">
     </div>

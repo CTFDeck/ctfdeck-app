@@ -360,6 +360,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.cdr.detectChanges();
   }
 
+  onInput() {
+    this.autocompleteSuggestions = this.autocompleteHelper.getSuggestions(this.currentCommand);
+    this.cdr.detectChanges();
+  }
+
   clearAutocompleteSuggestions() {
     if (this.autocompleteSuggestions.length > 0) {
       this.autocompleteSuggestions = [];

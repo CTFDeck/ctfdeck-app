@@ -17,6 +17,35 @@ export class TerminalAutocompleteHelper {
     return this.lastLsEntries;
   }
 
+  /**
+   * Returns matching suggestions for the current input string.
+   * Logic: Finds the last token of the input and returns all entries starting with that token.
+   * If the input ends in a space, or is empty, or no matches found, returns empty list.
+   */
+  getSuggestions(input: string): LsEntry[] {
+    if (this.lastLsEntries.length === 0) return [];
+
+    // If input is empty or just whitespace, don't suggest anything yet (or could suggest all? usually none)
+    if (!input || !input.trim()) return [];
+
+    const raw = input;
+    // If the input ends with a space, we are ready for a new token, so logically we *could* show all files,
+    // but typically shells wait for at least one char or a tab press. The user requested:
+    // "tooltip of the autocomplete neve rresets like it always stay there, (if the command is not here anymore it should disappear)"
+    // So we should only show if there is a partial match on the *current* token.
+    if (/\s$/.test(raw)) {
+      return [];
+    }
+
+    const trimmed = raw.trim();
+    const tokens = trimmed.split(/\s+/);
+    const lastToken = tokens[tokens.length - 1] || '';
+
+    if (!lastToken) return [];
+
+    return this.lastLsEntries.filter((e) => e.name.startsWith(lastToken));
+  }
+
   handleTab(currentCommand: string): AutocompleteResult {
     const result: AutocompleteResult = {
       newCommand: currentCommand,
