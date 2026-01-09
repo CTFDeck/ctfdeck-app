@@ -1,4 +1,19 @@
+/**
+ * Binary Protocol Utilities for CtfDeck - with Streaming Support
+ */
+
+/**
+ * Message types matching the backend
+ */
+export enum MessageType {
+  CompleteResponse = 0,
+  StreamOutput = 1,
+  StreamError = 2,
+  StreamEnd = 3,
+}
+
 export interface CommandResponse {
+  type: MessageType.CompleteResponse;
   exitCode: number;
   commandOutput: string;
   output: string;
@@ -6,6 +21,22 @@ export interface CommandResponse {
   workingDirectory: string;
   messageId: string;
 }
+
+export interface StreamChunk {
+  type: MessageType.StreamOutput | MessageType.StreamError;
+  messageId: string;
+  data: string;
+  isError: boolean;
+}
+
+export interface StreamEnd {
+  type: MessageType.StreamEnd;
+  messageId: string;
+  exitCode: number;
+  workingDirectory: string;
+}
+
+export type StreamMessage = CommandResponse | StreamChunk | StreamEnd;
 
 export function uuidToBytes(uuid: string): Uint8Array {
   const hex = uuid.replace(/-/g, '');
@@ -71,12 +102,37 @@ export function serializeCommand(command: string, messageId: string): Uint8Array
   return buf;
 }
 
-export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResponse {
+/**
+ * Deserialize a streaming message from the server.
+ * Returns the appropriate message type based on the first byte.
+ */
+export function deserializeMessage(data: ArrayBuffer | Uint8Array): StreamMessage {
   const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
   const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const dec = new TextDecoder();
 
-  let o = 0;
+  // First byte is message type
+  const messageType = u8[0] as MessageType;
+
+  switch (messageType) {
+    case MessageType.CompleteResponse:
+      return deserializeCompleteResponse(u8, v, dec);
+    case MessageType.StreamOutput:
+    case MessageType.StreamError:
+      return deserializeStreamChunk(u8, v, dec, messageType);
+    case MessageType.StreamEnd:
+      return deserializeStreamEnd(u8, v, dec);
+    default:
+      throw new Error(`Unknown message type: ${messageType}`);
+  }
+}
+
+function deserializeCompleteResponse(
+  u8: Uint8Array,
+  v: DataView,
+  dec: TextDecoder,
+): CommandResponse {
+  let o = 1; // Skip message type byte
 
   const exitCode = v.getInt32(o, true);
   o += 4;
@@ -96,6 +152,7 @@ export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResp
   const messageId = bytesToUuid(u8.slice(o, o + 16));
 
   return {
+    type: MessageType.CompleteResponse,
     exitCode,
     commandOutput,
     output: commandOutput,
@@ -103,4 +160,59 @@ export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResp
     workingDirectory,
     messageId,
   };
+}
+
+function deserializeStreamChunk(
+  u8: Uint8Array,
+  v: DataView,
+  dec: TextDecoder,
+  type: MessageType.StreamOutput | MessageType.StreamError,
+): StreamChunk {
+  let o = 1; // Skip message type byte
+
+  const messageId = bytesToUuid(u8.slice(o, o + 16));
+  o += 16;
+
+  const dataLength = v.getInt32(o, true);
+  o += 4;
+
+  const data = dec.decode(u8.slice(o, o + dataLength));
+
+  return {
+    type,
+    messageId,
+    data,
+    isError: type === MessageType.StreamError,
+  };
+}
+
+function deserializeStreamEnd(u8: Uint8Array, v: DataView, dec: TextDecoder): StreamEnd {
+  let o = 1; // Skip message type byte
+
+  const messageId = bytesToUuid(u8.slice(o, o + 16));
+  o += 16;
+
+  const exitCode = v.getInt32(o, true);
+  o += 4;
+
+  const wdLength = v.getInt32(o, true);
+  o += 4;
+
+  const workingDirectory = dec.decode(u8.slice(o, o + wdLength));
+
+  return {
+    type: MessageType.StreamEnd,
+    messageId,
+    exitCode,
+    workingDirectory,
+  };
+}
+
+// Legacy function for backward compatibility
+export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResponse {
+  const message = deserializeMessage(data);
+  if (message.type === MessageType.CompleteResponse) {
+    return message;
+  }
+  throw new Error('Expected CompleteResponse but got: ' + message.type);
 }

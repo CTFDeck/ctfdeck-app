@@ -1,11 +1,32 @@
 import { Injectable, NgZone } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import {
   serializeCommand,
-  deserializeResponse,
+  deserializeMessage,
   generateUUID,
   CommandResponse,
+  StreamChunk,
+  StreamEnd,
+  StreamMessage,
+  MessageType,
 } from './websocket.protocol';
+
+/**
+ * Streaming command result that accumulates output
+ */
+export interface StreamingResult {
+  exitCode: number;
+  workingDirectory: string;
+}
+
+/**
+ * Callbacks for streaming command execution
+ */
+export interface StreamingCallbacks {
+  onOutput: (data: string) => void;
+  onError: (data: string) => void;
+  onComplete: (result: StreamingResult) => void;
+}
 
 @Injectable({ providedIn: 'root' })
 export class WebSocketService {
@@ -14,6 +35,7 @@ export class WebSocketService {
   private isConnectedSubject = new BehaviorSubject<boolean>(false);
   public isConnected$ = this.isConnectedSubject.asObservable();
 
+  // Legacy pending for complete responses
   private pending = new Map<
     string,
     {
@@ -22,6 +44,9 @@ export class WebSocketService {
       timeoutId: ReturnType<typeof setTimeout>;
     }
   >();
+
+  // Streaming callbacks per messageId
+  private streamingCallbacks = new Map<string, StreamingCallbacks>();
 
   private currentUrl = 'ws://localhost:42712';
 
@@ -101,7 +126,15 @@ export class WebSocketService {
     });
   }
 
-  executeCommand(command: string): Promise<CommandResponse> {
+  /**
+   * Execute command with streaming output.
+   * Returns a promise that resolves when all output is received.
+   */
+  executeCommandStreaming(
+    command: string,
+    onOutput: (data: string) => void,
+    onError: (data: string) => void,
+  ): Promise<StreamingResult> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       return Promise.reject(new Error('WebSocket not connected'));
     }
@@ -109,45 +142,139 @@ export class WebSocketService {
     const messageId = generateUUID();
     const payload = serializeCommand(command, messageId);
 
-    return new Promise<CommandResponse>((resolve, reject) => {
+    return new Promise<StreamingResult>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        const p = this.pending.get(messageId);
-        if (p) {
-          this.pending.delete(messageId);
-          p.reject(new Error('Command timeout'));
-        }
-      }, 30_000);
+        this.streamingCallbacks.delete(messageId);
+        this.pending.delete(messageId);
+        reject(new Error('Command timeout'));
+      }, 300_000); // 5 minute timeout for long commands
 
-      this.pending.set(messageId, { resolve, reject, timeoutId });
+      // Register streaming callbacks
+      this.streamingCallbacks.set(messageId, {
+        onOutput,
+        onError,
+        onComplete: (result) => {
+          clearTimeout(timeoutId);
+          this.streamingCallbacks.delete(messageId);
+          resolve(result);
+        },
+      });
+
+      // Also register pending for fallback to complete response
+      this.pending.set(messageId, {
+        resolve: (response) => {
+          clearTimeout(timeoutId);
+          this.streamingCallbacks.delete(messageId);
+          // Convert complete response to streaming result format
+          if (response.output) onOutput(response.output);
+          if (response.error) onError(response.error);
+          resolve({
+            exitCode: response.exitCode,
+            workingDirectory: response.workingDirectory,
+          });
+        },
+        reject,
+        timeoutId,
+      });
 
       try {
         this.ws!.send(payload);
       } catch (e) {
         clearTimeout(timeoutId);
+        this.streamingCallbacks.delete(messageId);
         this.pending.delete(messageId);
         reject(e);
       }
     });
   }
 
+  /**
+   * Legacy non-streaming execute (for backward compatibility)
+   */
+  executeCommand(command: string): Promise<CommandResponse> {
+    return new Promise<CommandResponse>((resolve, reject) => {
+      this.executeCommandStreaming(
+        command,
+        () => {}, // Ignore streaming output
+        () => {}, // Ignore streaming errors
+      )
+        .then((result) => {
+          // This shouldn't happen with streaming, but handle it
+          resolve({
+            type: MessageType.CompleteResponse,
+            exitCode: result.exitCode,
+            commandOutput: '',
+            output: '',
+            error: '',
+            workingDirectory: result.workingDirectory,
+            messageId: '',
+          });
+        })
+        .catch(reject);
+    });
+  }
+
   private handleMessage(data: ArrayBuffer): void {
-    let response: CommandResponse;
+    let message: StreamMessage;
 
     try {
-      response = deserializeResponse(data);
+      message = deserializeMessage(data);
     } catch (e) {
-      // parsing error => reject all to avoid UI stuck
-      this.rejectAllPending(e instanceof Error ? e : new Error('Protocol parse error'));
+      console.error('Failed to parse message:', e);
       return;
     }
 
+    this.zone.run(() => {
+      switch (message.type) {
+        case MessageType.CompleteResponse:
+          this.handleCompleteResponse(message);
+          break;
+        case MessageType.StreamOutput:
+        case MessageType.StreamError:
+          this.handleStreamChunk(message);
+          break;
+        case MessageType.StreamEnd:
+          this.handleStreamEnd(message);
+          break;
+      }
+    });
+  }
+
+  private handleCompleteResponse(response: CommandResponse): void {
     const pending = this.pending.get(response.messageId);
     if (!pending) return;
 
     this.pending.delete(response.messageId);
     clearTimeout(pending.timeoutId);
+    pending.resolve(response);
+  }
 
-    this.zone.run(() => pending.resolve(response));
+  private handleStreamChunk(chunk: StreamChunk): void {
+    const callbacks = this.streamingCallbacks.get(chunk.messageId);
+    if (!callbacks) return;
+
+    if (chunk.isError) {
+      callbacks.onError(chunk.data);
+    } else {
+      callbacks.onOutput(chunk.data);
+    }
+  }
+
+  private handleStreamEnd(end: StreamEnd): void {
+    const callbacks = this.streamingCallbacks.get(end.messageId);
+    if (callbacks) {
+      callbacks.onComplete({
+        exitCode: end.exitCode,
+        workingDirectory: end.workingDirectory,
+      });
+    }
+
+    // Also clean up pending (if registered)
+    const pending = this.pending.get(end.messageId);
+    if (pending) {
+      clearTimeout(pending.timeoutId);
+      this.pending.delete(end.messageId);
+    }
   }
 
   private rejectAllPending(err: unknown): void {
@@ -158,8 +285,9 @@ export class WebSocketService {
       } catch {}
     }
     this.pending.clear();
+    this.streamingCallbacks.clear();
   }
 }
 
-// (optionnel) re-export utile pour tes imports existants
-export type { CommandResponse };
+// Re-export for existing imports
+export type { CommandResponse, StreamChunk, StreamEnd };

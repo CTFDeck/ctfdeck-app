@@ -10,7 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { WebSocketService, CommandResponse } from '../../app/core/services/websocket.service';
+import { WebSocketService } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -132,12 +132,16 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
    * Initialize terminal state: get current directory and populate autocomplete cache
    */
   private initializeTerminalState() {
-    // Run pwd to get initial working directory and ls to populate autocomplete
+    // Run pwd to get initial working directory
     this.wsService
-      .executeCommand('pwd')
-      .then((response) => {
-        if (response.workingDirectory) {
-          this.updatePwd(response.workingDirectory);
+      .executeCommandStreaming(
+        'pwd',
+        () => {}, // Ignore output (we get workingDirectory from result)
+        () => {},
+      )
+      .then((result) => {
+        if (result.workingDirectory) {
+          this.updatePwd(result.workingDirectory);
         }
         // Also refresh autocomplete cache
         this.refreshAutocompleteCache();
@@ -179,29 +183,55 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
+    // Track streaming output with a buffer
+    let outputLineIndex = -1;
+    let outputBuffer = '';
+    let errorBuffer = '';
+
+    // Use streaming execution
     this.wsService
-      .executeCommand(cmd)
-      .then((response: CommandResponse) => {
-        // Update prompt with current working directory
-        if (response.workingDirectory) {
-          this.updatePwd(response.workingDirectory);
-        }
+      .executeCommandStreaming(
+        cmd,
+        // onOutput callback - called for each stdout chunk
+        (data: string) => {
+          outputBuffer += data;
 
-        // Unified output handling - all commands rendered the same way
-        if (response.output) {
-          // Update autocomplete cache if it looks like a directory listing
+          // Update autocomplete cache if this looks like directory listing
           if (this.looksLikeDirectoryListing(cmd)) {
-            this.updateLsCache(response.output);
+            this.updateLsCache(outputBuffer);
           }
-          this.addLine('output', response.output);
+
+          // Create output line if first chunk, otherwise update existing
+          if (outputLineIndex === -1) {
+            outputLineIndex = this.lines.length;
+            this.lines.push({
+              type: 'output',
+              content: '',
+              timestamp: new Date(),
+            });
+          }
+
+          // Update the output line with the full buffer (re-render ANSI each time)
+          const html = this.ansiConverter.toHtml(outputBuffer);
+          this.lines[outputLineIndex].content = this.sanitizer.bypassSecurityTrustHtml(html);
+          this.cdr.detectChanges();
+          this.scrollToBottom();
+        },
+        // onError callback - called for each stderr chunk
+        (data: string) => {
+          errorBuffer += data;
+          this.appendToLastError(data);
+          this.scrollToBottom();
+        },
+      )
+      .then((result) => {
+        // Stream completed
+        if (result.workingDirectory) {
+          this.updatePwd(result.workingDirectory);
         }
 
-        if (response.error) {
-          this.addLine('error', response.error);
-        }
-
-        if (response.exitCode !== 0 && !response.error) {
-          this.addLine('error', `Program exited with code ${response.exitCode}`);
+        if (result.exitCode !== 0 && !errorBuffer) {
+          this.addLine('error', `Program exited with code ${result.exitCode}`);
         }
 
         // Auto-refresh autocomplete cache after directory changes
@@ -217,14 +247,34 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
+   */
+  private appendToLastError(data: string) {
+    // Check if last line is an error line we can append to
+    const lastLine = this.lines[this.lines.length - 1];
+    if (lastLine && lastLine.type === 'error') {
+      lastLine.content = (lastLine.content || '') + data;
+      this.cdr.detectChanges();
+    } else {
+      this.addLine('error', data);
+    }
+  }
+
+  /**
    * Silently refreshes the autocomplete cache by running ls in the background
    */
   private refreshAutocompleteCache() {
+    let output = '';
     this.wsService
-      .executeCommand('ls')
-      .then((response) => {
-        if (response.output) {
-          this.updateLsCache(response.output);
+      .executeCommandStreaming(
+        'ls',
+        (data) => {
+          output += data;
+        },
+        () => {},
+      )
+      .then(() => {
+        if (output) {
+          this.updateLsCache(output);
         }
       })
       .catch(() => {
