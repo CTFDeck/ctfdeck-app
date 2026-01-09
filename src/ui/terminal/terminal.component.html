@@ -56,33 +56,31 @@
            'text-muted-foreground': line.type === 'output',
            'text-destructive': line.type === 'error',
            'text-primary italic': line.type === 'info'
-         }">
-
-      <!-- Autocomplete suggestions with colors -->
-      <ng-container *ngIf="line.type === 'autocomplete' && line.autocompleteCandidates?.length; else checkLs">
-        <div class="autocomplete-grid">
-          <span *ngFor="let e of line.autocompleteCandidates"
-                class="autocomplete-item"
-                [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
-        </div>
-      </ng-container>
+          }">
 
       <!-- LS grid display -->
-      <ng-template #checkLs>
-        <ng-container *ngIf="line.type === 'ls' && line.lsEntries?.length; else normalLine">
-          <div class="ls-grid">
-            <span *ngFor="let e of line.lsEntries" class="ls-item" [ngClass]="classForPrefix(e.prefix)">
-              {{ e.name }}
-            </span>
-          </div>
-        </ng-container>
-      </ng-template>
+      <ng-container *ngIf="line.type === 'ls' && line.lsEntries?.length; else normalLine">
+        <div class="ls-grid">
+          <span *ngFor="let e of line.lsEntries" class="ls-item" [ngClass]="classForPrefix(e.prefix)">
+            {{ e.name }}
+          </span>
+        </div>
+      </ng-container>
 
       <ng-template #normalLine>
         <!-- For output type, use innerHTML to render ANSI-converted HTML -->
         <span *ngIf="line.type === 'output'" class="content whitespace-pre-wrap" [innerHTML]="line.content"></span>
         <span *ngIf="line.type !== 'output'" class="content whitespace-pre-wrap">{{ line.content }}</span>
       </ng-template>
+    </div>
+
+    <!-- Autocomplete suggestions shown inline near input -->
+    <div *ngIf="autocompleteSuggestions.length > 0" class="autocomplete-suggestions mb-2">
+      <div class="autocomplete-grid">
+        <span *ngFor="let e of autocompleteSuggestions"
+              class="autocomplete-item"
+              [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
+      </div>
     </div>
 
     <div class="input-line flex items-center mt-2">
@@ -95,6 +93,7 @@
              (keydown.arrowup)="navigateHistory('up', $event)"
              (keydown.arrowdown)="navigateHistory('down', $event)"
              (keydown.tab)="onTabAutocomplete($event)"
+             (input)="clearAutocompleteSuggestions()"
              autocomplete="off"
              spellcheck="false">
     </div>

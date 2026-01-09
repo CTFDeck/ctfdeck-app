@@ -46,5 +46,22 @@
 
 .autocomplete-item {
   white-space: nowrap;
-  font-style: italic;
+}
+
+/* Ensure file type colors apply to autocomplete items with higher specificity */
+.autocomplete-item.ft-dir { color: #60a5fa !important; }
+.autocomplete-item.ft-arc { color: #fbbf24 !important; }
+.autocomplete-item.ft-bin { color: #f87171 !important; }
+.autocomplete-item.ft-lnk { color: #a78bfa !important; }
+.autocomplete-item.ft-txt { color: #d1d5db !important; }
+.autocomplete-item.ft-img { color: #34d399 !important; }
+.autocomplete-item.ft-vid { color: #fb7185 !important; }
+.autocomplete-item.ft-aud { color: #22c55e !important; }
+.autocomplete-item.ft-unk { color: #9ca3af !important; }
+
+/* Inline autocomplete suggestions area */
+.autocomplete-suggestions {
+  border-left: 2px solid var(--primary, #60a5fa);
+  padding-left: 0.5rem;
+  margin-left: 0.25rem;
 }

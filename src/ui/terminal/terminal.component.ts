@@ -26,11 +26,10 @@ interface LsEntry {
 }
 
 interface TerminalLine {
-  type: 'command' | 'output' | 'error' | 'info' | 'ls' | 'autocomplete';
+  type: 'command' | 'output' | 'error' | 'info' | 'ls';
   content: any; // Allow SafeHtml
   timestamp: Date;
   lsEntries?: LsEntry[];
-  autocompleteCandidates?: LsEntry[]; // For colored autocomplete display
 }
 
 @Component({
@@ -59,6 +58,9 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   private lastPwd: string = '';
 
   private lastLsEntries: LsEntry[] = [];
+
+  // Autocomplete suggestions shown near the input
+  autocompleteSuggestions: LsEntry[] = [];
 
   showServerSelection: boolean = false;
   serverUrl: string = '';
@@ -272,8 +274,8 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private parseLs(lsOutput: string): LsEntry[] {
-    // Build a map of stripped name -> original colored segment
-    const coloredMap = this.buildColoredNameMap(lsOutput);
+    // Build a map of stripped name -> original colored segment AND detected type from ANSI
+    const { coloredMap, typeMap } = this.buildColoredNameMapWithTypes(lsOutput);
 
     // Strip ANSI codes for parsing
     const cleanOutput = this.stripAnsi(lsOutput);
@@ -288,67 +290,12 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     for (const name of items) {
       if (name === '.' || name === '..') continue;
 
-      let prefix: FilePrefix = 'unk';
+      // First try to detect type from ANSI color codes
+      let prefix: FilePrefix = typeMap.get(name) || 'unk';
 
-      if (name.endsWith('/') || name.endsWith('\\')) {
-        prefix = 'dir';
-      } else {
-        const ext = name.split('.').pop()?.toLowerCase();
-        switch (ext) {
-          case 'zip':
-          case 'tar':
-          case 'gz':
-          case '7z':
-          case 'rar':
-            prefix = 'arc';
-            break;
-          case 'exe':
-          case 'dll':
-          case 'so':
-          case 'sh':
-          case 'bat':
-          case 'cmd':
-            prefix = 'bin';
-            break;
-          case 'txt':
-          case 'md':
-          case 'json':
-          case 'js':
-          case 'ts':
-          case 'css':
-          case 'html':
-          case 'xml':
-          case 'log':
-            prefix = 'txt';
-            break;
-          case 'png':
-          case 'jpg':
-          case 'jpeg':
-          case 'gif':
-          case 'bmp':
-          case 'svg':
-          case 'webp':
-            prefix = 'img';
-            break;
-          case 'mp4':
-          case 'avi':
-          case 'mkv':
-          case 'mov':
-          case 'webm':
-            prefix = 'vid';
-            break;
-          case 'mp3':
-          case 'wav':
-          case 'ogg':
-          case 'flac':
-            prefix = 'aud';
-            break;
-          case 'lnk':
-            prefix = 'lnk';
-            break;
-          default:
-            prefix = 'unk';
-        }
+      // If no ANSI type detected, fall back to extension-based detection
+      if (prefix === 'unk') {
+        prefix = this.detectFileTypeFromName(name);
       }
 
       // Get the original colored name if available, otherwise use plain name
@@ -359,19 +306,112 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Builds a map from stripped name -> original ANSI-colored segment.
-   * This extracts colored segments from ls output and maps them to their plain text equivalents.
+   * Detect file type from name/extension as a fallback
    */
-  private buildColoredNameMap(lsOutput: string): Map<string, string> {
-    const map = new Map<string, string>();
+  private detectFileTypeFromName(name: string): FilePrefix {
+    if (name.endsWith('/') || name.endsWith('\\')) {
+      return 'dir';
+    }
+
+    // Check if it's likely a directory (no extension, or starts with dot and no other dot)
+    const parts = name.split('.');
+    const ext = parts.length > 1 ? parts.pop()?.toLowerCase() : undefined;
+
+    if (!ext) {
+      // No extension - could be directory or extensionless file
+      // Common directories without extensions
+      const commonDirs = [
+        'src',
+        'lib',
+        'libs',
+        'bin',
+        'dist',
+        'build',
+        'tests',
+        'test',
+        'docs',
+        'doc',
+        'public',
+        'assets',
+        'electron',
+      ];
+      if (commonDirs.includes(name.toLowerCase())) {
+        return 'dir';
+      }
+      return 'unk';
+    }
+
+    switch (ext) {
+      case 'zip':
+      case 'tar':
+      case 'gz':
+      case '7z':
+      case 'rar':
+        return 'arc';
+      case 'exe':
+      case 'dll':
+      case 'so':
+      case 'sh':
+      case 'bat':
+      case 'cmd':
+        return 'bin';
+      case 'txt':
+      case 'md':
+      case 'json':
+      case 'js':
+      case 'ts':
+      case 'css':
+      case 'html':
+      case 'xml':
+      case 'log':
+      case 'yml':
+      case 'yaml':
+        return 'txt';
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'bmp':
+      case 'svg':
+      case 'webp':
+      case 'ico':
+        return 'img';
+      case 'mp4':
+      case 'avi':
+      case 'mkv':
+      case 'mov':
+      case 'webm':
+        return 'vid';
+      case 'mp3':
+      case 'wav':
+      case 'ogg':
+      case 'flac':
+        return 'aud';
+      case 'lnk':
+        return 'lnk';
+      default:
+        return 'unk';
+    }
+  }
+
+  /**
+   * Builds a map from stripped name -> original ANSI-colored segment,
+   * AND detects file type from ANSI color codes.
+   */
+  private buildColoredNameMapWithTypes(lsOutput: string): {
+    coloredMap: Map<string, string>;
+    typeMap: Map<string, FilePrefix>;
+  } {
+    const coloredMap = new Map<string, string>();
+    const typeMap = new Map<string, FilePrefix>();
 
     // Match ANSI-colored segments: sequences of ANSI codes followed by text
-    // Pattern: optional ANSI codes, then non-whitespace text, then optional reset
-    const ansiPattern = /((?:\x1B\[[0-9;]*m)+)?([^\s\x1B]+)((?:\x1B\[[0-9;]*m)*)/g;
+    // Pattern: ANSI codes, then non-whitespace text, then optional reset
+    const ansiPattern = /((?:\x1B\[[0-9;]*m)+)([^\s\x1B]+)((?:\x1B\[[0-9;]*m)*)/g;
 
     let match;
     while ((match = ansiPattern.exec(lsOutput)) !== null) {
-      const prefix = match[1] || '';
+      const ansiCodes = match[1] || '';
       const text = match[2];
       const suffix = match[3] || '';
 
@@ -380,11 +420,53 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       if (text === '.' || text === '..') continue;
 
       // Store the full colored segment
-      const coloredSegment = prefix + text + suffix;
-      map.set(text, coloredSegment);
+      const coloredSegment = ansiCodes + text + suffix;
+      coloredMap.set(text, coloredSegment);
+
+      // Detect file type from ANSI SGR codes
+      // Common LS_COLORS mappings:
+      // 34 or 01;34 = directory (blue)
+      // 32 or 01;32 = executable (green)
+      // 36 or 01;36 = symlink (cyan)
+      // 31 or 01;31 = archive (red)
+      // 33 or 01;33 = device/special (yellow)
+      // 35 or 01;35 = image/video (magenta)
+      const type = this.detectTypeFromAnsiCode(ansiCodes);
+      if (type !== 'unk') {
+        typeMap.set(text, type);
+      }
     }
 
-    return map;
+    return { coloredMap, typeMap };
+  }
+
+  /**
+   * Detect file type from ANSI SGR color codes
+   */
+  private detectTypeFromAnsiCode(ansiCode: string): FilePrefix {
+    // Extract the SGR parameters (the numbers between [ and m)
+    const match = ansiCode.match(/\[([0-9;]+)m/);
+    if (!match) return 'unk';
+
+    const params = match[1].split(';').map((p) => parseInt(p, 10));
+
+    // Check for foreground colors (30-37 normal, 90-97 bright)
+    for (const param of params) {
+      // Blue = directory
+      if (param === 34 || param === 94) return 'dir';
+      // Green = executable/binary
+      if (param === 32 || param === 92) return 'bin';
+      // Cyan = symlink
+      if (param === 36 || param === 96) return 'lnk';
+      // Red = archive
+      if (param === 31 || param === 91) return 'arc';
+      // Magenta = image/media
+      if (param === 35 || param === 95) return 'img';
+      // Yellow = special/device
+      if (param === 33 || param === 93) return 'unk';
+    }
+
+    return 'unk';
   }
 
   private stripAnsi(text: string): string {
@@ -481,7 +563,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Get full LsEntry objects for colored display
     const candidateEntries = this.lastLsEntries.filter((e) => e.name.startsWith(lastToken));
-    this.addAutocompleteLine(candidateEntries);
+    this.showAutocompleteSuggestions(candidateEntries);
     this.scrollToBottom();
   }
 
@@ -523,17 +605,22 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Adds an autocomplete suggestions line with colored entries.
+   * Shows autocomplete suggestions near the input.
    * Uses CSS class-based colors for consistent display.
    */
-  private addAutocompleteLine(candidates: LsEntry[]) {
-    this.lines.push({
-      type: 'autocomplete',
-      content: '',
-      timestamp: new Date(),
-      autocompleteCandidates: candidates,
-    });
+  private showAutocompleteSuggestions(candidates: LsEntry[]) {
+    this.autocompleteSuggestions = candidates;
     this.cdr.detectChanges();
+  }
+
+  /**
+   * Clears autocomplete suggestions
+   */
+  clearAutocompleteSuggestions() {
+    if (this.autocompleteSuggestions.length > 0) {
+      this.autocompleteSuggestions = [];
+      this.cdr.detectChanges();
+    }
   }
 
   private scrollToBottom(): void {
