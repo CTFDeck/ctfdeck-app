@@ -1,4 +1,4 @@
-<div class="terminal-container flex flex-col h-full w-full bg-card text-card-foreground overflow-hidden rounded-md border border-border font-mono"
+<div class="terminal-container flex flex-col h-full w-full bg-card text-card-foreground overflow-hidden rounded-md font-mono"
      (click)="focusInput()">
   <div class="terminal-header flex items-center px-3 py-2 bg-muted/30 border-b border-border" (click)="$event.stopPropagation()">
     <div class="relative inline-block">
@@ -93,7 +93,6 @@
              (keydown.arrowup)="navigateHistory('up', $event)"
              (keydown.arrowdown)="navigateHistory('down', $event)"
              (keydown.tab)="onTabAutocomplete($event)"
-             (input)="clearAutocompleteSuggestions()"
              autocomplete="off"
              spellcheck="false">
     </div>
