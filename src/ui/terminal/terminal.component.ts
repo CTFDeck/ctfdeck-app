@@ -9,25 +9,16 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { WebSocketService, CommandResponse } from '../../app/core/services/websocket.service';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { WebSocketService } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideServer, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
-
-type FilePrefix = 'dir' | 'arc' | 'bin' | 'lnk' | 'txt' | 'img' | 'vid' | 'aud' | 'unk';
-
-interface LsEntry {
-  prefix: FilePrefix;
-  name: string;
-}
-
-interface TerminalLine {
-  type: 'command' | 'output' | 'error' | 'info' | 'ls';
-  content: string;
-  timestamp: Date;
-  lsEntries?: LsEntry[];
-}
+import AnsiToHtml from 'ansi-to-html';
+import { TerminalLine, LsEntry, FilePrefix } from './helpers/terminal-types';
+import { TerminalHistoryHelper } from './helpers/terminal-history.helper';
+import { TerminalAutocompleteHelper } from './helpers/terminal-autocomplete.helper';
 
 @Component({
   selector: 'app-terminal',
@@ -54,19 +45,33 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   prompt: string = '$';
   private lastPwd: string = '';
 
-  private lastLsEntries: LsEntry[] = [];
+  // Autocomplete suggestions shown near the input
+  autocompleteSuggestions: LsEntry[] = [];
 
   showServerSelection: boolean = false;
   serverUrl: string = '';
   savedServers: string[] = ['ws://localhost:42712', 'wss://echo.websocket.org'];
 
   private subscriptions: Subscription = new Subscription();
-  private commandHistory: string[] = [];
-  private historyIndex: number = -1;
+
+  // Helpers
+  private historyHelper = new TerminalHistoryHelper();
+  public autocompleteHelper = new TerminalAutocompleteHelper();
+
+  private ansiConverter = new AnsiToHtml({
+    fg: '#d4d4d4',
+    bg: '#1e1e1e',
+    newline: true,
+    colors: {
+      4: '#61afef', // Softer blue
+      34: '#61afef', // Softer blue
+    },
+  });
 
   constructor(
     private wsService: WebSocketService,
     private cdr: ChangeDetectorRef,
+    private sanitizer: DomSanitizer,
   ) {
     this.serverUrl = this.wsService.getUrl();
   }
@@ -103,21 +108,40 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.addLine('info', 'Connected to WebSocket server.');
         this.addLine('info', 'Type "help" for a list of available commands or just type away!');
         this.scrollToBottom();
+        this.initializeTerminalState();
       })
       .catch((err) => {
         this.addLine('error', `Connection failed: ${err?.message || 'Unknown error'}`);
       });
   }
 
+  private initializeTerminalState() {
+    this.wsService
+      .executeCommandStreaming(
+        'pwd',
+        () => {},
+        () => {},
+      )
+      .then((result) => {
+        if (result.workingDirectory) {
+          this.updatePwd(result.workingDirectory);
+        }
+        this.refreshAutocompleteCache();
+      })
+      .catch(() => {});
+  }
+
   executeCommand() {
     const cmd = this.currentCommand.trim();
     if (!cmd) return;
 
-    this.commandHistory.push(cmd);
-    this.historyIndex = this.commandHistory.length;
+    this.historyHelper.add(cmd);
 
     this.addLine('command', `${this.prompt} ${cmd}`);
     this.currentCommand = '';
+
+    // Clear autocomplete when executing
+    this.clearAutocompleteSuggestions();
 
     if (cmd === 'clear' || cmd === 'cls') {
       this.lines = [];
@@ -141,30 +165,69 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
+    // High-performance streaming
+    let outputLineIndex = -1;
+    let outputBuffer = '';
+    let errorBuffer = '';
+    let pendingRender = false;
+    let lastRenderTime = 0;
+    const MIN_RENDER_INTERVAL = 16;
+
+    const scheduleRender = () => {
+      if (pendingRender) return;
+      const now = performance.now();
+      if (now - lastRenderTime < MIN_RENDER_INTERVAL) {
+        pendingRender = true;
+        requestAnimationFrame(() => {
+          pendingRender = false;
+          lastRenderTime = performance.now();
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
+        });
+      } else {
+        lastRenderTime = now;
+        this.renderOutputBuffer(outputLineIndex, outputBuffer);
+      }
+    };
+
     this.wsService
-      .executeCommand(cmd)
-      .then((response: CommandResponse) => {
-        this.updatePwd(response.pwdOutput ?? '');
-        this.updateLsCache(response.lsOutput ?? '');
-
-        if (this.isPlainLsCommand(cmd)) {
-          if (response.lsOutput) {
-            this.addLsGrid(response.lsOutput);
-          } else if (response.output) {
-            this.addLine('output', response.output);
+      .executeCommandStreaming(
+        cmd,
+        (data: string) => {
+          outputBuffer += data;
+          if (outputLineIndex === -1) {
+            outputLineIndex = this.lines.length;
+            this.lines.push({
+              type: 'output',
+              content: '',
+              timestamp: new Date(),
+            });
           }
-        } else {
-          if (response.output) {
-            this.addLine('output', response.output);
-          }
+          scheduleRender();
+        },
+        (data: string) => {
+          errorBuffer += data;
+          this.appendToLastError(data);
+        },
+      )
+      .then((result) => {
+        if (outputLineIndex >= 0) {
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
         }
 
-        if (response.error) {
-          this.addLine('error', response.error);
+        if (this.looksLikeDirectoryListing(cmd)) {
+          this.updateLsCache(outputBuffer);
         }
 
-        if (response.exitCode !== 0 && !response.error) {
-          this.addLine('error', `Program exited with code ${response.exitCode}`);
+        if (result.workingDirectory) {
+          this.updatePwd(result.workingDirectory);
+        }
+
+        if (result.exitCode !== 0 && !errorBuffer) {
+          this.addLine('error', `Program exited with code ${result.exitCode}`);
+        }
+
+        if (this.looksLikeDirectoryChange(cmd)) {
+          this.refreshAutocompleteCache();
         }
 
         this.scrollToBottom();
@@ -174,145 +237,139 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       });
   }
 
-
-  private updatePwd(pwdOutput: string) {
-    const pwd = (pwdOutput || '').trim();
-    if (!pwd) return;
-
-    this.lastPwd = pwd;
-    this.prompt = `${pwd} $`;
+  private renderOutputBuffer(lineIndex: number, buffer: string): void {
+    if (lineIndex < 0 || lineIndex >= this.lines.length) return;
+    const html = this.ansiConverter.toHtml(buffer);
+    this.lines[lineIndex].content = this.sanitizer.bypassSecurityTrustHtml(html);
     this.cdr.detectChanges();
+    this.scrollToBottom();
   }
 
-
-  private updateLsCache(lsOutput: string) {
-    this.lastLsEntries = this.parseLs(lsOutput);
-  }
-
-  private parseLs(lsOutput: string): LsEntry[] {
-    const lines = (lsOutput || '')
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-
-    const out: LsEntry[] = [];
-    for (const line of lines) {
-      const m = line.match(/^\[(dir|arc|bin|lnk|txt|img|vid|aud|unk)\]\s+(.+)$/i);
-      if (!m) continue;
-      out.push({
-        prefix: m[1].toLowerCase() as FilePrefix,
-        name: m[2],
-      });
-    }
-    return out;
-  }
-
-  classForPrefix(prefix: FilePrefix): string {
-    switch (prefix) {
-      case 'dir': return 'ft-dir';
-      case 'arc': return 'ft-arc';
-      case 'bin': return 'ft-bin';
-      case 'lnk': return 'ft-lnk';
-      case 'txt': return 'ft-txt';
-      case 'img': return 'ft-img';
-      case 'vid': return 'ft-vid';
-      case 'aud': return 'ft-aud';
-      default: return 'ft-unk';
+  private appendToLastError(data: string) {
+    const lastLine = this.lines[this.lines.length - 1];
+    if (lastLine && lastLine.type === 'error') {
+      lastLine.content = (lastLine.content || '') + data;
+      this.cdr.detectChanges();
+    } else {
+      this.addLine('error', data);
     }
   }
 
-  private addLsGrid(lsOutput: string) {
-    const entries = this.parseLs(lsOutput);
-
-    this.lines.push({
-      type: 'ls',
-      content: '',
-      timestamp: new Date(),
-      lsEntries: entries,
-    });
-
-    this.cdr.detectChanges();
+  private refreshAutocompleteCache() {
+    let output = '';
+    this.wsService
+      .executeCommandStreaming(
+        'ls',
+        (data) => {
+          output += data;
+        },
+        () => {},
+      )
+      .then(() => {
+        if (output) {
+          this.updateLsCache(output);
+        }
+      })
+      .catch(() => {});
   }
 
-  private isPlainLsCommand(cmd: string): boolean {
+  private looksLikeDirectoryChange(cmd: string): boolean {
     const trimmed = cmd.trim();
     if (!trimmed) return false;
-
     const parts = trimmed.split(/\s+/);
     const base = (parts[0] || '').toLowerCase();
+    return base === 'cd' || base === 'pushd' || base === 'popd';
+  }
 
-    return (base === 'ls' || base === 'dir') && parts.length === 1;
+  private updatePwd(workingDirectory: string) {
+    const pwd = (workingDirectory || '').trim();
+    if (!pwd) return;
+
+    const displayPath = pwd.replace(/\\/g, '/');
+    const home = this.getHomePath();
+    const shortPath =
+      home && displayPath.startsWith(home) ? '~' + displayPath.slice(home.length) : displayPath;
+
+    this.lastPwd = pwd;
+    this.prompt = `${shortPath} $`;
+    this.cdr.detectChanges();
+  }
+
+  private getHomePath(): string {
+    const match = this.lastPwd.match(
+      /^(\/[a-z]\/Users\/[^\/]+|\/home\/[^\/]+|C:\\Users\\[^\\/]+)/i,
+    );
+    if (match) {
+      return match[1].replace(/\\/g, '/');
+    }
+    return '';
+  }
+
+  private updateLsCache(lsOutput: string) {
+    this.autocompleteHelper.updateCache(lsOutput);
+  }
+
+  // Wrapper for template
+  classForPrefix(prefix: FilePrefix): string {
+    return this.autocompleteHelper.getClassForPrefix(prefix);
+  }
+
+  private addLine(type: 'command' | 'output' | 'error' | 'info', content: string) {
+    if (type === 'output') {
+      console.log('Received output content:', JSON.stringify(content));
+    }
+
+    let renderedContent: SafeHtml | string = content;
+
+    if (type === 'output') {
+      const html = this.ansiConverter.toHtml(content);
+      renderedContent = this.sanitizer.bypassSecurityTrustHtml(html);
+    }
+
+    this.lines.push({
+      type,
+      content: renderedContent as string,
+      timestamp: new Date(),
+    });
+    this.cdr.detectChanges();
+  }
+
+  private looksLikeDirectoryListing(cmd: string): boolean {
+    const trimmed = cmd.trim();
+    if (!trimmed) return false;
+    const parts = trimmed.split(/\s+/);
+    const base = (parts[0] || '').toLowerCase();
+    return base === 'ls' || base === 'dir';
   }
 
   onTabAutocomplete(event: Event) {
     const e = event as KeyboardEvent;
     e.preventDefault();
 
-    if (this.lastLsEntries.length === 0) return;
+    const result = this.autocompleteHelper.handleTab(this.currentCommand);
+    this.currentCommand = result.newCommand;
 
-    const raw = this.currentCommand;
-    const hasTrailingSpace = /\s$/.test(raw);
-    const trimmed = raw.trim();
-
-    if (!trimmed) return;
-
-    const tokens = trimmed.split(/\s+/);
-
-    if (tokens.length === 1 && !hasTrailingSpace) {
-      this.currentCommand = raw + ' ';
-      return;
+    if (result.suggestions.length > 0) {
+      this.showAutocompleteSuggestions(result.suggestions);
+      this.scrollToBottom();
     }
-
-    const lastToken = hasTrailingSpace ? '' : (tokens[tokens.length - 1] ?? '');
-
-    const candidates = this.lastLsEntries
-      .map((x) => x.name)
-      .filter((name) => name.startsWith(lastToken));
-
-    if (candidates.length === 0) return;
-
-    const prefixText = hasTrailingSpace
-      ? raw
-      : raw.replace(new RegExp(`${this.escapeRegex(lastToken)}$`), '');
-
-    if (candidates.length === 1) {
-      this.currentCommand = prefixText + candidates[0] + ' ';
-      return;
-    }
-
-    const common = this.commonPrefix(candidates);
-    if (common.length > lastToken.length) {
-      this.currentCommand = prefixText + common;
-      return;
-    }
-
-    this.addLine('info', candidates.join('    '));
-    this.scrollToBottom();
   }
 
-  private commonPrefix(items: string[]): string {
-    if (items.length === 0) return '';
-    let prefix = items[0];
-    for (let i = 1; i < items.length; i++) {
-      while (!items[i].startsWith(prefix)) {
-        prefix = prefix.slice(0, -1);
-        if (!prefix) return '';
-      }
-    }
-    return prefix;
-  }
-
-  private escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  private addLine(type: 'command' | 'output' | 'error' | 'info', content: string) {
-    this.lines.push({
-      type,
-      content,
-      timestamp: new Date(),
-    });
+  private showAutocompleteSuggestions(candidates: LsEntry[]) {
+    this.autocompleteSuggestions = candidates;
     this.cdr.detectChanges();
+  }
+
+  onInput() {
+    this.autocompleteSuggestions = this.autocompleteHelper.getSuggestions(this.currentCommand);
+    this.cdr.detectChanges();
+  }
+
+  clearAutocompleteSuggestions() {
+    if (this.autocompleteSuggestions.length > 0) {
+      this.autocompleteSuggestions = [];
+      this.cdr.detectChanges();
+    }
   }
 
   private scrollToBottom(): void {
@@ -323,23 +380,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   navigateHistory(direction: 'up' | 'down', event: Event) {
     event.preventDefault();
-
-    if (this.commandHistory.length === 0) return;
-
-    if (direction === 'up') {
-      if (this.historyIndex > 0) {
-        this.historyIndex--;
-        this.currentCommand = this.commandHistory[this.historyIndex];
-      }
-    } else {
-      if (this.historyIndex < this.commandHistory.length - 1) {
-        this.historyIndex++;
-        this.currentCommand = this.commandHistory[this.historyIndex];
-      } else {
-        this.historyIndex = this.commandHistory.length;
-        this.currentCommand = '';
-      }
-    }
+    this.currentCommand = this.historyHelper.navigate(direction, this.currentCommand);
   }
 
   focusInput(event?: Event) {

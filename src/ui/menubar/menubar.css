@@ -80,13 +80,15 @@ button[hlmMenuBarItem] {
   padding: 0.25rem 0.6rem;
   border-radius: calc(var(--radius) / 2);
   cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 /* subtle, theme-aware hover/active states using foreground mixing so it's readable
    in both light and dark modes (avoids white-on-white or black-on-black issues) */
 button[hlmMenuBarItem]:hover,
-button[hlmMenuBarItem][aria-expanded="true"] {
+button[hlmMenuBarItem][aria-expanded='true'] {
   background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
   color: var(--foreground);
 }

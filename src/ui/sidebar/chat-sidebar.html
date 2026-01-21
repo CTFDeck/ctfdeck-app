@@ -5,7 +5,11 @@
         <div class="font-semibold text-sm">Chat History</div>
         <div class="text-xs text-muted-foreground">Your recent conversations</div>
       </div>
-      <button hlmSidebarMenuButton (click)="toggleSidebar()" class="ml-auto p-1 h-8 w-8 flex items-center justify-center shrink-0">
+      <button
+        hlmSidebarMenuButton
+        (click)="toggleSidebar()"
+        class="ml-auto p-1 h-8 w-8 flex items-center justify-center shrink-0"
+      >
         <ng-icon name="lucidePanelLeft" />
       </button>
     </div>
@@ -19,7 +23,7 @@
             hlmSidebarMenuButton
             (click)="newChat()"
             class="text-sm text-left flex items-center gap-2 h-9"
-            [ngClass]="{'justify-center': isCollapsed()}"
+            [ngClass]="{ 'justify-center': isCollapsed() }"
             title="New chat"
           >
             <ng-icon name="lucidePlus" />
@@ -27,7 +31,7 @@
           </button>
         </div>
 
-        <div class="px-2 py-2" *ngIf="!isCollapsed()">
+        <div class="px-3 py-2 mb-2" *ngIf="!isCollapsed()">
           <div hlmInputGroup class="w-full">
             <div hlmInputGroupAddon>
               <ng-icon name="lucideSearch" />
@@ -50,10 +54,13 @@
             <ng-icon name="lucideFolder" /> <span>Projects</span>
           </div>
           <div class="flex flex-col gap-1">
-            <button hlmSidebarMenuButton *ngFor="let p of projects" 
-                    class="text-sm text-left flex items-center gap-2 h-9"
-                    [ngClass]="{'justify-center': isCollapsed()}"
-                    title="{{ p.name }}">
+            <button
+              hlmSidebarMenuButton
+              *ngFor="let p of projects"
+              class="text-sm text-left flex items-center gap-2 h-9"
+              [ngClass]="{ 'justify-center': isCollapsed() }"
+              title="{{ p.name }}"
+            >
               <ng-icon name="lucideFolder" />
               <span *ngIf="!isCollapsed()" class="truncate">{{ p.name }}</span>
             </button>
@@ -72,7 +79,7 @@
               *ngFor="let c of filteredChats"
               (click)="openChat(c)"
               class="text-sm text-left truncate flex items-center gap-2 h-9"
-              [ngClass]="{'justify-center': isCollapsed()}"
+              [ngClass]="{ 'justify-center': isCollapsed() }"
               title="{{ c.title }}"
             >
               <ng-icon name="lucideMessageCircleDashed" />
@@ -85,6 +92,8 @@
   </hlm-sidebar-content>
 
   <hlm-sidebar-footer *ngIf="!isCollapsed()">
-    <div class="px-3 py-3 text-xs text-muted-foreground">Tip: Create projects to organize chats.</div>
+    <div class="px-3 py-3 text-xs text-muted-foreground">
+      Tip: Create projects to organize chats.
+    </div>
   </hlm-sidebar-footer>
 </hlm-sidebar>
