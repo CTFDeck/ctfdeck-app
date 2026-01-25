@@ -1,13 +1,11 @@
-name: Build and Release
+name: Pipeline
 
 on:
   push:
     branches: ['**']
-    tags: ['**']
   pull_request:
-    branches: ['stage']
+    branches: ['**']
 
-permissions:
   contents: write
 
 jobs:
