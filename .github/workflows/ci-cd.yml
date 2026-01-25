@@ -137,7 +137,7 @@ jobs:
       contents: write
     needs:
       - build
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage')
     steps:
       - uses: actions/checkout@v4
 
