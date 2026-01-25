@@ -140,7 +140,7 @@ jobs:
     permissions:
       contents: write
     needs:
-      - build-and-test
+      - build
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
