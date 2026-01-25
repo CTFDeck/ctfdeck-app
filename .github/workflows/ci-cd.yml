@@ -6,8 +6,6 @@ on:
   pull_request:
     branches: ['**']
 
-  contents: write
-
 jobs:
   build:
     name: Build ${{ matrix.os }}
