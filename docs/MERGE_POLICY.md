@@ -37,6 +37,3 @@ Once all issues related to a feature are integrated and validated:
 - Continuously improve overall code quality.
 - Maintain a clear view of feature and sprint progress.
 
-Lorsqu’on termine une issue on ouvre une pull request de la branche issue vers la branche feature concernée. Cette pull request devra être lue et approuvée par au moins deux membres du groupe. Dans le cas d’un refus, les correctifs devront êtres apportés par le membre du groupe concerné et ensuite la pull request devra à nouveau être lue et approuvée.
-
-Une fois la feature terminée la branche feature sera merge manuellement vers la branche correspondant au sprint actuel POC/MVP/DELIVERY
