@@ -134,3 +134,46 @@ jobs:
             --notes "$NOTES" \
             --target "$TARGET" \
             --prerelease
+
+  deploy-documentation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+      - build-and-test
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Wiki access
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/CTFDeck/ctfdeck-app.wiki.git wiki
+
+
+      - name: Deploy documentation to Wiki
+        run: |
+          rm -rf wiki/*
+          cp -r docs/* wiki/
+          cp README.md wiki/Home.md
+
+      - name: Check for changes
+        id: changes
+        run: |
+          cd wiki
+          git add .
+          if git diff-index --quiet HEAD; then
+            echo "No changes to commit"
+            echo "skip=true" >> $GITHUB_ENV
+          else
+            echo "Changes detected"
+            echo "skip=false" >> $GITHUB_ENV
+          fi
+
+      - name: Push changes to Wiki
+        if: env.skip == 'false'
+        run: |
+          cd wiki
+          git commit -m "Update Wiki documentation"
+          git push
