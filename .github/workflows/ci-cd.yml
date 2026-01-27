@@ -34,24 +34,34 @@ jobs:
         run: npm run electron:build
 
       - name: Package Electron App
-        if: github.event_name == 'pull_request' && github.base_ref == 'stage'
+        if: |
+          (github.event_name == 'pull_request' && github.base_ref == 'stage') ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/stage')
         run: npm run package -- --publish never
 
       - name: Cleanup Artifacts (Unix)
         working-directory: ./release
-        if: runner.os != 'Windows' && github.event_name == 'pull_request' && github.base_ref == 'stage'
+        if: |
+          runner.os != 'Windows' && 
+          ((github.event_name == 'pull_request' && github.base_ref == 'stage') ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/stage'))
         run: |
           rm -rf win-unpacked linux-unpacked mac mac-arm64 builder-debug.yml .icon-icns || true
 
       - name: Cleanup Artifacts (Windows)
         working-directory: ./release
-        if: runner.os == 'Windows' && github.event_name == 'pull_request' && github.base_ref == 'stage'
+        if: |
+          runner.os == 'Windows' && 
+          ((github.event_name == 'pull_request' && github.base_ref == 'stage') ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/stage'))
         run: |
           Remove-Item -Recurse -Force -ErrorAction SilentlyContinue win-unpacked, linux-unpacked, mac, mac-arm64, builder-debug.yml, .icon-icns
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
-        if: github.event_name == 'pull_request' && github.base_ref == 'stage'
+        if: |
+          (github.event_name == 'pull_request' && github.base_ref == 'stage') ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/stage')
         with:
           name: artifacts-${{ matrix.os }}
           path: |
