@@ -1,24 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
-
 import {
   HlmMenu,
   HlmMenuBar,
   HlmMenuBarItem,
   HlmMenuGroup,
   HlmMenuItem,
-  HlmMenuItemCheck,
-  HlmMenuItemCheckbox,
-  HlmMenuItemRadio,
-  HlmMenuItemRadioIndicator,
   HlmMenuItemSubIndicator,
   HlmMenuSeparator,
-  HlmMenuShortcut,
   HlmSubMenu,
 } from '@ctfdeck/helm/menu';
-import { HlmButtonImports } from '@ctfdeck/helm/button';
-
 import { ThemeToggle } from './theme-toggle';
 
 @Component({
@@ -41,6 +33,8 @@ import { ThemeToggle } from './theme-toggle';
 })
 export class Menubar {
   constructor(private router: Router) {}
+  
+  @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
 
   navigate(path: string) {
     this.router.navigate([path]);
@@ -48,5 +42,13 @@ export class Menubar {
 
   openExternal(url: string) {
     window.open(url, '_blank', 'noopener');
+  }
+
+  openTargetManager(mode: 'view' | 'add' | 'delete') {
+    this.openTargetManagerEvent.emit(mode);
+  }
+
+  saveTargets() {
+    console.log('Targets already saved in cookies');
   }
 }

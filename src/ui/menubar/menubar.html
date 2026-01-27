@@ -19,10 +19,10 @@
   <ng-template #target>
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
-        <button hlmMenuItem>Configuration</button>
-        <button hlmMenuItem>Ajout d’une cible</button>
-        <button hlmMenuItem>Retrait d’une cible</button>
-        <button hlmMenuItem>Sauvegarde d’une cible</button>
+        <button hlmMenuItem (click)="openTargetManager('view')">Configuration</button>
+        <button hlmMenuItem (click)="openTargetManager('add')">Ajout d'une cible</button>
+        <button hlmMenuItem (click)="openTargetManager('delete')">Retrait d'une cible</button>
+        <button hlmMenuItem (click)="saveTargets()">Sauvegarde d'une cible</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
@@ -40,7 +40,6 @@
   <ng-template #utils>
     <hlm-menu variant="menubar" class="w-64">
       <hlm-menu-group>
-        <!-- Single Tools entry that opens a sub-menu like Edit did before -->
         <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="tools_sub">
           Tools
           <hlm-menu-item-sub-indicator />
