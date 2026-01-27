@@ -62,88 +62,90 @@ jobs:
           retention-days: 1
 
   release:
-      needs: build
-      if: |
-        (github.event_name == 'pull_request' && github.base_ref == 'stage') ||
-        (github.event_name == 'push' && github.ref == 'refs/heads/stage')
-      runs-on: ubuntu-latest
-      permissions:
-        contents: write
+    needs: build
+    if: |
+      (github.event_name == 'pull_request' && github.base_ref == 'stage') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/stage')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Download All Artifacts
-          uses: actions/download-artifact@v4
-          with:
-            path: ./artifacts
-            merge-multiple: true
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
 
-        - name: Create ZIP archives
-          run: |
-            mkdir -p ./release-packages
-            
-            # ZIP pour Ubuntu
-            if [ -d "./artifacts/artifacts-ubuntu-latest" ]; then
-              cd ./artifacts/artifacts-ubuntu-latest && zip -r ../../release-linux-x64.zip . && cd ../..
-            fi
-            
-            # ZIP pour Windows
-            if [ -d "./artifacts/artifacts-windows-latest" ]; then
-              cd ./artifacts/artifacts-windows-latest && zip -r ../../release-win-x64.zip . && cd ../..
-            fi
-            
-            # ZIP pour macOS
-            if [ -d "./artifacts/artifacts-macos-latest" ]; then
-              cd ./artifacts/artifacts-macos-latest && zip -r ../../release-osx-x64.zip . && cd ../..
-            fi
+      - name: List downloaded artifacts
+        run: |
+          echo "Artifacts structure:"
+          ls -R ./artifacts
 
-        - name: Verify ZIP files
-          run: |
-            echo "Created release archives:"
-            ls -lh release-*.zip
+      - name: Create ZIP archives
+        run: |
+          # ZIP pour Ubuntu
+          if [ -d "./artifacts/artifacts-ubuntu-latest" ]; then
+            cd ./artifacts/artifacts-ubuntu-latest && zip -r ../../release-linux-x64.zip . && cd ../..
+          fi
+          
+          # ZIP pour Windows
+          if [ -d "./artifacts/artifacts-windows-latest" ]; then
+            cd ./artifacts/artifacts-windows-latest && zip -r ../../release-win-x64.zip . && cd ../..
+          fi
+          
+          # ZIP pour macOS
+          if [ -d "./artifacts/artifacts-macos-latest" ]; then
+            cd ./artifacts/artifacts-macos-latest && zip -r ../../release-osx-x64.zip . && cd ../..
+          fi
 
-        - name: Get PR number or use commit SHA
-          id: version
-          run: |
-            if [ "${{ github.event_name }}" == "pull_request" ]; then
-              echo "tag=pr-${{ github.event.pull_request.number }}-stage" >> $GITHUB_OUTPUT
-              echo "title=CTFDeck Release #${{ github.event.pull_request.number }} to stage" >> $GITHUB_OUTPUT
-              echo "notes=Automated release build for PR #${{ github.event.pull_request.number }} targeting stage branch" >> $GITHUB_OUTPUT
-            else
-              SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-              echo "tag=stage-${SHORT_SHA}" >> $GITHUB_OUTPUT
-              echo "title=CTFDeck Stage Release ${SHORT_SHA}" >> $GITHUB_OUTPUT
-              echo "notes=Automated release build for commit ${SHORT_SHA} on stage branch" >> $GITHUB_OUTPUT
-            fi
+      - name: Verify ZIP files
+        run: |
+          echo "Created release archives:"
+          ls -lh release-*.zip
 
-        - name: Delete existing release if exists
-          env:
-            GH_TOKEN: ${{ github.token }}
-          run: |
-            TAG_NAME="${{ steps.version.outputs.tag }}"
-            if gh release view "$TAG_NAME" > /dev/null 2>&1; then
-              echo "Deleting existing release $TAG_NAME"
-              gh release delete "$TAG_NAME" --yes
-            fi
-            if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
-              echo "Deleting existing tag $TAG_NAME"
-              git push --delete origin "$TAG_NAME" || true
-            fi
+      - name: Get PR number or use commit SHA
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "tag=pr-${{ github.event.pull_request.number }}-stage" >> $GITHUB_OUTPUT
+            echo "title=CTFDeck Release #${{ github.event.pull_request.number }} to stage" >> $GITHUB_OUTPUT
+            echo "notes=Automated release build for PR #${{ github.event.pull_request.number }} targeting stage branch" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+            echo "tag=stage-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "title=CTFDeck Stage Release ${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "notes=Automated release build for commit ${SHORT_SHA} on stage branch" >> $GITHUB_OUTPUT
+          fi
 
-        - name: Create GitHub Release
-          env:
-            GH_TOKEN: ${{ github.token }}
-          run: |
-            TAG_NAME="${{ steps.version.outputs.tag }}"
-            gh release create "$TAG_NAME" \
-              release-linux-x64.zip \
-              release-win-x64.zip \
-              release-osx-x64.zip \
-              --title "${{ steps.version.outputs.title }}" \
-              --notes "${{ steps.version.outputs.notes }}" \
-              --target ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+      - name: Delete existing release if exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
+            echo "Deleting existing release $TAG_NAME"
+            gh release delete "$TAG_NAME" --yes
+          fi
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+            echo "Deleting existing tag $TAG_NAME"
+            git push --delete origin "$TAG_NAME" || true
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_NAME="${{ steps.version.outputs.tag }}"
+          gh release create "$TAG_NAME" \
+            release-linux-x64.zip \
+            release-win-x64.zip \
+            release-osx-x64.zip \
+            --title "${{ steps.version.outputs.title }}" \
+            --notes "${{ steps.version.outputs.notes }}" \
+            --target ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
 
   deploy-documentation:
     runs-on: ubuntu-latest
