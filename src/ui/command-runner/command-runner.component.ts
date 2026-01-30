@@ -72,22 +72,36 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
         
         <!-- Left: Target & Tool -->
         <div class="space-y-6">
+            <!-- Target Section -->
             <div class="space-y-2">
-                <label hlmLabel>Target</label>
-                <brn-select hlm class="w-full" [(ngModel)]="selectedTargetId" (ngModelChange)="onTargetChange()" placeholder="Select a target...">
-                    <hlm-select-trigger class="w-full">
-                        <hlm-select-value />
-                    </hlm-select-trigger>
-                    <hlm-select-content class="max-h-60">
-                        <hlm-option *ngFor="let target of targets" [value]="target.id">
-                            {{ target.name }} ({{ target.host }})
-                        </hlm-option>
-                    </hlm-select-content>
-                </brn-select>
+                <div class="flex justify-between items-center h-9">
+                    <label hlmLabel>Target</label>
+                </div>
+                
+                <ng-container *ngIf="targets.length > 0; else noTargets">
+                    <brn-select hlm class="w-full" [(ngModel)]="selectedTargetId" (ngModelChange)="onTargetChange()" placeholder="Select a target...">
+                        <hlm-select-trigger class="w-full">
+                            <hlm-select-value />
+                        </hlm-select-trigger>
+                        <hlm-select-content class="max-h-60">
+                            <hlm-option *ngFor="let target of targets" [value]="target.id">
+                                {{ target.name }} ({{ target.host }})
+                            </hlm-option>
+                        </hlm-select-content>
+                    </brn-select>
+                </ng-container>
+                <ng-template #noTargets>
+                    <div class="flex items-center justify-center p-3 border border-dashed border-border rounded-md bg-muted/50 text-muted-foreground text-sm">
+                        No targets available
+                    </div>
+                </ng-template>
             </div>
 
+            <!-- Tool Section -->
             <div class="space-y-2">
-                <label hlmLabel>Tool</label>
+                <div class="flex justify-between items-center h-9">
+                    <label hlmLabel>Tool</label>
+                </div>
                 <div class="flex flex-wrap gap-2">
                     <button *ngFor="let tool of tools"
                             hlmBtn
@@ -103,15 +117,16 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
         <!-- Right: Command & Controls -->
         <div class="space-y-6">
             <div class="space-y-2">
-                 <div class="flex justify-between items-center">
+                 <div class="flex justify-between items-center h-9">
                     <label hlmLabel>Command</label>
-                    <button hlmBtn variant="ghost" size="icon" class="h-6 w-6" (click)="saveCommand()" title="Save as default">
-                        <ng-icon hlm name="lucideSave" size="sm" />
-                    </button>
                  </div>
                  <div class="flex gap-2">
                     <input hlmInput class="flex-1 font-mono" [(ngModel)]="currentCommand" placeholder="Select target & tool..." />
                     
+                    <button hlmBtn variant="outline" size="icon" (click)="saveCommand()" title="Save as default">
+                        <ng-icon hlm name="lucideSave" size="sm" />
+                    </button>
+
                     <!-- Help Dialog Trigger -->
                     <hlm-dialog>
                         <button brnDialogTrigger hlmBtn variant="outline" size="icon" (click)="runHelp()" [disabled]="!selectedToolId" title="Show Help">
