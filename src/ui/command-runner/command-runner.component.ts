@@ -16,6 +16,8 @@ import {
   lucideLoader, 
   lucideCircleHelp 
 } from '@ng-icons/lucide';
+import { TOOLS } from '../../app/core/constants/tools';
+import { Input, OnChanges, SimpleChanges } from '@angular/core';
 
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
@@ -199,15 +201,11 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   // Help State
   isHelpRunning = false;
   helpOutput: SafeHtml | null = null;
+  
+  @Input() initialToolId: string = '';
 
   // Tools definition
-  readonly tools = [
-    { id: 'nmap', name: 'Nmap Scan', template: 'nmap -sV -p- {host}' },
-    { id: 'gobuster', name: 'Gobuster Dir', template: 'gobuster dir -u http://{host}:{port} -w common.txt' },
-    { id: 'ffuf', name: 'FFuF Fuzz', template: 'ffuf -u http://{host}:{port}/FUZZ -w common.txt' },
-    { id: 'ping', name: 'Ping', template: 'ping -c 4 {host}' },
-    { id: 'whois', name: 'Whois', template: 'whois {host}' }
-  ];
+  readonly tools = TOOLS;
 
   private ansiConverter = new AnsiToHtml({
     fg: '#d4d4d4',
@@ -221,6 +219,15 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.targets = this.targetService.getTargets();
+    if (this.initialToolId) {
+        this.selectTool(this.initialToolId);
+    }
+  }
+  
+  ngOnChanges(changes: SimpleChanges) {
+      if (changes['initialToolId'] && changes['initialToolId'].currentValue) {
+          this.selectTool(changes['initialToolId'].currentValue);
+      }
   }
 
   ngOnDestroy() {

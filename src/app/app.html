@@ -2,7 +2,7 @@
   <!-- Menubar -->
   <spartan-menubar
     (openTargetManagerEvent)="openTargetManager($event)"
-    (openCommandRunnerEvent)="openCommandRunner()"
+    (openCommandRunnerEvent)="openCommandRunner($event)"
   ></spartan-menubar>
 
   <div class="app-layout flex-1 flex overflow-hidden">
@@ -44,6 +44,7 @@
       (click)="$event.stopPropagation()"
     >
       <app-command-runner
+        [initialToolId]="selectedToolId"
         (closeEvent)="closeCommandRunner()"
       ></app-command-runner>
     </div>
