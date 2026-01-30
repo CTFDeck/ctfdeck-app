@@ -35,6 +35,7 @@ export class Menubar {
   constructor(private router: Router) {}
   
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
+  @Output() openCommandRunnerEvent = new EventEmitter<void>();
 
   navigate(path: string) {
     this.router.navigate([path]);
@@ -46,6 +47,10 @@ export class Menubar {
 
   openTargetManager(mode: 'view' | 'add' | 'delete') {
     this.openTargetManagerEvent.emit(mode);
+  }
+
+  openCommandRunner() {
+    this.openCommandRunnerEvent.emit();
   }
 
   saveTargets() {
