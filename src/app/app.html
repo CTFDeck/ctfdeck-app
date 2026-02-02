@@ -2,6 +2,7 @@
   <!-- Menubar -->
   <spartan-menubar
     (openTargetManagerEvent)="openTargetManager($event)"
+    (openCommandRunnerEvent)="openCommandRunner($event)"
   ></spartan-menubar>
 
   <div class="app-layout flex-1 flex overflow-hidden">
@@ -29,6 +30,23 @@
         [mode]="targetManagerMode"
         (closeEvent)="closeTargetManager()"
       ></app-target-manager>
+    </div>
+  </div>
+
+  <!-- Modal Command Runner -->
+  <div 
+    *ngIf="commandRunnerVisible" 
+    class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+    (click)="closeCommandRunner()"
+  >
+    <div 
+      class="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-5xl w-full h-[80vh] overflow-hidden m-4"
+      (click)="$event.stopPropagation()"
+    >
+      <app-command-runner
+        [initialToolId]="selectedToolId"
+        (closeEvent)="closeCommandRunner()"
+      ></app-command-runner>
     </div>
   </div>
 </div>
