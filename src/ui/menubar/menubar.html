@@ -20,9 +20,8 @@
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
         <button hlmMenuItem (click)="openTargetManager('view')">Configuration</button>
-        <button hlmMenuItem (click)="openTargetManager('add')">Ajout d'une cible</button>
-        <button hlmMenuItem (click)="openTargetManager('delete')">Retrait d'une cible</button>
-        <button hlmMenuItem (click)="saveTargets()">Sauvegarde d'une cible</button>
+        <button hlmMenuItem (click)="openTargetManager('add')">Adding a target</button>
+        <button hlmMenuItem (click)="openTargetManager('delete')">Target removal</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
@@ -45,9 +44,7 @@
           <hlm-menu-item-sub-indicator />
         </button>
       </hlm-menu-group>
-
       <hlm-menu-separator />
-
       <hlm-menu-group>
         <button hlmMenuItem (click)="openExternal('https://cve.org')">CVE.org</button>
         <button hlmMenuItem (click)="openExternal('https://www.exploit-db.com')">ExploitDB</button>
