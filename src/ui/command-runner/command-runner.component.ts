@@ -69,9 +69,6 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
           <ng-icon hlm name="lucideTerminal" class="text-primary text-2xl" />
           <h2 class="text-2xl font-bold tracking-tight">Command Runner</h2>
         </div>
-        <button hlmBtn variant="ghost" size="icon" (click)="close()">
-          <ng-icon hlm name="lucideX" />
-        </button>
       </div>
 
       <!-- Settings Grid -->
@@ -177,7 +174,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
                   </hlm-dialog-header>
 
                   <div
-                    class="p-6 flex-1 overflow-auto bg-slate-950 rounded-md m-6 border border-slate-800"
+                    class="p-6 flex-1 overflow-auto bg-muted rounded-md m-6 border border-border font-mono text-sm"
                   >
                     <div
                       *ngIf="isHelpRunning"
@@ -187,7 +184,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
                     </div>
                     <div
                       *ngIf="!isHelpRunning"
-                      class="font-mono text-sm whitespace-pre-wrap text-slate-300 p-2"
+                      class="whitespace-pre-wrap text-foreground p-2 leading-relaxed"
                       [innerHTML]="helpOutput"
                     ></div>
                   </div>
@@ -233,14 +230,14 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 
       <!-- Output Terminal -->
       <div
-        class="flex-1 flex flex-col min-h-0 rounded-md border border-border bg-[#1e1e1e] overflow-hidden"
+        class="flex-1 flex flex-col min-h-0 rounded-md border border-border bg-card text-card-foreground overflow-hidden font-mono"
       >
         <div
-          class="flex justify-between items-center px-4 py-2 border-b border-white/10 bg-white/5"
+          class="flex justify-between items-center px-3 py-2 bg-muted/30 border-b border-border"
         >
-          <span class="text-xs font-medium text-slate-400">Terminal Output</span>
+          <span class="text-xs font-medium text-muted-foreground">Terminal Output</span>
           <button
-            class="text-xs text-slate-400 hover:text-white transition-colors"
+            class="text-xs text-muted-foreground hover:text-foreground transition-colors"
             (click)="clearOutput()"
           >
             Clear
@@ -248,10 +245,10 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
         </div>
         <div
           #outputContainer
-          class="flex-1 overflow-auto p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-[#d4d4d4]"
+          class="flex-1 overflow-auto p-3 text-sm leading-relaxed whitespace-pre-wrap"
         >
-          <div *ngFor="let line of outputLines" [innerHTML]="line"></div>
-          <div *ngIf="outputLines.length === 0" class="text-slate-600 italic">
+          <div *ngFor="let line of outputLines" [innerHTML]="line" class="mb-0.5 break-all"></div>
+          <div *ngIf="outputLines.length === 0" class="text-muted-foreground italic">
             Ready to execute...
           </div>
         </div>
@@ -263,6 +260,39 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
       :host {
         display: block;
         height: 100%;
+      }
+
+      .ft-dir {
+        color: #60a5fa;
+      } /* blue */
+      .ft-arc {
+        color: #fbbf24;
+      } /* yellow */
+      .ft-bin {
+        color: #f87171;
+      } /* red */
+      .ft-lnk {
+        color: #a78bfa;
+      } /* purple */
+      .ft-txt {
+        color: #d1d5db;
+      } /* light grey */
+      .ft-img {
+        color: #34d399;
+      } /* green */
+      .ft-vid {
+        color: #fb7185;
+      } /* pink */
+      .ft-aud {
+        color: #22c55e;
+      } /* green */
+      .ft-unk {
+        color: #9ca3af;
+      } /* grey */
+
+      /* Hide the auto-generated close button in the dialog header */
+      ::ng-deep [data-slot="dialog-close"] {
+        display: none !important;
       }
     `,
   ],
