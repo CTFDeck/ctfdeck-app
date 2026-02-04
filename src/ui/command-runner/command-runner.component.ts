@@ -409,17 +409,51 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.outputLines = [];
     this.addLine(`<span class="text-blue-400">Running: ${this.currentCommand}</span>`);
 
+    // High-performance streaming - similar to terminal component
+    let outputLineIndex = -1;
+    let outputBuffer = '';
+    let errorBuffer = '';
+    let pendingRender = false;
+    let lastRenderTime = 0;
+    const MIN_RENDER_INTERVAL = 16;
+
+    const scheduleRender = () => {
+      if (pendingRender) return;
+      const now = performance.now();
+      if (now - lastRenderTime < MIN_RENDER_INTERVAL) {
+        pendingRender = true;
+        requestAnimationFrame(() => {
+          pendingRender = false;
+          lastRenderTime = performance.now();
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
+        });
+      } else {
+        lastRenderTime = now;
+        this.renderOutputBuffer(outputLineIndex, outputBuffer);
+      }
+    };
+
     this.wsService
       .executeCommandStreaming(
         this.currentCommand,
-        (data) => {
-          this.appendOutput(data);
+        (data: string) => {
+          outputBuffer += data;
+          if (outputLineIndex === -1) {
+            outputLineIndex = this.outputLines.length;
+            this.outputLines.push(this.createSafeHtml('')); // Initialize with empty content
+          }
+          scheduleRender();
         },
-        (error) => {
-          this.appendOutput(error, true);
+        (data: string) => {
+          errorBuffer += data;
+          this.appendToLastError(data);
         },
       )
-      .then((result: any) => {
+      .then((result) => {
+        if (outputLineIndex >= 0) {
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
+        }
+
         this.isRunning = false;
         this.addLine(`<span class="text-green-400">Done. Exit code: ${result.exitCode}</span>`);
         this.cdr.detectChanges();
@@ -448,24 +482,47 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.isHelpRunning = true;
     this.helpOutput = null; // Clear previous help
 
-    let outputAcc = '';
+    // High-performance streaming for help - similar to terminal component
+    let outputBuffer = '';
+    let errorBuffer = '';
+    let pendingRender = false;
+    let lastRenderTime = 0;
+    const MIN_RENDER_INTERVAL = 16;
+
+    const scheduleRender = () => {
+      if (pendingRender) return;
+      const now = performance.now();
+      if (now - lastRenderTime < MIN_RENDER_INTERVAL) {
+        pendingRender = true;
+        requestAnimationFrame(() => {
+          pendingRender = false;
+          lastRenderTime = performance.now();
+          this.renderHelpOutput(outputBuffer);
+        });
+      } else {
+        lastRenderTime = now;
+        this.renderHelpOutput(outputBuffer);
+      }
+    };
+
     this.wsService
       .executeCommandStreaming(
         `${this.selectedToolId} -h`,
-        (data) => {
+        (data: string) => {
           console.log('Help output received:', data);
-          outputAcc += data;
+          outputBuffer += data;
+          scheduleRender();
         },
-        (error) => {
+        (error: string) => {
           console.error('Help error received:', error);
-          outputAcc += error;
+          errorBuffer += error;
         },
       )
       .then((result) => {
         console.log('Help command completed with result:', result);
         this.isHelpRunning = false;
-        const html = this.ansiConverter.toHtml(outputAcc);
-        this.helpOutput = this.sanitizer.bypassSecurityTrustHtml(html);
+        // Render final output
+        this.renderHelpOutput(outputBuffer);
         this.cdr.detectChanges();
       })
       .catch((err: any) => {
@@ -481,6 +538,38 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   private appendOutput(data: string, isError: boolean = false) {
     const html = this.ansiConverter.toHtml(data);
     this.addLine(html);
+  }
+
+  private renderOutputBuffer(lineIndex: number, buffer: string): void {
+    if (lineIndex < 0 || lineIndex >= this.outputLines.length) return;
+    const html = this.ansiConverter.toHtml(buffer);
+    this.outputLines[lineIndex] = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.cdr.detectChanges();
+    this.scrollToBottom();
+  }
+
+  private renderHelpOutput(buffer: string): void {
+    const html = this.ansiConverter.toHtml(buffer);
+    this.helpOutput = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.cdr.detectChanges();
+  }
+
+  private appendToLastError(data: string) {
+    if (this.outputLines.length > 0) {
+      const lastLine = this.outputLines[this.outputLines.length - 1];
+      const currentContent = this.sanitizer.sanitize(0, lastLine) || '';
+      const newContent = currentContent + data;
+      this.outputLines[this.outputLines.length - 1] = this.sanitizer.bypassSecurityTrustHtml(
+        `<span class="text-red-500">${newContent}</span>`,
+      );
+      this.cdr.detectChanges();
+    } else {
+      this.addLine(`<span class="text-red-500">${data}</span>`);
+    }
+  }
+
+  private createSafeHtml(content: string) {
+    return this.sanitizer.bypassSecurityTrustHtml(content);
   }
 
   private addLine(htmlContent: string) {
