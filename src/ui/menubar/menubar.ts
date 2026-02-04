@@ -64,6 +64,7 @@ export class Menubar {
   }
 
   openCommandRunner(toolId?: string) {
+    console.log('Menubar emitting openCommandRunner event with toolId:', toolId);
     this.openCommandRunnerEvent.emit(toolId);
   }
 
