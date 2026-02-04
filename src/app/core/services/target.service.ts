@@ -7,6 +7,7 @@ export interface Target {
   port?: number;
   description?: string;
   createdAt: string;
+  commands?: Record<string, string>;
 }
 
 @Injectable({
@@ -73,6 +74,23 @@ export class TargetService {
     const deletedCount = targets.length - filtered.length;
     
     this.saveTargets(filtered);
+    this.saveTargets(filtered);
     return deletedCount;
+  }
+
+  saveTargetCommand(targetId: string, tool: string, command: string): boolean {
+    const targets = this.getTargets();
+    const index = targets.findIndex(t => t.id === targetId);
+
+    if (index === -1) return false;
+
+    const target = targets[index];
+    const commands = target.commands || {};
+    commands[tool] = command;
+
+    targets[index] = { ...target, commands };
+    this.saveTargets(targets);
+
+    return true;
   }
 }

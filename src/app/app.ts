@@ -25,6 +25,8 @@ export class App {
   
   targetManagerVisible = false;
   targetManagerMode: 'view' | 'add' | 'delete' = 'view';
+  commandRunnerVisible = false;
+  selectedToolId: string = '';
   
   @ViewChild('targetManager', { static: false }) targetManager?: TargetManagerComponent;
 
@@ -41,6 +43,15 @@ export class App {
 
   closeTargetManager() {
     this.targetManagerVisible = false;
+  }
+
+  openCommandRunner(toolId?: string) {
+    this.selectedToolId = toolId || '';
+    this.commandRunnerVisible = true;
+  }
+
+  closeCommandRunner() {
+    this.commandRunnerVisible = false;
   }
 
   saveTargets() {

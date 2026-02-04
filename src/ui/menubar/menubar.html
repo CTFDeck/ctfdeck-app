@@ -29,11 +29,56 @@
   <ng-template #scripts>
     <hlm-menu variant="menubar" class="w-48">
       <hlm-menu-group>
-        <button hlmMenuItem>Web</button>
-        <button hlmMenuItem>Reverse shell</button>
-        <button hlmMenuItem>Reverse engineering</button>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="discovery">
+            Discovery
+            <hlm-menu-item-sub-indicator />
+        </button>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="web">
+            Web
+            <hlm-menu-item-sub-indicator />
+        </button>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="revshell">
+            Reverse Shell
+            <hlm-menu-item-sub-indicator />
+        </button>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="exploit">
+            Exploit
+            <hlm-menu-item-sub-indicator />
+        </button>
       </hlm-menu-group>
     </hlm-menu>
+  </ng-template>
+
+  <ng-template #discovery>
+      <hlm-sub-menu>
+        <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.DISCOVERY)" (click)="openCommandRunner(tool.id)">
+            {{ tool.name }}
+        </button>
+      </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #web>
+      <hlm-sub-menu>
+        <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.WEB)" (click)="openCommandRunner(tool.id)">
+            {{ tool.name }}
+        </button>
+      </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #revshell>
+      <hlm-sub-menu>
+        <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.REVERSE_SHELL)" (click)="openCommandRunner(tool.id)">
+            {{ tool.name }}
+        </button>
+      </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #exploit>
+      <hlm-sub-menu>
+        <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.EXPLOIT)" (click)="openCommandRunner(tool.id)">
+            {{ tool.name }}
+        </button>
+      </hlm-sub-menu>
   </ng-template>
 
   <ng-template #utils>
