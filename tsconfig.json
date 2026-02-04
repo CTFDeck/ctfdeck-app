@@ -52,20 +52,17 @@
       "@ctfdeck/helm/textarea": [
         "./libs/ui/textarea/src/index.ts"
       ],
-      "@ctfdeck/helm/alert-dialog": [
-        "./libs/ui/alert-dialog/src/index.ts"
-      ],
       "@ctfdeck/helm/dialog": [
         "./libs/ui/dialog/src/index.ts"
       ],
-      "@ctfdeck/helm/select": [
-        "./libs/ui/select/src/index.ts"
-      ],
-      "@ctfdeck/helm/form-field": [
-        "./libs/ui/form-field/src/index.ts"
-      ],
       "@ctfdeck/helm/label": [
         "./libs/ui/label/src/index.ts"
+      ],
+      "@ctfdeck/helm/tabs": [
+        "./libs/ui/tabs/src/index.ts"
+      ],
+      "@ctfdeck/helm/sonner": [
+        "./libs/ui/sonner/src/index.ts"
       ]
     }
   },

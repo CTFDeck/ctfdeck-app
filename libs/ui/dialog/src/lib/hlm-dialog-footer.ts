@@ -1,20 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { hlm } from '@ctfdeck/helm/utils';
-import type { ClassValue } from 'clsx';
+import { Directive } from '@angular/core';
+import { classes } from '@ctfdeck/helm/utils';
 
-@Component({
-	selector: 'hlm-dialog-footer',
-	changeDetection: ChangeDetectionStrategy.OnPush,
+@Directive({
+	selector: '[hlmDialogFooter],hlm-dialog-footer',
 	host: {
-		'[class]': '_computedClass()',
+		'data-slot': 'dialog-footer',
 	},
-	template: `
-		<ng-content />
-	`,
 })
 export class HlmDialogFooter {
-	public readonly userClass = input<ClassValue>('', { alias: 'class' });
-	protected readonly _computedClass = computed(() =>
-		hlm('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', this.userClass()),
-	);
+	constructor() {
+		classes(() => 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end');
+	}
 }

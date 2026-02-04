@@ -1,20 +1,20 @@
+import type { BooleanInput } from '@angular/cdk/coercion';
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { NgIcon, provideIcons } from '@ng-icons/core';
+import { booleanAttribute, ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { provideIcons } from '@ng-icons/core';
 import { lucideX } from '@ng-icons/lucide';
-import { BrnDialogClose, BrnDialogRef, injectBrnDialogContext } from '@spartan-ng/brain/dialog';
-import { HlmIcon } from '@ctfdeck/helm/icon';
-import { hlm } from '@ctfdeck/helm/utils';
-import type { ClassValue } from 'clsx';
+import { BrnDialogRef, injectBrnDialogContext } from '@spartan-ng/brain/dialog';
+import { HlmIconImports } from '@ctfdeck/helm/icon';
+import { classes } from '@ctfdeck/helm/utils';
 import { HlmDialogClose } from './hlm-dialog-close';
 
 @Component({
 	selector: 'hlm-dialog-content',
-	imports: [NgComponentOutlet, BrnDialogClose, HlmDialogClose, NgIcon, HlmIcon],
+	imports: [NgComponentOutlet, HlmDialogClose, HlmIconImports],
 	providers: [provideIcons({ lucideX })],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: {
-		'[class]': '_computedClass()',
+		'data-slot': 'dialog-content',
 		'[attr.data-state]': 'state()',
 	},
 	template: `
@@ -24,27 +24,29 @@ import { HlmDialogClose } from './hlm-dialog-close';
 			<ng-content />
 		}
 
-		<button brnDialogClose hlm>
-			<span class="sr-only">Close</span>
-			<ng-icon hlm size="sm" name="lucideX" />
-		</button>
+		@if (showCloseButton()) {
+			<button hlmDialogClose>
+				<span class="sr-only">Close</span>
+				<ng-icon hlm size="sm" name="lucideX" />
+			</button>
+		}
 	`,
 })
 export class HlmDialogContent {
 	private readonly _dialogRef = inject(BrnDialogRef);
 	private readonly _dialogContext = injectBrnDialogContext({ optional: true });
 
+	public readonly showCloseButton = input<boolean, BooleanInput>(true, { transform: booleanAttribute });
+
 	public readonly state = computed(() => this._dialogRef?.state() ?? 'closed');
 
 	public readonly component = this._dialogContext?.$component;
 	private readonly _dynamicComponentClass = this._dialogContext?.$dynamicComponentClass;
 
-	public readonly userClass = input<ClassValue>('', { alias: 'class' });
-	protected readonly _computedClass = computed(() =>
-		hlm(
+	constructor() {
+		classes(() => [
 			'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 mx-auto grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border p-6 shadow-lg data-[state=closed]:duration-200 data-[state=open]:duration-200 sm:mx-0 sm:max-w-lg',
-			this.userClass(),
 			this._dynamicComponentClass,
-		),
-	);
+		]);
+	}
 }

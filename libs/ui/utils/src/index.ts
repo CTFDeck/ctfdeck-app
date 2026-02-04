@@ -1,1 +1,8 @@
-export * from './lib/hlm';
+import { ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function hlm(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export const classes = hlm;

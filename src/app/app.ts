@@ -4,12 +4,19 @@ import { CommonModule } from '@angular/common';
 import { Menubar } from '../ui/menubar/menubar';
 import { ChatSidebar } from '../ui/sidebar/chat-sidebar';
 import { TargetManagerComponent } from '../ui/target-manager/target-manager.component';
-import { CommandRunnerComponent } from '../ui/command-runner/command-runner.component';
+import { HlmToaster } from '@ctfdeck/helm/sonner';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, Menubar, ChatSidebar, TargetManagerComponent, CommandRunnerComponent],
+  imports: [
+    CommonModule, 
+    RouterOutlet, 
+    Menubar, 
+    ChatSidebar, 
+    TargetManagerComponent,
+    HlmToaster
+  ],
   templateUrl: './app.html',
   styleUrls: ['./app.css'],
 })
