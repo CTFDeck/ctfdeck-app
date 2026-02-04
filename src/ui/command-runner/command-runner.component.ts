@@ -21,7 +21,7 @@ import { Input, OnChanges, SimpleChanges } from '@angular/core';
 
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
-import { HlmSelectImports } from '@ctfdeck/helm/select';
+// import { HlmSelectImports } from '@ctfdeck/helm/select';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmIconImports } from '@ctfdeck/helm/icon';
@@ -36,7 +36,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
     FormsModule,
     ...BrnSelectImports,
     ...BrnDialogImports,
-    ...HlmSelectImports,
+    // ...HlmSelectImports,
     ...HlmButtonImports,
     ...HlmInputImports,
     ...HlmIconImports,
@@ -79,22 +79,23 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
                 </div>
                 
                 <ng-container *ngIf="targets.length > 0; else noTargets">
-                    <brn-select hlm class="w-full" [(ngModel)]="selectedTargetId" (ngModelChange)="onTargetChange()" placeholder="Select a target...">
-                        <hlm-select-trigger class="w-full">
-                            <hlm-select-value />
-                        </hlm-select-trigger>
-                        <hlm-select-content class="max-h-60">
-                            <hlm-option *ngFor="let target of targets" [value]="target.id">
-                                {{ target.name }} ({{ target.host }})
-                            </hlm-option>
-                        </hlm-select-content>
-                    </brn-select>
-                </ng-container>
-                <ng-template #noTargets>
-                    <div class="flex items-center justify-center p-3 border border-dashed border-border rounded-md bg-muted/50 text-muted-foreground text-sm">
-                        No targets available
-                    </div>
-                </ng-template>
+                  <select 
+                      [(ngModel)]="selectedTargetId" 
+                      (ngModelChange)="onTargetChange()"
+                      class="flex w-full h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                      <option value="" disabled selected>Select a target...</option>
+                      <option *ngFor="let target of targets" [value]="target.id">
+                          {{ target.name }} ({{ target.host }})
+                      </option>
+                  </select>
+              </ng-container>
+
+              <ng-template #noTargets>
+                  <div class="flex items-center justify-center p-3 border border-dashed border-border rounded-md bg-muted/50 text-muted-foreground text-sm">
+                      No targets available
+                  </div>
+              </ng-template>
             </div>
 
             <!-- Tool Section -->
