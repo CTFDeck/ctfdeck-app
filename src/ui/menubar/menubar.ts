@@ -36,16 +36,19 @@ import { CommonModule } from '@angular/common';
 })
 export class Menubar {
   constructor(private router: Router) {}
-  
+
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
   @Output() openCommandRunnerEvent = new EventEmitter<string | undefined>();
+  customScripts: any[] = [];
 
+  // si tu l'utilises ailleurs, garde-le cohérent avec les nouvelles catégories
   categories = [
-    ToolCategory.DISCOVERY,
-    ToolCategory.WEB,
+    ToolCategory.PORT_SCANNING,
+    ToolCategory.WEB_DISCOVERY,
+    ToolCategory.WEB_VULN_SCAN,
     ToolCategory.REVERSE_SHELL,
     ToolCategory.EXPLOIT,
-    ToolCategory.OTHER
+    ToolCategory.OTHER,
   ];
 
   tools = TOOLS;
@@ -70,6 +73,14 @@ export class Menubar {
 
   getToolsByCategory(category: ToolCategory) {
     return this.tools.filter(t => t.category === category);
+  }
+
+  openScriptImporter(): void {
+    console.log('Opening script importer...');
+  }
+
+  manageCustomScripts(): void {
+    console.log('Managing custom scripts...');
   }
 
   saveTargets() {
