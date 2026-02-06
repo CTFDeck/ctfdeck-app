@@ -177,17 +177,18 @@ export class SessionStoreService implements OnDestroy {
     }
   }
 
-  async addTarget(target: Omit<SessionTarget, 'id'>): Promise<void> {
-    const sessionId = await this.ensureActiveSession();
+  async addTarget(target: Omit<SessionTarget, 'id'>, sessionId?: string): Promise<void> {
+    const targetSessionId = sessionId || (await this.ensureActiveSession());
     const result = await this.sessions.addTarget(
-      sessionId,
+      targetSessionId,
       target.address,
       target.port,
       target.name,
       target.type,
       target.description,
     );
-    if (result.success) {
+    // Only refresh if we modified the currently active session
+    if (result.success && targetSessionId === this.activeSessionIdSubject.value) {
       await this.refreshActiveSession();
     }
   }
@@ -227,5 +228,9 @@ export class SessionStoreService implements OnDestroy {
     const loadSessions = this.refreshSessions();
     const restoreLastSession = lastSession ? this.selectSession(lastSession) : Promise.resolve();
     await Promise.all([loadSessions, restoreLastSession]);
+  }
+
+  getActiveSessionId(): string | null {
+    return this.activeSessionIdSubject.value;
   }
 }
