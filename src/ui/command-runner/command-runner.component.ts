@@ -12,8 +12,11 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { TargetService, Target } from '../../app/core/services/target.service';
+import { TargetService } from '../../app/core/services/target.service';
 import { WebSocketService } from '../../app/core/services/websocket.service';
+import { SessionStoreService } from '../../app/core/services/session-store.service';
+import { ScriptService } from '../../app/core/services/script.service';
+import { ScriptCategory, scriptCategoryName, SessionTarget } from '../../app/core/services/session.protocol';
 import AnsiToHtml from 'ansi-to-html';
 import { Subscription } from 'rxjs';
 import { provideIcons } from '@ng-icons/core';
@@ -35,6 +38,9 @@ import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
+import { toast } from 'ngx-sonner';
+
+type CommandOption = { id: string; name: string; kind: 'tool' | 'script' };
 
 @Component({
   selector: 'app-command-runner',
@@ -77,7 +83,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
         <div class="space-y-6">
           <!-- Target Section -->
           <div class="space-y-2">
-            <div class="flex justify-between items-center h-9">
+            <div class="flex justify-between items-center">
               <label hlmLabel>Target</label>
             </div>
 
@@ -89,7 +95,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
               >
                 <option value="" disabled selected>Select a target...</option>
                 <option *ngFor="let target of targets" [value]="target.id">
-                  {{ target.name }} ({{ target.host }})
+                  {{ target.name }} ({{ target.address }})
                 </option>
               </select>
             </ng-container>
@@ -103,20 +109,26 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
             </ng-template>
           </div>
 
-          <!-- Tool Section -->
           <div class="space-y-2">
-            <div class="flex justify-between items-center h-9">
-              <label hlmLabel>Tool</label>
+            <div class="flex justify-between items-center">
+              <label hlmLabel>Commands</label>
+              <button hlmBtn size="icon" variant="outline" (click)="openManageScripts()" title="Manage custom scripts">
+                +
+              </button>
             </div>
             <div class="flex flex-wrap gap-2">
+              <div *ngIf="customScriptsLoading && customScripts.length === 0" class="flex gap-2">
+                <div class="h-8 w-28 rounded-md bg-muted/70 animate-pulse"></div>
+                <div class="h-8 w-24 rounded-md bg-muted/70 animate-pulse"></div>
+              </div>
               <button
-                *ngFor="let tool of tools"
+                *ngFor="let item of commandOptions"
                 hlmBtn
-                [variant]="selectedToolId === tool.id ? 'default' : 'outline'"
+                [variant]="isCommandSelected(item) ? 'default' : 'outline'"
                 size="sm"
-                (click)="selectTool(tool.id)"
+                (click)="selectCommandOption(item)"
               >
-                {{ tool.name }}
+                {{ item.name }}
               </button>
             </div>
           </div>
@@ -125,7 +137,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
         <!-- Right: Command & Controls -->
         <div class="space-y-6">
           <div class="space-y-2">
-            <div class="flex justify-between items-center h-9">
+            <div class="flex justify-between items-center">
               <label hlmLabel>Command</label>
             </div>
             <div class="flex gap-2">
@@ -133,7 +145,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
                 hlmInput
                 class="flex-1 font-mono"
                 [(ngModel)]="currentCommand"
-                placeholder="Select target & tool..."
+                placeholder="Select target and command..."
               />
 
               <button
@@ -154,7 +166,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
                   variant="outline"
                   size="icon"
                   (click)="runHelp()"
-                  [disabled]="!selectedToolId"
+                  [disabled]="!canShowHelp"
                   title="Show Help"
                 >
                   <ng-icon hlm name="lucideCircleHelp" />
@@ -195,10 +207,6 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
                 </hlm-dialog-content>
               </hlm-dialog>
             </div>
-            <p class="text-xs text-muted-foreground">
-              Customize the command and click
-              <ng-icon hlm name="lucideSave" class="inline h-3 w-3" /> to save.
-            </p>
           </div>
 
           <div class="flex justify-end gap-3 pt-2">
@@ -213,7 +221,7 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
             </button>
             <button
               hlmBtn
-              [disabled]="isRunning || !currentCommand"
+              [disabled]="isRunning || !currentCommand || isSessionEnsuring"
               (click)="runCommand()"
               class="gap-2 min-w-[120px]"
             >
@@ -250,6 +258,88 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
           <div *ngFor="let line of outputLines" [innerHTML]="line" class="mb-0.5 break-all"></div>
           <div *ngIf="outputLines.length === 0" class="text-muted-foreground italic">
             Ready to execute...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      *ngIf="showManageScripts"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      (click)="closeManageScripts()"
+    >
+      <div
+        class="bg-background border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="p-6 border-b border-border flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Manage Custom Scripts</h3>
+          <button hlmBtn size="sm" variant="ghost" (click)="closeManageScripts()">Close</button>
+        </div>
+        <div class="p-6 space-y-4 max-h-[70vh] overflow-auto">
+          <div class="space-y-3">
+            <div class="grid gap-2">
+              <label hlmLabel>Name</label>
+              <input hlmInput [(ngModel)]="scriptForm.name" placeholder="Script name" />
+            </div>
+            <div class="grid gap-2">
+              <label hlmLabel>Category</label>
+              <select
+                [(ngModel)]="scriptForm.category"
+                class="flex w-full h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option *ngFor="let option of scriptCategoryOptions" [ngValue]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div class="grid gap-2">
+              <label hlmLabel>Template</label>
+              <textarea
+                rows="4"
+                [(ngModel)]="scriptForm.template"
+                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                placeholder="Command template, use {host} and {port}"
+              ></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+              <button hlmBtn variant="outline" (click)="resetScriptForm()">Reset</button>
+              <button hlmBtn (click)="saveScript()">
+                {{ editingScriptId ? 'Update Script' : 'Create Script' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="border-t border-border pt-4">
+            <h4 class="text-sm font-semibold mb-3">Existing Scripts</h4>
+            <div *ngIf="customScriptsLoading && customScripts.length === 0" class="space-y-2">
+              <div class="h-10 rounded-md bg-muted/70 animate-pulse"></div>
+              <div class="h-10 rounded-md bg-muted/70 animate-pulse"></div>
+            </div>
+            <div *ngIf="!customScriptsLoading && customScripts.length === 0" class="text-sm text-muted-foreground">
+              No custom scripts yet.
+            </div>
+            <div class="space-y-2">
+              <div
+                *ngFor="let script of customScripts"
+                class="flex items-center justify-between rounded-md border border-border p-3"
+              >
+                <div>
+                  <div class="font-medium">{{ script.name }}</div>
+                  <div class="text-xs text-muted-foreground">
+                    {{ getScriptCategoryLabel(script.category) }}
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button hlmBtn size="sm" variant="outline" (click)="editScript(script)">
+                    Edit
+                  </button>
+                  <button hlmBtn size="sm" variant="destructive" (click)="deleteScript(script.id)">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -302,16 +392,20 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   private targetService = inject(TargetService);
   private wsService = inject(WebSocketService);
+  private sessionStore = inject(SessionStoreService);
+  private scriptService = inject(ScriptService);
   private cdr = inject(ChangeDetectorRef);
   private sanitizer = inject(DomSanitizer);
 
   @ViewChild('outputContainer') private outputContainer!: ElementRef;
 
-  targets: Target[] = [];
+  targets: SessionTarget[] = [];
   selectedTargetId: string = '';
   selectedToolId: string = '';
+  selectedScriptId: string = '';
   currentCommand: string = '';
   isRunning: boolean = false;
+  isSessionEnsuring: boolean = false;
 
   outputLines: SafeHtml[] = [];
   private subscriptions: Subscription = new Subscription();
@@ -324,6 +418,19 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   // Tools definition
   readonly tools = TOOLS;
+  customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
+  customScriptsLoading = false;
+  showManageScripts = false;
+  editingScriptId: string | null = null;
+  scriptForm = { name: '', category: ScriptCategory.Other, template: '' };
+  private pendingInitialSelection: string | null = null;
+  readonly scriptCategoryOptions = [
+    { value: ScriptCategory.Discovery, label: scriptCategoryName(ScriptCategory.Discovery) },
+    { value: ScriptCategory.Web, label: scriptCategoryName(ScriptCategory.Web) },
+    { value: ScriptCategory.ReverseShell, label: scriptCategoryName(ScriptCategory.ReverseShell) },
+    { value: ScriptCategory.Exploit, label: scriptCategoryName(ScriptCategory.Exploit) },
+    { value: ScriptCategory.Other, label: scriptCategoryName(ScriptCategory.Other) },
+  ];
 
   private ansiConverter = new AnsiToHtml({
     fg: '#d4d4d4',
@@ -337,11 +444,33 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     console.log('CommandRunnerComponent initialized with initialToolId:', this.initialToolId);
-    this.targets = this.targetService.getTargets();
-    console.log('Loaded targets:', this.targets);
+    this.subscriptions.add(
+      this.sessionStore.activeSession$.subscribe((session) => {
+        this.targets = session?.targets || [];
+        if (this.selectedTargetId && !this.targets.find((t) => t.id === this.selectedTargetId)) {
+          this.selectedTargetId = '';
+        }
+        this.updateCommandPreview();
+      }),
+    );
+
+    this.subscriptions.add(
+      this.scriptService.scripts$.subscribe((scripts) => {
+        this.customScripts = scripts;
+        this.applyPendingSelection();
+      }),
+    );
+
+    this.subscriptions.add(
+      this.scriptService.isLoading$.subscribe((loading) => {
+        this.customScriptsLoading = loading;
+      }),
+    );
+    void this.scriptService.list();
+
     if (this.initialToolId) {
-      console.log('Selecting initial tool:', this.initialToolId);
-      this.selectTool(this.initialToolId);
+      this.pendingInitialSelection = this.initialToolId;
+      this.applyPendingSelection();
     }
   }
 
@@ -349,7 +478,13 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     console.log('CommandRunnerComponent ngOnChanges:', changes);
     if (changes['initialToolId'] && changes['initialToolId'].currentValue) {
       console.log('Selecting tool from ngOnChanges:', changes['initialToolId'].currentValue);
-      this.selectTool(changes['initialToolId'].currentValue);
+      const value = changes['initialToolId'].currentValue;
+      if (value === '__manage_scripts__') {
+        this.showManageScripts = true;
+        return;
+      }
+      this.pendingInitialSelection = value;
+      this.applyPendingSelection();
     }
   }
 
@@ -365,49 +500,92 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.updateCommandPreview();
   }
 
+  get commandOptions(): CommandOption[] {
+    const toolOptions: CommandOption[] = this.tools.map((tool) => ({
+      id: tool.id,
+      name: tool.name,
+      kind: 'tool',
+    }));
+    const scriptOptions: CommandOption[] = this.customScripts.map((script) => ({
+      id: script.id,
+      name: script.name,
+      kind: 'script',
+    }));
+    return [...toolOptions, ...scriptOptions];
+  }
+
+  selectCommandOption(option: CommandOption) {
+    if (option.kind === 'tool') {
+      this.selectTool(option.id);
+      return;
+    }
+    this.selectScript(option.id);
+  }
+
+  isCommandSelected(option: CommandOption): boolean {
+    return option.kind === 'tool'
+      ? this.selectedToolId === option.id
+      : this.selectedScriptId === option.id;
+  }
+
   selectTool(toolId: string) {
     this.selectedToolId = toolId;
+    this.selectedScriptId = '';
+    this.updateCommandPreview();
+  }
+
+  selectScript(scriptId: string) {
+    this.selectedScriptId = scriptId;
+    this.selectedToolId = '';
     this.updateCommandPreview();
   }
 
   updateCommandPreview() {
-    if (!this.selectedTargetId || !this.selectedToolId) return;
+    if (!this.selectedTargetId || (!this.selectedToolId && !this.selectedScriptId)) return;
 
     const target = this.targets.find((t) => t.id === this.selectedTargetId);
     if (!target) return;
 
     // Check if we have a saved command for this target+tool
-    if (target.commands && target.commands[this.selectedToolId]) {
-      this.currentCommand = target.commands[this.selectedToolId];
-    } else {
-      // Generate from template
-      const tool = this.tools.find((t) => t.id === this.selectedToolId);
-      if (tool) {
-        let cmd = tool.template;
-        cmd = cmd.replace(/{host}/g, target.host);
-        cmd = cmd.replace(/{port}/g, (target.port || (cmd.includes('http') ? 80 : '')).toString());
-        this.currentCommand = cmd;
-      }
+    const selectedId = this.selectedToolId || this.selectedScriptId;
+    const savedCommand = this.targetService.getSavedCommand(target.id, selectedId);
+    if (savedCommand) {
+      this.currentCommand = savedCommand;
+      return;
+    }
+
+    const template =
+      this.selectedToolId
+        ? this.tools.find((t) => t.id === this.selectedToolId)?.template
+        : this.customScripts.find((s) => s.id === this.selectedScriptId)?.template;
+
+    if (template) {
+      let cmd = template;
+      cmd = cmd.replace(/{host}/g, target.address);
+      const port = target.port ?? (cmd.includes('http') ? 80 : '');
+      cmd = cmd.replace(/{port}/g, port.toString());
+      this.currentCommand = cmd;
     }
   }
 
   saveCommand() {
-    if (this.selectedTargetId && this.selectedToolId && this.currentCommand) {
-      this.targetService.saveTargetCommand(
-        this.selectedTargetId,
-        this.selectedToolId,
-        this.currentCommand,
-      );
-      this.targets = this.targetService.getTargets();
+    const selectedId = this.selectedToolId || this.selectedScriptId;
+    if (this.selectedTargetId && selectedId && this.currentCommand) {
+      this.targetService.saveTargetCommand(this.selectedTargetId, selectedId, this.currentCommand);
     }
   }
 
-  runCommand() {
+  async runCommand() {
     if (!this.currentCommand) return;
 
     this.isRunning = true;
     this.outputLines = [];
     this.addLine(`<span class="text-blue-400">Running: ${this.currentCommand}</span>`);
+
+    if (!(await this.ensureActiveSession())) {
+      this.isRunning = false;
+      return;
+    }
 
     // High-performance streaming - similar to terminal component
     let outputLineIndex = -1;
@@ -463,6 +641,20 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.addLine(`<span class="text-red-500">Error: ${err.message}</span>`);
         this.cdr.detectChanges();
       });
+  }
+
+  private async ensureActiveSession(): Promise<boolean> {
+    this.isSessionEnsuring = true;
+    try {
+      await this.sessionStore.ensureActiveSession();
+      return true;
+    } catch (err: any) {
+      this.addLine(`<span class="text-red-500">Session error: ${err?.message || err}</span>`);
+      return false;
+    } finally {
+      this.isSessionEnsuring = false;
+      this.cdr.detectChanges();
+    }
   }
 
   stopCommand() {
@@ -533,6 +725,101 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         );
         this.cdr.detectChanges();
       });
+  }
+
+  get canShowHelp(): boolean {
+    return !!this.selectedToolId;
+  }
+
+  openManageScripts() {
+    this.showManageScripts = true;
+    this.resetScriptForm();
+  }
+
+  closeManageScripts() {
+    this.showManageScripts = false;
+    this.resetScriptForm();
+  }
+
+  editScript(script: { id: string; name: string; category: number; template: string }) {
+    this.editingScriptId = script.id;
+    this.scriptForm = {
+      name: script.name,
+      category: script.category as ScriptCategory,
+      template: script.template,
+    };
+    this.showManageScripts = true;
+  }
+
+  async saveScript() {
+    const name = this.scriptForm.name.trim();
+    const template = this.scriptForm.template.trim();
+    if (!name || !template) {
+      toast.error('Missing fields', { description: 'Name and template are required.' });
+      return;
+    }
+
+    try {
+      if (this.editingScriptId) {
+        await this.scriptService.update(
+          this.editingScriptId,
+          name,
+          this.scriptForm.category,
+          template,
+        );
+        toast.success('Script updated');
+      } else {
+        await this.scriptService.create(name, this.scriptForm.category, template);
+        toast.success('Script created');
+      }
+      this.resetScriptForm();
+    } catch (err: any) {
+      toast.error('Script operation failed', { description: err?.message || 'Unknown error' });
+    }
+  }
+
+  async deleteScript(scriptId: string) {
+    try {
+      await this.scriptService.delete(scriptId);
+      toast.success('Script deleted');
+      if (this.selectedScriptId === scriptId) {
+        this.selectedScriptId = '';
+        this.currentCommand = '';
+      }
+    } catch (err: any) {
+      toast.error('Delete failed', { description: err?.message || 'Unknown error' });
+    }
+  }
+
+  getScriptCategoryLabel(category: number): string {
+    return this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown';
+  }
+
+  resetScriptForm() {
+    this.editingScriptId = null;
+    this.scriptForm = { name: '', category: ScriptCategory.Other, template: '' };
+  }
+
+  private applyPendingSelection() {
+    if (!this.pendingInitialSelection) return;
+    const value = this.pendingInitialSelection;
+    if (value === '__manage_scripts__') {
+      this.showManageScripts = true;
+      this.pendingInitialSelection = null;
+      return;
+    }
+
+    if (this.tools.find((t) => t.id === value)) {
+      this.selectTool(value);
+      this.pendingInitialSelection = null;
+      return;
+    }
+
+    const script = this.customScripts.find((s) => s.id === value);
+    if (script) {
+      this.selectScript(script.id);
+      this.pendingInitialSelection = null;
+    }
   }
 
   private appendOutput(data: string, isError: boolean = false) {

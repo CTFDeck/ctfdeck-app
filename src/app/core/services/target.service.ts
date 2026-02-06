@@ -15,6 +15,7 @@ export interface Target {
 })
 export class TargetService {
   private readonly STORAGE_KEY = 'ctfdeck_targets';
+  private readonly COMMANDS_KEY = 'ctfdeck_target_commands';
 
   getTargets(): Target[] {
     const stored = localStorage.getItem(this.STORAGE_KEY);
@@ -79,18 +80,32 @@ export class TargetService {
   }
 
   saveTargetCommand(targetId: string, tool: string, command: string): boolean {
-    const targets = this.getTargets();
-    const index = targets.findIndex(t => t.id === targetId);
-
-    if (index === -1) return false;
-
-    const target = targets[index];
-    const commands = target.commands || {};
-    commands[tool] = command;
-
-    targets[index] = { ...target, commands };
-    this.saveTargets(targets);
-
+    if (!targetId || !tool) return false;
+    const stored = localStorage.getItem(this.COMMANDS_KEY);
+    let commandsByTarget: Record<string, Record<string, string>> = {};
+    if (stored) {
+      try {
+        commandsByTarget = JSON.parse(stored);
+      } catch (error) {
+        console.error('Error parsing target commands:', error);
+      }
+    }
+    commandsByTarget[targetId] = commandsByTarget[targetId] || {};
+    commandsByTarget[targetId][tool] = command;
+    localStorage.setItem(this.COMMANDS_KEY, JSON.stringify(commandsByTarget));
     return true;
+  }
+
+  getSavedCommand(targetId: string, tool: string): string | null {
+    if (!targetId || !tool) return null;
+    const stored = localStorage.getItem(this.COMMANDS_KEY);
+    if (!stored) return null;
+    try {
+      const commandsByTarget: Record<string, Record<string, string>> = JSON.parse(stored);
+      return commandsByTarget[targetId]?.[tool] ?? null;
+    } catch (error) {
+      console.error('Error parsing target commands:', error);
+      return null;
+    }
   }
 }

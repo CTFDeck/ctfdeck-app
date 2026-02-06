@@ -47,24 +47,8 @@
           </div>
         </div>
 
-        <hlm-sidebar-separator />
-
-        <div class="px-3 py-2">
-          <div *ngIf="!isCollapsed()" class="text-xs font-medium mb-2 flex items-center gap-2">
-            <ng-icon name="lucideFolder" /> <span>Projects</span>
-          </div>
-          <div class="flex flex-col gap-1">
-            <button
-              hlmSidebarMenuButton
-              *ngFor="let p of projects"
-              class="text-sm text-left flex items-center gap-2 h-9"
-              [ngClass]="{ 'justify-center': isCollapsed() }"
-              title="{{ p.name }}"
-            >
-              <ng-icon name="lucideFolder" />
-              <span *ngIf="!isCollapsed()" class="truncate">{{ p.name }}</span>
-            </button>
-          </div>
+        <div class="px-3 py-1 text-xs text-muted-foreground" *ngIf="!isCollapsed() && (sessionsLoading$ | async)">
+          Loading sessions...
         </div>
 
         <hlm-sidebar-separator />
@@ -73,18 +57,103 @@
           <div *ngIf="!isCollapsed()" class="text-xs font-medium mb-2 flex items-center gap-2">
             <ng-icon name="lucideMessageCircleDashed" /> <span>Chats</span>
           </div>
-          <div class="flex flex-col gap-1">
-            <button
-              hlmSidebarMenuButton
-              *ngFor="let c of filteredChats"
-              (click)="openChat(c)"
-              class="text-sm text-left truncate flex items-center gap-2 h-9"
-              [ngClass]="{ 'justify-center': isCollapsed() }"
-              title="{{ c.title }}"
+          <div class="flex flex-col gap-2" *ngIf="(sessions$ | async) as sessions">
+            <div
+              *ngIf="(sessionsLoading$ | async) && sessions.length === 0 && !isCollapsed()"
+              class="space-y-2"
             >
-              <ng-icon name="lucideMessageCircleDashed" />
-              <span *ngIf="!isCollapsed()" class="truncate">{{ c.title }}</span>
-            </button>
+              <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+              <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+              <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+            </div>
+
+            <div
+              *ngFor="let c of filteredChats(sessions)"
+              class="group relative"
+              [class.ctf-session-deleting]="isDeletingSession(c.id)"
+            >
+              <button
+                hlmSidebarMenuButton
+                (click)="openChat(c)"
+                class="text-sm text-left truncate flex items-center gap-2 h-9 pr-14"
+                [ngClass]="{
+                  'justify-center': isCollapsed(),
+                  'ctf-session-active': c.id === (activeSessionId$ | async)
+                }"
+                title="{{ c.name }}"
+              >
+                <ng-icon name="lucideMessageCircleDashed" />
+                <span *ngIf="!isCollapsed()" class="truncate">
+                  {{ c.name }}
+                </span>
+              </button>
+
+              <div
+                *ngIf="!isCollapsed()"
+                class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <hlm-dialog>
+                  <button
+                    brnDialogTrigger
+                    hlmBtn
+                    size="sm"
+                    variant="ghost"
+                    (click)="$event.stopPropagation(); beginRename(c)"
+                  >
+                    <ng-icon name="lucidePencil" />
+                  </button>
+                  <hlm-dialog-content
+                    *brnDialogContent="let ctx"
+                    class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-md w-full overflow-hidden"
+                  >
+                    <hlm-dialog-header class="p-6 border-b border-border">
+                      <h3 hlmDialogTitle>Rename Session</h3>
+                    </hlm-dialog-header>
+                    <div class="p-6 space-y-3">
+                      <label hlmLabel for="session-name-{{ c.id }}">Name</label>
+                      <input
+                        id="session-name-{{ c.id }}"
+                        hlmInput
+                        [(ngModel)]="renameDraftById[c.id]"
+                        (keydown.enter)="renameSession(c, ctx)"
+                        placeholder="Session name"
+                      />
+                    </div>
+                    <hlm-dialog-footer class="p-6 border-t border-border flex justify-end gap-2">
+                      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
+                      <button hlmBtn (click)="renameSession(c, ctx)">Save</button>
+                    </hlm-dialog-footer>
+                  </hlm-dialog-content>
+                </hlm-dialog>
+
+                <hlm-dialog>
+                  <button
+                    brnDialogTrigger
+                    hlmBtn
+                    size="sm"
+                    variant="ghost"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <ng-icon name="lucideTrash2" class="text-destructive" />
+                  </button>
+                  <hlm-dialog-content
+                    *brnDialogContent="let ctx"
+                    class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-md w-full overflow-hidden"
+                  >
+                    <hlm-dialog-header class="p-6 border-b border-border">
+                      <h3 hlmDialogTitle>Delete Session</h3>
+                      <p hlmDialogDescription class="mt-2 text-sm text-muted-foreground">
+                        Delete "{{ c.name }}"? This action cannot be undone.
+                      </p>
+                    </hlm-dialog-header>
+                    <hlm-dialog-footer class="p-6 border-t border-border flex justify-end gap-2">
+                      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
+                      <button hlmBtn variant="destructive" (click)="deleteSession(c, ctx)">Delete</button>
+                    </hlm-dialog-footer>
+                  </hlm-dialog-content>
+                </hlm-dialog>
+              </div>
+            </div>
           </div>
         </div>
       </hlm-sidebar-group>

@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Output, Input, OnInit, inject } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TargetService, Target } from '../../app/core/services/target.service';
+import { SessionStoreService } from '../../app/core/services/session-store.service';
+import { SessionTarget } from '../../app/core/services/session.protocol';
+import { Subscription } from 'rxjs';
 
 import { BrnTabsImports } from '@spartan-ng/brain/tabs';
 import { HlmTabsImports } from '@ctfdeck/helm/tabs';
@@ -45,9 +47,9 @@ import { toast } from 'ngx-sonner';
 
       <hlm-tabs [tab]="mode" class="w-full">
         <hlm-tabs-list class="grid w-full grid-cols-3 mb-6">
-          <button hlmTabsTrigger="view" (click)="mode = 'view'">Configuration</button>
-          <button hlmTabsTrigger="add" (click)="mode = 'add'">Add Target</button>
-          <button hlmTabsTrigger="delete" (click)="mode = 'delete'">Bulk Delete</button>
+          <button hlmTabsTrigger="view" (click)="setMode('view')">Configuration</button>
+          <button hlmTabsTrigger="add" (click)="setMode('add')">Add Target</button>
+          <button hlmTabsTrigger="delete" (click)="setMode('delete')">Bulk Delete</button>
         </hlm-tabs-list>
 
         <div hlmTabsContent="view" class="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
@@ -61,7 +63,7 @@ import { toast } from 'ngx-sonner';
                 <h4 class="font-bold uppercase tracking-wider text-primary">{{ target.name }}</h4>
                 <div class="flex items-center gap-2">
                     <code class="px-2 py-0.5 rounded bg-muted text-xs font-mono border border-border">
-                        {{ target.host }}{{ target.port ? ':' + target.port : '' }}
+                        {{ target.address }}{{ target.port ? ':' + target.port : '' }}
                     </code>
                 </div>
               </div>
@@ -74,7 +76,7 @@ import { toast } from 'ngx-sonner';
             <div *ngIf="editingId === target.id" class="space-y-3 p-2 animate-in fade-in slide-in-from-top-1">
               <input hlmInput [(ngModel)]="editForm.name" placeholder="Server name" class="w-full" />
               <div class="flex gap-2">
-                <input hlmInput [(ngModel)]="editForm.host" placeholder="IP / Host" class="flex-1" />
+                <input hlmInput [(ngModel)]="editForm.address" placeholder="IP / Host" class="flex-1" />
                 <button hlmBtn size="sm" (click)="saveEdit()">Save</button>
                 <button hlmBtn size="sm" variant="ghost" (click)="editingId = null">Cancel</button>
               </div>
@@ -90,8 +92,8 @@ import { toast } from 'ngx-sonner';
             </div>
             <div class="grid grid-cols-3 gap-4">
               <div class="col-span-2 grid gap-2">
-                <label hlmLabel for="add-host">IP Address or Hostname</label>
-                <input hlmInput id="add-host" [(ngModel)]="addForm.host" placeholder="10.0.0.5" />
+              <label hlmLabel for="add-host">IP Address or Hostname</label>
+              <input hlmInput id="add-host" [(ngModel)]="addForm.address" placeholder="10.0.0.5" />
               </div>
               <div class="grid gap-2">
                 <label hlmLabel for="add-port">Port</label>
@@ -113,7 +115,7 @@ import { toast } from 'ngx-sonner';
                 <div *ngIf="selectedIds.has(target.id)" class="text-[10px] text-primary-foreground">✔</div>
               </div>
               <span class="font-medium">{{ target.name }}</span>
-              <span class="text-xs text-muted-foreground ml-auto font-mono">{{ target.host }}</span>
+              <span class="text-xs text-muted-foreground ml-auto font-mono">{{ target.address }}</span>
             </div>
           </div>
           <button hlmBtn variant="destructive" class="w-full" 
@@ -129,48 +131,87 @@ import { toast } from 'ngx-sonner';
     </div>
   `
 })
-export class TargetManagerComponent implements OnInit {
-  private targetService = inject(TargetService);
+export class TargetManagerComponent implements OnInit, OnDestroy {
+  private sessionStore = inject(SessionStoreService);
   @Input() mode: 'view' | 'add' | 'delete' = 'view';
   @Output() closeEvent = new EventEmitter<void>();
 
-  targets: Target[] = [];
+  targets: SessionTarget[] = [];
   selectedIds = new Set<string>();
   editingId: string | null = null;
-  addForm = { name: '', host: '', port: undefined as number | undefined, description: '' };
-  editForm = { name: '', host: '', port: undefined as number | undefined, description: '' };
+  addForm = { name: '', address: '', port: undefined as number | undefined, description: '' };
+  editForm = { name: '', address: '', port: undefined as number | undefined, description: '' };
+  private subscriptions = new Subscription();
 
-  ngOnInit() { this.loadTargets(); }
-  loadTargets() { this.targets = this.targetService.getTargets(); }
+  ngOnInit() {
+    this.subscriptions.add(
+      this.sessionStore.activeSession$.subscribe((session) => {
+        this.targets = session?.targets || [];
+        this.selectedIds.clear();
+        if (this.editingId && !this.targets.find((t) => t.id === this.editingId)) {
+          this.editingId = null;
+        }
+      }),
+    );
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
+  }
 
   public open(mode: 'view' | 'add' | 'delete') {
-    this.mode = mode;
-    this.loadTargets();
+    this.defer(() => {
+      this.mode = mode;
+    });
+    void this.sessionStore.refreshActiveSession();
   }
 
-  addTarget() {
-    if (!this.addForm.name) {
-      toast.error('Error', { description: 'Target name is required.' });
+  async addTarget() {
+    if (!this.addForm.name || !this.addForm.address) {
+      toast.error('Error', { description: 'Target name and address are required.' });
       return;
     }
-    this.targetService.addTarget({...this.addForm});
-    this.addForm = { name: '', host: '', port: undefined, description: '' };
-    this.loadTargets();
-    this.mode = 'view';
-    toast.success('Target added!', { description: 'Target successfully saved.' });
+
+    try {
+      await this.sessionStore.addTarget({
+        name: this.addForm.name,
+        address: this.addForm.address,
+        port: this.addForm.port ?? null,
+        description: this.addForm.description || '',
+        type: 0,
+      });
+      this.addForm = { name: '', address: '', port: undefined, description: '' };
+      this.setMode('view');
+      toast.success('Target added!', { description: 'Target successfully saved.' });
+    } catch (err: any) {
+      toast.error('Error', { description: err?.message || 'Failed to add target.' });
+    }
   }
 
-  startEditing(target: Target) {
+  startEditing(target: SessionTarget) {
     this.editingId = target.id;
-    this.editForm = { name: target.name, host: target.host, port: target.port, description: target.description || '' };
+    this.editForm = {
+      name: target.name,
+      address: target.address,
+      port: target.port ?? undefined,
+      description: target.description || '',
+    };
   }
 
-  saveEdit() {
-    if (this.editingId) {
-      this.targetService.updateTarget(this.editingId, this.editForm);
+  async saveEdit() {
+    if (!this.editingId) return;
+    try {
+      await this.sessionStore.editTarget(this.editingId, {
+        name: this.editForm.name,
+        address: this.editForm.address,
+        port: this.editForm.port ?? null,
+        description: this.editForm.description || '',
+        type: 0,
+      });
       this.editingId = null;
-      this.loadTargets();
       toast.success('Changes saved', { description: 'Target updated.' });
+    } catch (err: any) {
+      toast.error('Update failed', { description: err?.message || 'Target update failed.' });
     }
   }
 
@@ -182,18 +223,36 @@ export class TargetManagerComponent implements OnInit {
     }
   }
 
-  deleteOneTarget(id: string) {
-    this.targetService.deleteTarget(id);
-    this.loadTargets();
-    toast.success('Target deleted', { description: 'Removed from configuration.' });
+  async deleteOneTarget(id: string) {
+    try {
+      await this.sessionStore.deleteTarget(id);
+      toast.success('Target deleted', { description: 'Removed from configuration.' });
+    } catch (err: any) {
+      toast.error('Delete failed', { description: err?.message || 'Target delete failed.' });
+    }
   }
 
-  deleteSelected() {
+  async deleteSelected() {
     const count = this.selectedIds.size;
     if (count === 0) return;
-      this.targetService.deleteTargets(Array.from(this.selectedIds));
+    try {
+      for (const id of this.selectedIds) {
+        await this.sessionStore.deleteTarget(id);
+      }
       this.selectedIds.clear();
-      this.loadTargets();
       toast.error('Deletion successful', { description: `${count} targets removed.`, closeButton: true });
+    } catch (err: any) {
+      toast.error('Delete failed', { description: err?.message || 'Bulk delete failed.' });
+    }
+  }
+
+  setMode(mode: 'view' | 'add' | 'delete') {
+    this.defer(() => {
+      this.mode = mode;
+    });
+  }
+
+  private defer(fn: () => void) {
+    setTimeout(fn, 0);
   }
 }

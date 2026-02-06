@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
 import {
@@ -14,6 +14,8 @@ import {
 import { ThemeToggle } from './theme-toggle';
 import { TOOLS, ToolCategory } from '../../app/core/constants/tools';
 import { CommonModule } from '@angular/common';
+import { ScriptService } from '../../app/core/services/script.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'spartan-menubar',
@@ -34,12 +36,17 @@ import { CommonModule } from '@angular/common';
   templateUrl: './menubar.html',
   styleUrls: ['./menubar.css'],
 })
-export class Menubar {
-  constructor(private router: Router) {}
+export class Menubar implements OnInit, OnDestroy {
+  constructor(
+    private router: Router,
+    private scriptService: ScriptService,
+  ) {}
 
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
   @Output() openCommandRunnerEvent = new EventEmitter<string | undefined>();
-  customScripts: any[] = [];
+  customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
+  customScriptsLoading = false;
+  private subscriptions = new Subscription();
 
   // si tu l'utilises ailleurs, garde-le cohérent avec les nouvelles catégories
   categories = [
@@ -53,6 +60,24 @@ export class Menubar {
 
   tools = TOOLS;
   protected readonly ToolCategory = ToolCategory;
+
+  ngOnInit(): void {
+    this.subscriptions.add(
+      this.scriptService.scripts$.subscribe((scripts) => {
+        this.customScripts = scripts;
+      }),
+    );
+    this.subscriptions.add(
+      this.scriptService.isLoading$.subscribe((loading) => {
+        this.customScriptsLoading = loading;
+      }),
+    );
+    void this.scriptService.list();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
 
   navigate(path: string) {
     this.router.navigate([path]);
@@ -75,12 +100,12 @@ export class Menubar {
     return this.tools.filter(t => t.category === category);
   }
 
-  openScriptImporter(): void {
-    console.log('Opening script importer...');
+  get recentCustomScripts() {
+    return this.customScripts.slice(-3).reverse();
   }
 
   manageCustomScripts(): void {
-    console.log('Managing custom scripts...');
+    this.openCommandRunner('__manage_scripts__');
   }
 
   saveTargets() {

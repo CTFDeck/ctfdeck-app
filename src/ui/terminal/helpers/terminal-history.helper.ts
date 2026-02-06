@@ -31,4 +31,9 @@ export class TerminalHistoryHelper {
   reset() {
     this.index = this.history.length;
   }
+
+  setHistory(commands: string[]) {
+    this.history = [...commands];
+    this.index = this.history.length;
+  }
 }
