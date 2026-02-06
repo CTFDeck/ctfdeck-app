@@ -147,6 +147,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.customScripts = scripts;
         this.updateCommandOptions();
         this.applyPendingSelection();
+        this.updateCommandPreview();
       }),
     );
 
