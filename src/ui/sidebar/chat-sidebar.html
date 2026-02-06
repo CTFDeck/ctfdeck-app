@@ -132,12 +132,12 @@
   <hlm-dialog-content
     *brnDialogContent="let ctx"
     [showCloseButton]="false"
-    class="max-w-[425px] w-full bg-background text-foreground border border-border shadow-lg p-6 rounded-lg flex flex-col gap-4 z-50"
+    class="max-w-[425px] w-full bg-background text-foreground border border-border shadow-lg p-0 rounded-lg flex flex-col gap-0 z-50 overflow-hidden"
   >
-    <hlm-dialog-header>
+    <hlm-dialog-header class="p-6 border-b border-border">
       <h3 hlmDialogTitle>Rename Session</h3>
     </hlm-dialog-header>
-    <div class="py-4 space-y-4" *ngIf="sessionToRename">
+    <div class="p-6 space-y-4" *ngIf="sessionToRename">
       <div class="space-y-2">
         <label hlmLabel for="rename-input">Name</label>
         <input
@@ -150,7 +150,7 @@
         />
       </div>
     </div>
-    <hlm-dialog-footer>
+    <hlm-dialog-footer class="p-6 border-t border-border flex justify-between">
       <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
       <button hlmBtn (click)="renameSession(ctx)">Save</button>
     </hlm-dialog-footer>
@@ -163,15 +163,15 @@
   <hlm-dialog-content
     *brnDialogContent="let ctx"
     [showCloseButton]="false"
-    class="max-w-[425px] w-full bg-background text-foreground border border-border shadow-lg p-6 rounded-lg flex flex-col gap-4 z-50"
+    class="max-w-[425px] w-full bg-background text-foreground border border-border shadow-lg p-0 rounded-lg flex flex-col gap-0 z-50 overflow-hidden"
   >
-    <hlm-dialog-header>
+    <hlm-dialog-header class="p-6 border-b border-border">
       <h3 hlmDialogTitle>Delete Session</h3>
       <p hlmDialogDescription class="mt-2 text-sm text-muted-foreground" *ngIf="sessionToDelete">
         Delete "{{ sessionToDelete.name }}"? This action cannot be undone.
       </p>
     </hlm-dialog-header>
-    <hlm-dialog-footer>
+    <hlm-dialog-footer class="p-6 border-t border-border flex justify-between">
       <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
       <button hlmBtn variant="destructive" (click)="deleteSession(ctx)">Delete</button>
     </hlm-dialog-footer>
