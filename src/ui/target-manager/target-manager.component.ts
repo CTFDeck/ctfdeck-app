@@ -1,4 +1,14 @@
-import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, inject, signal, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  Input,
+  OnInit,
+  OnDestroy,
+  inject,
+  signal,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
@@ -14,7 +24,7 @@ import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { HlmSelectImports } from '../../../libs/ui/select/src';
 import { HlmButtonGroupImports } from '@ctfdeck/helm/button-group';
 
-import { HlmIcon } from '../../../libs/ui/icon/src/lib/hlm-icon'; 
+import { HlmIcon } from '../../../libs/ui/icon/src/lib/hlm-icon';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideTarget, lucideChevronUp, lucideChevronDown } from '@ng-icons/lucide';
 
@@ -24,7 +34,7 @@ import { toast } from 'ngx-sonner';
   selector: 'app-target-manager',
   standalone: true,
   imports: [
-    CommonModule, 
+    CommonModule,
     FormsModule,
     BrnTabsImports,
     HlmTabsImports,
@@ -36,11 +46,9 @@ import { toast } from 'ngx-sonner';
     HlmSelectImports,
     ...HlmButtonGroupImports,
   ],
-  providers: [
-    provideIcons({ lucideTarget, lucideChevronUp, lucideChevronDown })
-  ],
+  providers: [provideIcons({ lucideTarget, lucideChevronUp, lucideChevronDown })],
   templateUrl: './target-manager.component.html',
-  styleUrl: './target-manager.component.css'
+  styleUrl: './target-manager.component.css',
 })
 export class TargetManagerComponent implements OnInit, OnDestroy {
   private sessionStore = inject(SessionStoreService);
@@ -52,12 +60,18 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   sessions$ = this.sessionStore.sessions$;
   selectedIds = new Set<string>();
   editingId: string | null = null;
-  addForm = { name: '', address: '', port: undefined as number | undefined, description: '', sessionIds: [] as string[] };
+  addForm = {
+    name: '',
+    address: '',
+    port: undefined as number | undefined,
+    description: '',
+    sessionIds: [] as string[],
+  };
   editForm = { name: '', address: '', port: undefined as number | undefined, description: '' };
-  
+
   // Mapping of "address:port" -> list of session names
   targetToSessions = new Map<string, string[]>();
-  
+
   private subscriptions = new Subscription();
 
   ngOnInit() {
@@ -69,12 +83,12 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
         if (this.editingId && !this.targets.find((t) => t.id === this.editingId)) {
           this.editingId = null;
         }
-        
+
         // Pre-select current session in add form if available
         if (session && this.addForm.sessionIds.length === 0) {
-            this.addForm.sessionIds = [session.id];
+          this.addForm.sessionIds = [session.id];
         }
-        
+
         this.updateTargetSessionMapping();
       }),
     );
@@ -82,7 +96,7 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.sessionStore.sessions$.subscribe(() => {
         this.updateTargetSessionMapping();
-      })
+      }),
     );
   }
 
@@ -91,17 +105,19 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   }
 
   private async updateTargetSessionMapping() {
-    const sessions = this.sessionStore.getActiveSessionId() ? [this.sessionStore.getActiveSessionId()!] : [];
-    
+    const sessions = this.sessionStore.getActiveSessionId()
+      ? [this.sessionStore.getActiveSessionId()!]
+      : [];
+
     // Using a micro-task to avoid blocking
     setTimeout(async () => {
       // Get current list of session metas
       const metas: any[] = [];
-      const sub = this.sessionStore.sessions$.subscribe(m => metas.push(...m));
+      const sub = this.sessionStore.sessions$.subscribe((m) => metas.push(...m));
       sub.unsubscribe();
 
       const newMap = new Map<string, string[]>();
-      
+
       // Load details for each session to find targets
       for (const meta of metas) {
         const data = await this.sessionStore.getSessionData(meta.id);
@@ -145,42 +161,48 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
       // If no sessions selected, default to current one (handled by service if undefined passed, but we enforce specific ID now)
       // Actually service handles undefined by ensuring active session.
       // But if we have multiple selected, we loop.
-      
-      const sessionIds = this.addForm.sessionIds.length > 0 
-        ? this.addForm.sessionIds 
-        : [this.sessionStore.getActiveSessionId()!]; // Fallback to current if none selected, though UI should probably enforce selection or default.
+
+      const sessionIds =
+        this.addForm.sessionIds.length > 0
+          ? this.addForm.sessionIds
+          : [this.sessionStore.getActiveSessionId()!]; // Fallback to current if none selected, though UI should probably enforce selection or default.
 
       if (!sessionIds.length || sessionIds.includes(null!)) {
-           // Fallback if really nothing is there
-           await this.saveTargetToSession(undefined);
+        // Fallback if really nothing is there
+        await this.saveTargetToSession(undefined);
       } else {
-          for (const sessionId of sessionIds) {
-              await this.saveTargetToSession(sessionId);
-          }
+        for (const sessionId of sessionIds) {
+          await this.saveTargetToSession(sessionId);
+        }
       }
 
       this.addForm = { name: '', address: '', port: undefined, description: '', sessionIds: [] };
       // Reset session selection to active one
       const activeId = this.sessionStore.getActiveSessionId();
       if (activeId) {
-          this.addForm.sessionIds = [activeId];
+        this.addForm.sessionIds = [activeId];
       }
-      
+
       this.setMode('view');
-      toast.success('Target added!', { description: 'Target successfully saved to selected session(s).' });
+      toast.success('Target added!', {
+        description: 'Target successfully saved to selected session(s).',
+      });
     } catch (err: any) {
       toast.error('Error', { description: err?.message || 'Failed to add target.' });
     }
   }
 
   private async saveTargetToSession(sessionId: string | undefined) {
-      await this.sessionStore.addTarget({
+    await this.sessionStore.addTarget(
+      {
         name: this.addForm.name,
         address: this.addForm.address,
         port: this.addForm.port ?? null,
         description: this.addForm.description || '',
         type: 0,
-      }, sessionId);
+      },
+      sessionId,
+    );
   }
 
   startEditing(target: SessionTarget) {
@@ -235,7 +257,10 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
         await this.sessionStore.deleteTarget(id);
       }
       this.selectedIds.clear();
-      toast.error('Deletion successful', { description: `${count} targets removed.`, closeButton: true });
+      toast.error('Deletion successful', {
+        description: `${count} targets removed.`,
+        closeButton: true,
+      });
     } catch (err: any) {
       toast.error('Delete failed', { description: err?.message || 'Bulk delete failed.' });
     }

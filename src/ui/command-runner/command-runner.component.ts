@@ -16,7 +16,11 @@ import { TargetService } from '../../app/core/services/target.service';
 import { WebSocketService } from '../../app/core/services/websocket.service';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { ScriptService } from '../../app/core/services/script.service';
-import { ScriptCategory, scriptCategoryName, SessionTarget } from '../../app/core/services/session.protocol';
+import {
+  ScriptCategory,
+  scriptCategoryName,
+  SessionTarget,
+} from '../../app/core/services/session.protocol';
 import AnsiToHtml from 'ansi-to-html';
 import { Subscription } from 'rxjs';
 import { provideIcons } from '@ng-icons/core';
@@ -247,10 +251,9 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const template =
-      this.selectedToolId
-        ? this.tools.find((t) => t.id === this.selectedToolId)?.template
-        : this.customScripts.find((s) => s.id === this.selectedScriptId)?.template;
+    const template = this.selectedToolId
+      ? this.tools.find((t) => t.id === this.selectedToolId)?.template
+      : this.customScripts.find((s) => s.id === this.selectedScriptId)?.template;
 
     if (template) {
       let cmd = template;
@@ -497,7 +500,9 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   }
 
   getScriptCategoryLabel(category: number): string {
-    return this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown';
+    return (
+      this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown'
+    );
   }
 
   resetScriptForm() {

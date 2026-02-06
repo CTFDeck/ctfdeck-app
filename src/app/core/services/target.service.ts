@@ -8,10 +8,11 @@ export interface Target {
   description?: string;
   createdAt: string;
   commands?: Record<string, string>;
+  commands?: Record<string, string>;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TargetService {
   private readonly STORAGE_KEY = 'ctfdeck_targets';
@@ -20,7 +21,7 @@ export class TargetService {
   getTargets(): Target[] {
     const stored = localStorage.getItem(this.STORAGE_KEY);
     if (!stored) return [];
-    
+
     try {
       return JSON.parse(stored);
     } catch (error) {
@@ -37,43 +38,43 @@ export class TargetService {
     const newTarget: Target = {
       ...target,
       id: `target_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
-    
+
     const targets = this.getTargets();
     targets.push(newTarget);
     this.saveTargets(targets);
-    
+
     return newTarget;
   }
 
   updateTarget(id: string, updates: Partial<Target>): boolean {
     const targets = this.getTargets();
-    const index = targets.findIndex(t => t.id === id);
-    
+    const index = targets.findIndex((t) => t.id === id);
+
     if (index === -1) return false;
-    
+
     targets[index] = { ...targets[index], ...updates };
     this.saveTargets(targets);
-    
+
     return true;
   }
 
   deleteTarget(id: string): boolean {
     const targets = this.getTargets();
-    const filtered = targets.filter(t => t.id !== id);
-    
+    const filtered = targets.filter((t) => t.id !== id);
+
     if (filtered.length === targets.length) return false;
-    
+
     this.saveTargets(filtered);
     return true;
   }
 
   deleteTargets(ids: string[]): number {
     const targets = this.getTargets();
-    const filtered = targets.filter(t => !ids.includes(t.id));
+    const filtered = targets.filter((t) => !ids.includes(t.id));
     const deletedCount = targets.length - filtered.length;
-    
+
     this.saveTargets(filtered);
     this.saveTargets(filtered);
     return deletedCount;

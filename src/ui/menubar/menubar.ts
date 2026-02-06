@@ -22,6 +22,7 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [
     CommonModule,
+    CommonModule,
     BrnMenuTrigger,
     HlmMenu,
     HlmMenuBar,
@@ -100,7 +101,7 @@ export class Menubar implements OnInit, OnDestroy {
   }
 
   getToolsByCategory(category: ToolCategory) {
-    return this.tools.filter(t => t.category === category);
+    return this.tools.filter((t) => t.category === category);
   }
 
   get recentCustomScripts() {

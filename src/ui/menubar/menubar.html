@@ -22,14 +22,50 @@
         <button hlmMenuItem (click)="openTargetManager('view')">Configuration</button>
         <button hlmMenuItem (click)="openTargetManager('add')">Add Target</button>
         <button hlmMenuItem (click)="openTargetManager('delete')">Remove Target</button>
+        <button hlmMenuItem (click)="openTargetManager('add')">Add Target</button>
+        <button hlmMenuItem (click)="openTargetManager('delete')">Remove Target</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
 
   <!-- ✅ Scripts : tri corrigé -->
+  <!-- ✅ Scripts : tri corrigé -->
   <ng-template #scripts>
     <hlm-menu variant="menubar" class="w-48">
       <hlm-menu-group>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="portScanning">
+          Port Scanning
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webDiscovery">
+          Web Discovery
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webVuln">
+          Web Vulnerability Scan
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="revshell">
+          Reverse Shell
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="exploit">
+          Exploit
+          <hlm-menu-item-sub-indicator />
+        </button>
+      </hlm-menu-group>
+
+      <hlm-menu-separator />
+
+      <hlm-menu-group>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="customscripts">
+          Custom Scripts
+          <hlm-menu-item-sub-indicator />
+        </button>
         <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="portScanning">
           Port Scanning
           <hlm-menu-item-sub-indicator />
@@ -157,6 +193,7 @@
         <button hlmMenuItem (click)="openExternal('https://cve.org')">CVE.org</button>
         <button hlmMenuItem (click)="openExternal('https://www.exploit-db.com')">ExploitDB</button>
         <button hlmMenuItem (click)="navigate('/docs')">Documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs')">Documentation</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
@@ -175,7 +212,10 @@
       <hlm-menu-group>
         <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
         <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
 </div>
+
