@@ -20,21 +20,124 @@
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
         <button hlmMenuItem (click)="openTargetManager('view')">Configuration</button>
-        <button hlmMenuItem (click)="openTargetManager('add')">Ajout d'une cible</button>
-        <button hlmMenuItem (click)="openTargetManager('delete')">Retrait d'une cible</button>
-        <button hlmMenuItem (click)="saveTargets()">Sauvegarde d'une cible</button>
+        <button hlmMenuItem (click)="openTargetManager('add')">Add Target</button>
+        <button hlmMenuItem (click)="openTargetManager('delete')">Remove Target</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
 
+  <!-- ✅ Scripts : tri corrigé -->
   <ng-template #scripts>
     <hlm-menu variant="menubar" class="w-48">
       <hlm-menu-group>
-        <button hlmMenuItem>Web</button>
-        <button hlmMenuItem>Reverse shell</button>
-        <button hlmMenuItem>Reverse engineering</button>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="portScanning">
+          Port Scanning
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webDiscovery">
+          Web Discovery
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webVuln">
+          Web Vulnerability Scan
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="revshell">
+          Reverse Shell
+          <hlm-menu-item-sub-indicator />
+        </button>
+
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="exploit">
+          Exploit
+          <hlm-menu-item-sub-indicator />
+        </button>
+      </hlm-menu-group>
+
+      <hlm-menu-separator />
+
+      <hlm-menu-group>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="customscripts">
+          Custom Scripts
+          <hlm-menu-item-sub-indicator />
+        </button>
       </hlm-menu-group>
     </hlm-menu>
+  </ng-template>
+
+  <ng-template #portScanning>
+    <hlm-sub-menu>
+      <button
+        hlmMenuItem
+        *ngFor="let tool of getToolsByCategory(ToolCategory.PORT_SCANNING)"
+        (click)="openCommandRunner(tool.id)"
+      >
+        {{ tool.name }}
+      </button>
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #webDiscovery>
+    <hlm-sub-menu>
+      <button
+        hlmMenuItem
+        *ngFor="let tool of getToolsByCategory(ToolCategory.WEB_DISCOVERY)"
+        (click)="openCommandRunner(tool.id)"
+      >
+        {{ tool.name }}
+      </button>
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #webVuln>
+    <hlm-sub-menu>
+      <button
+        hlmMenuItem
+        *ngFor="let tool of getToolsByCategory(ToolCategory.WEB_VULN_SCAN)"
+        (click)="openCommandRunner(tool.id)"
+      >
+        {{ tool.name }}
+      </button>
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #revshell>
+    <hlm-sub-menu>
+      <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.REVERSE_SHELL)" (click)="openCommandRunner(tool.id)">
+        {{ tool.name }}
+      </button>
+      <hlm-menu-separator />
+      <button hlmMenuItem (click)="openExternal('https://www.revshells.com')">
+        RevShells.com
+      </button>
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #exploit>
+    <hlm-sub-menu>
+      <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.EXPLOIT)" (click)="openCommandRunner(tool.id)">
+        {{ tool.name }}
+      </button>
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #customscripts>
+    <hlm-sub-menu>
+      <button hlmMenuItem *ngFor="let script of customScripts" (click)="openCommandRunner(script.id)">
+        {{ script.name }}
+      </button>
+      <ng-container *ngIf="customScripts.length > 0">
+        <hlm-menu-separator />
+      </ng-container>
+      <button hlmMenuItem (click)="openScriptImporter()">
+        Import Personal Scripts
+      </button>
+      <button hlmMenuItem (click)="manageCustomScripts()">
+        Manage Scripts
+      </button>
+    </hlm-sub-menu>
   </ng-template>
 
   <ng-template #utils>
@@ -45,13 +148,11 @@
           <hlm-menu-item-sub-indicator />
         </button>
       </hlm-menu-group>
-
       <hlm-menu-separator />
-
       <hlm-menu-group>
         <button hlmMenuItem (click)="openExternal('https://cve.org')">CVE.org</button>
         <button hlmMenuItem (click)="openExternal('https://www.exploit-db.com')">ExploitDB</button>
-        <button hlmMenuItem (click)="navigate('/docs')">Notre documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs')">Documentation</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
@@ -68,8 +169,8 @@
   <ng-template #documentation>
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
-        <button hlmMenuItem (click)="navigate('/docs/developer')">Documentation développeur</button>
-        <button hlmMenuItem (click)="navigate('/docs/user')">Documentation utilisateur</button>
+        <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>

@@ -51,6 +51,18 @@
       ],
       "@ctfdeck/helm/textarea": [
         "./libs/ui/textarea/src/index.ts"
+      ],
+      "@ctfdeck/helm/dialog": [
+        "./libs/ui/dialog/src/index.ts"
+      ],
+      "@ctfdeck/helm/label": [
+        "./libs/ui/label/src/index.ts"
+      ],
+      "@ctfdeck/helm/tabs": [
+        "./libs/ui/tabs/src/index.ts"
+      ],
+      "@ctfdeck/helm/sonner": [
+        "./libs/ui/sonner/src/index.ts"
       ]
     }
   },
