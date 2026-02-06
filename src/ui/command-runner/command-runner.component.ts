@@ -28,6 +28,7 @@ import {
   lucideSquare,
   lucideLoader,
   lucideCircleHelp,
+  lucidePlus,
 } from '@ng-icons/lucide';
 import { TOOLS } from '../../app/core/constants/tools';
 import { Input, SimpleChanges } from '@angular/core';
@@ -65,6 +66,7 @@ type CommandOption = { id: string; name: string; kind: 'tool' | 'script' };
       lucideSquare,
       lucideLoader,
       lucideCircleHelp,
+      lucidePlus,
     }),
   ],
   template: `
@@ -112,8 +114,15 @@ type CommandOption = { id: string; name: string; kind: 'tool' | 'script' };
           <div class="space-y-2">
             <div class="flex justify-between items-center">
               <label hlmLabel>Commands</label>
-              <button hlmBtn size="icon" variant="outline" (click)="openManageScripts()" title="Manage custom scripts">
-                +
+              <button
+                hlmBtn
+                size="icon"
+                variant="outline"
+                (click)="openManageScripts()"
+                title="Manage custom scripts"
+                class="h-8 w-8"
+              >
+                <ng-icon hlm name="lucidePlus" size="sm" />
               </button>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -418,6 +427,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   // Tools definition
   readonly tools = TOOLS;
+  commandOptions: CommandOption[] = [];
   customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
   customScriptsLoading = false;
   showManageScripts = false;
@@ -450,22 +460,27 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         if (this.selectedTargetId && !this.targets.find((t) => t.id === this.selectedTargetId)) {
           this.selectedTargetId = '';
         }
+        this.updateCommandOptions();
         this.updateCommandPreview();
       }),
     );
 
     this.subscriptions.add(
       this.scriptService.scripts$.subscribe((scripts) => {
+        console.log('[CommandRunner] Received scripts update, count:', scripts.length);
         this.customScripts = scripts;
+        this.updateCommandOptions();
         this.applyPendingSelection();
       }),
     );
 
     this.subscriptions.add(
       this.scriptService.isLoading$.subscribe((loading) => {
+        console.log('[CommandRunner] Scripts loading state:', loading);
         this.customScriptsLoading = loading;
       }),
     );
+    this.updateCommandOptions();
     void this.scriptService.list();
 
     if (this.initialToolId) {
@@ -500,7 +515,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.updateCommandPreview();
   }
 
-  get commandOptions(): CommandOption[] {
+  private updateCommandOptions() {
     const toolOptions: CommandOption[] = this.tools.map((tool) => ({
       id: tool.id,
       name: tool.name,
@@ -511,7 +526,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       name: script.name,
       kind: 'script',
     }));
-    return [...toolOptions, ...scriptOptions];
+    this.commandOptions = [...toolOptions, ...scriptOptions];
   }
 
   selectCommandOption(option: CommandOption) {

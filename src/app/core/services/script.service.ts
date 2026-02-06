@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { WebSocketService } from './websocket.service';
 import { generateUUID } from './websocket.protocol';
@@ -38,15 +38,22 @@ export class ScriptService {
   private listRequest: Promise<CustomScript[]> | null = null;
   private isConnected = false;
 
-  constructor(private ws: WebSocketService) {
+  constructor(
+    private ws: WebSocketService,
+    private zone: NgZone,
+  ) {
     this.ws.registerHandler(this.handleMessage.bind(this));
     this.ws.isConnected$.subscribe((connected) => {
-      this.isConnected = connected;
-      if (connected) {
-        void this.refreshList();
-      } else {
-        this.scriptsSubject.next([]);
-      }
+      this.zone.run(() => {
+        console.log('[ScriptService] Connection state:', connected);
+        this.isConnected = connected;
+        if (connected) {
+          // Defer to next tick to ensure WebSocket is fully ready and avoid sync issues
+          setTimeout(() => void this.refreshList(), 0);
+        } else {
+          this.scriptsSubject.next([]);
+        }
+      });
     });
   }
 
@@ -54,6 +61,7 @@ export class ScriptService {
     const type = data[0];
     if (!isCustomScriptResponse(type)) return false;
 
+    console.log('[ScriptService] Received message type:', type);
     let result: any;
     switch (type) {
       case MessageType.CustomScriptCreateResult:
@@ -77,8 +85,13 @@ export class ScriptService {
 
     const callback = this.pending.get(result.messageId);
     if (callback) {
-      this.pending.delete(result.messageId);
-      callback(result);
+      console.log('[ScriptService] Found pending callback for messageId:', result.messageId);
+      this.zone.run(() => {
+        this.pending.delete(result.messageId);
+        callback(result);
+      });
+    } else {
+      console.warn('[ScriptService] No pending callback for messageId:', result.messageId);
     }
 
     return true;
@@ -154,6 +167,7 @@ export class ScriptService {
   }
 
   list(force = false): Promise<CustomScript[]> {
+    console.log('[ScriptService] list() called, force=', force, 'current length=', this.scriptsSubject.value.length);
     if (!force && this.scriptsSubject.value.length > 0) {
       return Promise.resolve(this.scriptsSubject.value);
     }
@@ -161,13 +175,16 @@ export class ScriptService {
   }
 
   private refreshList(force = false): Promise<CustomScript[]> {
+    console.log('[ScriptService] refreshList() called, force=', force);
     if (!force && this.listRequest) {
+      console.log('[ScriptService] Using existing listRequest');
       return this.listRequest;
     }
 
     this.loadingSubject.next(true);
     this.listRequest = new Promise((resolve, reject) => {
       const messageId = generateUUID();
+      console.log('[ScriptService] Requesting list, messageId:', messageId);
       const buffer = serializeCustomScriptList(messageId);
       const timeoutId = setTimeout(() => {
         if (!this.pending.has(messageId)) return;
@@ -195,12 +212,26 @@ export class ScriptService {
       });
 
       try {
+        if (!this.isConnected) {
+          throw new Error('WebSocket not connected');
+        }
+        console.log('[ScriptService] Sending CustomScriptList message');
         this.ws.sendBinary(buffer);
       } catch (err) {
+        console.warn('[ScriptService] Failed to send list request:', err);
         clearTimeout(timeoutId);
         this.pending.delete(messageId);
         this.loadingSubject.next(false);
         this.listRequest = null;
+        
+        // If it was a forced refresh or we have no scripts, retry after a delay
+        if (this.isConnected) {
+          console.log('[ScriptService] Scheduling retry in', ScriptService.RETRY_DELAY_MS, 'ms');
+          setTimeout(() => {
+            void this.refreshList(true);
+          }, ScriptService.RETRY_DELAY_MS);
+        }
+        
         resolve(this.scriptsSubject.value);
       }
     });

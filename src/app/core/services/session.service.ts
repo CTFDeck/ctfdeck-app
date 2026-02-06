@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { WebSocketService } from './websocket.service';
 import { generateUUID } from './websocket.protocol';
 import {
@@ -36,7 +36,10 @@ export class SessionService {
   private pending = new Map<string, (result: any) => void>();
   private activeSessionId: string | null = null;
 
-  constructor(private ws: WebSocketService) {
+  constructor(
+    private ws: WebSocketService,
+    private zone: NgZone,
+  ) {
     this.ws.registerHandler(this.handleMessage.bind(this));
   }
 
@@ -82,8 +85,10 @@ export class SessionService {
 
     const callback = this.pending.get(result.messageId);
     if (callback) {
-      this.pending.delete(result.messageId);
-      callback(result);
+      this.zone.run(() => {
+        this.pending.delete(result.messageId);
+        callback(result);
+      });
     }
 
     return true;
