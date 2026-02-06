@@ -63,6 +63,9 @@
       ],
       "@ctfdeck/helm/sonner": [
         "./libs/ui/sonner/src/index.ts"
+      ],
+      "@ctfdeck/helm/button-group": [
+        "./libs/ui/button-group/src/index.ts"
       ]
     }
   },

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
@@ -12,6 +12,7 @@ import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { HlmSelectImports } from '../../../libs/ui/select/src';
+import { HlmButtonGroupImports } from '@ctfdeck/helm/button-group';
 
 import { HlmIcon } from '../../../libs/ui/icon/src/lib/hlm-icon'; 
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -33,6 +34,7 @@ import { toast } from 'ngx-sonner';
     HlmIcon,
     BrnSelectImports,
     HlmSelectImports,
+    ...HlmButtonGroupImports,
   ],
   providers: [
     provideIcons({ lucideTarget, lucideChevronUp, lucideChevronDown })
@@ -42,6 +44,7 @@ import { toast } from 'ngx-sonner';
 })
 export class TargetManagerComponent implements OnInit, OnDestroy {
   private sessionStore = inject(SessionStoreService);
+  private cdr = inject(ChangeDetectorRef);
   @Input() mode: 'view' | 'add' | 'delete' = 'view';
   @Output() closeEvent = new EventEmitter<void>();
 
@@ -51,6 +54,10 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   editingId: string | null = null;
   addForm = { name: '', address: '', port: undefined as number | undefined, description: '', sessionIds: [] as string[] };
   editForm = { name: '', address: '', port: undefined as number | undefined, description: '' };
+  
+  // Mapping of "address:port" -> list of session names
+  targetToSessions = new Map<string, string[]>();
+  
   private subscriptions = new Subscription();
 
   ngOnInit() {
@@ -67,8 +74,56 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
         if (session && this.addForm.sessionIds.length === 0) {
             this.addForm.sessionIds = [session.id];
         }
+        
+        this.updateTargetSessionMapping();
       }),
     );
+
+    this.subscriptions.add(
+      this.sessionStore.sessions$.subscribe(() => {
+        this.updateTargetSessionMapping();
+      })
+    );
+  }
+
+  private getTargetKey(target: { address: string; port?: number | null }): string {
+    return `${target.address}${target.port ? ':' + target.port : ''}`;
+  }
+
+  private async updateTargetSessionMapping() {
+    const sessions = this.sessionStore.getActiveSessionId() ? [this.sessionStore.getActiveSessionId()!] : [];
+    
+    // Using a micro-task to avoid blocking
+    setTimeout(async () => {
+      // Get current list of session metas
+      const metas: any[] = [];
+      const sub = this.sessionStore.sessions$.subscribe(m => metas.push(...m));
+      sub.unsubscribe();
+
+      const newMap = new Map<string, string[]>();
+      
+      // Load details for each session to find targets
+      for (const meta of metas) {
+        const data = await this.sessionStore.getSessionData(meta.id);
+        if (data) {
+          for (const target of data.targets) {
+            const key = this.getTargetKey(target);
+            const list = newMap.get(key) || [];
+            if (!list.includes(meta.name)) {
+              list.push(meta.name);
+              newMap.set(key, list);
+            }
+          }
+        }
+      }
+
+      this.targetToSessions = newMap;
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  getSessionsForTarget(target: SessionTarget): string[] {
+    return this.targetToSessions.get(this.getTargetKey(target)) || [];
   }
 
   ngOnDestroy() {
@@ -76,9 +131,7 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   }
 
   public open(mode: 'view' | 'add' | 'delete') {
-    this.defer(() => {
-      this.mode = mode;
-    });
+    this.mode = mode;
     void this.sessionStore.refreshActiveSession();
   }
 
@@ -189,12 +242,6 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   }
 
   setMode(mode: 'view' | 'add' | 'delete') {
-    this.defer(() => {
-      this.mode = mode;
-    });
-  }
-
-  private defer(fn: () => void) {
-    setTimeout(fn, 0);
+    this.mode = mode;
   }
 }

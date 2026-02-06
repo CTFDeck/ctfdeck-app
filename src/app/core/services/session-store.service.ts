@@ -180,6 +180,15 @@ export class SessionStoreService implements OnDestroy {
     }
   }
 
+  async getSessionData(sessionId: string): Promise<SessionData | null> {
+    try {
+      const result = await this.sessions.load(sessionId);
+      return result.success ? result.session : null;
+    } catch {
+      return null;
+    }
+  }
+
   async addTarget(target: Omit<SessionTarget, 'id'>, sessionId?: string): Promise<void> {
     const targetSessionId = sessionId || (await this.ensureActiveSession());
     const result = await this.sessions.addTarget(
