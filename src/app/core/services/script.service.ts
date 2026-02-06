@@ -49,7 +49,7 @@ export class ScriptService {
         this.isConnected = connected;
         if (connected) {
           // Defer to next tick to ensure WebSocket is fully ready and avoid sync issues
-          setTimeout(() => void this.refreshList(), 0);
+          setTimeout(() => void this.refreshList(), 500);
         } else {
           this.scriptsSubject.next([]);
         }
@@ -177,8 +177,11 @@ export class ScriptService {
   private refreshList(force = false): Promise<CustomScript[]> {
     console.log('[ScriptService] refreshList() called, force=', force);
     if (!force && this.listRequest) {
-      console.log('[ScriptService] Using existing listRequest');
-      return this.listRequest;
+      if (this.loadingSubject.value) {
+        console.log('[ScriptService] Using existing listRequest');
+        return this.listRequest;
+      }
+      console.warn('[ScriptService] Stale listRequest detected (loading=false), forcing refresh');
     }
 
     this.loadingSubject.next(true);
