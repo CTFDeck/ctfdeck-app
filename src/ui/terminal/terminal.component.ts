@@ -102,6 +102,12 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     );
 
     this.subscriptions.add(
+      this.sessionStore.terminalEvents$.subscribe((event) => {
+        this.addLine(event.type, event.content);
+      }),
+    );
+
+    this.subscriptions.add(
       this.sessionStore.isLoading$.subscribe((loading) => {
         this.isSessionLoading = loading;
       }),

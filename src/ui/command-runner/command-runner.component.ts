@@ -302,6 +302,12 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       }
     };
 
+    // Broadcast command start
+    this.sessionStore.broadcastTerminalEvent({
+      type: 'command',
+      content: `${this.currentCommand}`,
+    });
+
     this.wsService
       .executeCommandStreaming(
         this.currentCommand,
@@ -311,10 +317,14 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
             outputLineIndex = this.outputLines.length;
             this.outputLines.push(this.createSafeHtml('')); // Initialize with empty content
           }
+          // Broadcast output
+          this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
           scheduleRender();
         },
         (data: string) => {
           errorBuffer += data;
+          // Broadcast error
+          this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
           this.appendToLastError(data);
         },
       )
@@ -326,6 +336,8 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.isRunning = false;
         this.addLine(`<span class="text-green-400">Done. Exit code: ${result.exitCode}</span>`);
         this.cdr.detectChanges();
+        // Refresh session to sync history
+        void this.sessionStore.refreshActiveSession();
       })
       .catch((err: any) => {
         this.isRunning = false;

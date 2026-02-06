@@ -1,5 +1,5 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, Subscription, Subject } from 'rxjs';
 import { SessionService } from './session.service';
 import { WebSocketService } from './websocket.service';
 import { SessionData, SessionMetadata, SessionTarget } from './session.protocol';
@@ -23,6 +23,9 @@ export class SessionStoreService implements OnDestroy {
 
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   isLoading$ = this.isLoadingSubject.asObservable();
+
+  private terminalEventsSubject = new Subject<TerminalEvent>();
+  terminalEvents$ = this.terminalEventsSubject.asObservable();
 
   private subscriptions = new Subscription();
   private creatingSessionPromise: Promise<string> | null = null;
@@ -233,4 +236,13 @@ export class SessionStoreService implements OnDestroy {
   getActiveSessionId(): string | null {
     return this.activeSessionIdSubject.value;
   }
+
+  broadcastTerminalEvent(event: TerminalEvent) {
+    this.terminalEventsSubject.next(event);
+  }
+}
+
+export interface TerminalEvent {
+  type: 'command' | 'output' | 'error';
+  content: string;
 }
