@@ -8,7 +8,6 @@ export interface Target {
   description?: string;
   createdAt: string;
   commands?: Record<string, string>;
-  commands?: Record<string, string>;
 }
 
 @Injectable({
