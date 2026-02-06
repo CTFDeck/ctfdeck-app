@@ -1,59 +1,58 @@
-# CTFDeckApp
+# CTFDeck – Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.0.
+## Overview
 
-## Development server
+CTFDeck is a web-based application designed to assist players during Capture The Flag (CTF) challenges.  
+This repository contains the **frontend** of the project, built with **Angular**, focusing on a clean, simple, and efficient user interface.
 
-To start a local development server, run:
+The frontend provides the visual structure of the platform, including navigation, session history, and an integrated terminal view.
 
-```bash
-ng serve
-```
+---
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Project Status
 
-## Code scaffolding
+🚧 **Current stage:** PoC / Milestone 1  
+At this stage, the frontend mainly focuses on **UI display and structure**.  
+Most features are static or mocked and do not yet interact with real backend logic.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+---
 
-```bash
-ng generate component component-name
-```
+## Features
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### ✅ Milestone 1 – PoC
+- Top navigation bar with dropdown menus:
+  - Targets (configuration, add, remove, save)
+  - Scripts (Web, Reverse Shell, Reverse Engineering)
+  - Utils (external security resources)
+  - Documentation (user & developer)
+- Sidebar displaying command history (chat-style)
+- Main panel with an integrated terminal interface (display only)
+- Simple, sober, and readable UI
 
-```bash
-ng generate --help
-```
+### ⬜ Milestone 2 – Functional Frontend
+- Configuration, addition, and deletion of targets (IP, Port)
+- Execution of Web scripts (Basic Discovery, e.g., Nmap, Gobuster)
+- Saving and switching between sessions
+- Updated UI to reflect dynamic data
+- Links to user and developer documentation
 
-## Building
+### ⬜ Milestone 3 – Full Features
+- Saving chats and outputs (all commands, including errors)
+- Import/export of targets (JSON or XML)
+- Generation of write-ups in Markdown or PDF format
+- UI customization and theme adjustments
+- Full integration with backend logic and scripts
 
-To build the project run:
+---
 
-```bash
-ng build
-```
+## Tech Stack
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+- **Angular**
+- **TypeScript**
+- **HTML / CSS**
+- **Electron** (desktop packaging – optional / experimental)
+- Shared UI components via `libs/ui` (Spratan-NG)
 
-## Running unit tests
+---
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Project Structure
