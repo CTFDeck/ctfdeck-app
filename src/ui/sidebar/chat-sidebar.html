@@ -92,66 +92,25 @@
                 *ngIf="!isCollapsed()"
                 class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <hlm-dialog>
-                  <button
-                    brnDialogTrigger
-                    hlmBtn
-                    size="sm"
-                    variant="ghost"
-                    (click)="$event.stopPropagation(); beginRename(c)"
-                  >
-                    <ng-icon name="lucidePencil" />
-                  </button>
-                  <hlm-dialog-content
-                    *brnDialogContent="let ctx"
-                    class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-md w-full overflow-hidden"
-                  >
-                    <hlm-dialog-header class="p-6 border-b border-border">
-                      <h3 hlmDialogTitle>Rename Session</h3>
-                    </hlm-dialog-header>
-                    <div class="p-6 space-y-3">
-                      <label hlmLabel for="session-name-{{ c.id }}">Name</label>
-                      <input
-                        id="session-name-{{ c.id }}"
-                        hlmInput
-                        [(ngModel)]="renameDraftById[c.id]"
-                        (keydown.enter)="renameSession(c, ctx)"
-                        placeholder="Session name"
-                      />
-                    </div>
-                    <hlm-dialog-footer class="p-6 border-t border-border flex justify-end gap-2">
-                      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
-                      <button hlmBtn (click)="renameSession(c, ctx)">Save</button>
-                    </hlm-dialog-footer>
-                  </hlm-dialog-content>
-                </hlm-dialog>
-
-                <hlm-dialog>
-                  <button
-                    brnDialogTrigger
-                    hlmBtn
-                    size="sm"
-                    variant="ghost"
-                    (click)="$event.stopPropagation()"
-                  >
-                    <ng-icon name="lucideTrash2" class="text-destructive" />
-                  </button>
-                  <hlm-dialog-content
-                    *brnDialogContent="let ctx"
-                    class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-md w-full overflow-hidden"
-                  >
-                    <hlm-dialog-header class="p-6 border-b border-border">
-                      <h3 hlmDialogTitle>Delete Session</h3>
-                      <p hlmDialogDescription class="mt-2 text-sm text-muted-foreground">
-                        Delete "{{ c.name }}"? This action cannot be undone.
-                      </p>
-                    </hlm-dialog-header>
-                    <hlm-dialog-footer class="p-6 border-t border-border flex justify-end gap-2">
-                      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
-                      <button hlmBtn variant="destructive" (click)="deleteSession(c, ctx)">Delete</button>
-                    </hlm-dialog-footer>
-                  </hlm-dialog-content>
-                </hlm-dialog>
+                <button
+                  hlmBtn
+                  size="sm"
+                  variant="ghost"
+                  (click)="$event.stopPropagation(); openRenameDialog(c)"
+                  title="Rename session"
+                >
+                  <ng-icon name="lucidePencil" />
+                </button>
+                <button
+                  hlmBtn
+                  size="sm"
+                  variant="ghost"
+                  class="text-destructive hover:text-destructive"
+                  (click)="$event.stopPropagation(); openDeleteDialog(c)"
+                  title="Delete session"
+                >
+                  <ng-icon name="lucideTrash2" />
+                </button>
               </div>
             </div>
           </div>
@@ -166,3 +125,55 @@
     </div>
   </hlm-sidebar-footer>
 </hlm-sidebar>
+
+<!-- Single Rename Dialog -->
+<hlm-dialog>
+  <button #renameTrigger brnDialogTrigger class="hidden"></button>
+  <hlm-dialog-content
+    *brnDialogContent="let ctx"
+    [showCloseButton]="false"
+    class="max-w-[425px] w-full bg-background text-foreground border border-border shadow-lg p-6 rounded-lg flex flex-col gap-4 z-50"
+  >
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>Rename Session</h3>
+    </hlm-dialog-header>
+    <div class="py-4 space-y-4" *ngIf="sessionToRename">
+      <div class="space-y-2">
+        <label hlmLabel for="rename-input">Name</label>
+        <input
+          id="rename-input"
+          hlmInput
+          class="w-full"
+          [(ngModel)]="renameDraftById[sessionToRename.id]"
+          (keydown.enter)="renameSession(ctx)"
+          placeholder="Session name"
+        />
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
+      <button hlmBtn (click)="renameSession(ctx)">Save</button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Single Delete Dialog -->
+<hlm-dialog>
+  <button #deleteTrigger brnDialogTrigger class="hidden"></button>
+  <hlm-dialog-content
+    *brnDialogContent="let ctx"
+    [showCloseButton]="false"
+    class="max-w-[425px] w-full bg-background text-foreground border border-border shadow-lg p-6 rounded-lg flex flex-col gap-4 z-50"
+  >
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>Delete Session</h3>
+      <p hlmDialogDescription class="mt-2 text-sm text-muted-foreground" *ngIf="sessionToDelete">
+        Delete "{{ sessionToDelete.name }}"? This action cannot be undone.
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
+      <button hlmBtn variant="destructive" (click)="deleteSession(ctx)">Delete</button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

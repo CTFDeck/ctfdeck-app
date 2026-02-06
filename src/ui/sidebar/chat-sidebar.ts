@@ -1,4 +1,4 @@
-import { Component, signal, HostBinding } from '@angular/core';
+import { Component, signal, HostBinding, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -79,6 +79,12 @@ export class ChatSidebar {
   activeSessionId$: Observable<string | null>;
   sessionsLoading$: Observable<boolean>;
 
+  @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
+
+  sessionToRename: SessionMetadata | null = null;
+  sessionToDelete: SessionMetadata | null = null;
+
   constructor(private sessionStore: SessionStoreService) {
     this.sessions$ = this.sessionStore.sessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
@@ -93,18 +99,36 @@ export class ChatSidebar {
     void this.sessionStore.selectSession(session.id);
   }
 
-  beginRename(session: SessionMetadata) {
+  // Rename Logic
+  openRenameDialog(session: SessionMetadata) {
+    this.sessionToRename = session;
     this.renameDraftById[session.id] = session.name;
+    // Defer click to ensure state update propagates if needed, though usually sync is fine here
+    setTimeout(() => this.renameTrigger.nativeElement.click());
   }
 
-  async renameSession(session: SessionMetadata, ctx: { close: () => void }) {
+  async renameSession(ctx: { close: () => void }) {
+    if (!this.sessionToRename) return;
+    const session = this.sessionToRename;
     const nextName = (this.renameDraftById[session.id] ?? '').trim();
+    
     if (!nextName) return;
+    
     ctx.close();
     await this.sessionStore.renameSession(session.id, nextName, session.description || '');
+    this.sessionToRename = null;
   }
 
-  async deleteSession(session: SessionMetadata, ctx: { close: () => void }) {
+  // Delete Logic
+  openDeleteDialog(session: SessionMetadata) {
+    this.sessionToDelete = session;
+    setTimeout(() => this.deleteTrigger.nativeElement.click());
+  }
+
+  async deleteSession(ctx: { close: () => void }) {
+    if (!this.sessionToDelete) return;
+    const session = this.sessionToDelete;
+    
     ctx.close();
     if (this.isDeletingSession(session.id)) return;
 
@@ -114,6 +138,7 @@ export class ChatSidebar {
       await this.sessionStore.deleteSession(session.id);
     } finally {
       this.setSessionDeleting(session.id, false);
+      this.sessionToDelete = null;
     }
   }
 
