@@ -148,6 +148,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.updateCommandOptions();
         this.applyPendingSelection();
         this.updateCommandPreview();
+        this.cdr.detectChanges();
       }),
     );
 

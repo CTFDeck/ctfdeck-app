@@ -102,11 +102,11 @@ export class ScriptService {
       const messageId = generateUUID();
       const buffer = serializeCustomScriptCreate(name, category, template, messageId);
 
-      this.pending.set(messageId, (result) => {
+      this.pending.set(messageId, async (result) => {
         if (result.error) {
           reject(new Error(result.error));
         } else {
-          void this.refreshList(true);
+          await this.refreshList(true);
           resolve({ success: result.success, scriptId: result.scriptId });
         }
       });
@@ -125,11 +125,11 @@ export class ScriptService {
       const messageId = generateUUID();
       const buffer = serializeCustomScriptUpdate(scriptId, name, category, template, messageId);
 
-      this.pending.set(messageId, (result) => {
+      this.pending.set(messageId, async (result) => {
         if (result.error) {
           reject(new Error(result.error));
         } else {
-          void this.refreshList(true);
+          await this.refreshList(true);
           resolve(result.success);
         }
       });
@@ -148,11 +148,11 @@ export class ScriptService {
       const messageId = generateUUID();
       const buffer = serializeCustomScriptDelete(scriptId, messageId);
 
-      this.pending.set(messageId, (result) => {
+      this.pending.set(messageId, async (result) => {
         if (result.error) {
           reject(new Error(result.error));
         } else {
-          void this.refreshList(true);
+          await this.refreshList(true);
           resolve(result.success);
         }
       });
