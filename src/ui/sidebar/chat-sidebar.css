@@ -89,10 +89,24 @@
   text-align: left;
 }
 
+.ctf-chat-sidebar button[hlmSidebarMenuButton].ctf-session-active {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
+
 .ctf-chat-sidebar .truncate {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ctf-chat-sidebar .ctf-session-deleting {
+  opacity: 0;
+  transform: translateX(14px) scale(0.98);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+  pointer-events: none;
 }
 
 /* ensure the visual vertical separator sits at the exact host edge */

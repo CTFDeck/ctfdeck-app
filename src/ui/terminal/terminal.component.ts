@@ -19,6 +19,8 @@ import AnsiToHtml from 'ansi-to-html';
 import { TerminalLine, LsEntry, FilePrefix } from './helpers/terminal-types';
 import { TerminalHistoryHelper } from './helpers/terminal-history.helper';
 import { TerminalAutocompleteHelper } from './helpers/terminal-autocomplete.helper';
+import { SessionStoreService } from '../../app/core/services/session-store.service';
+import { SessionData } from '../../app/core/services/session.protocol';
 
 @Component({
   selector: 'app-terminal',
@@ -51,6 +53,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   showServerSelection: boolean = false;
   serverUrl: string = '';
   savedServers: string[] = ['ws://localhost:42712', 'wss://echo.websocket.org'];
+  isSessionLoading: boolean = false;
 
   private subscriptions: Subscription = new Subscription();
 
@@ -70,6 +73,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   constructor(
     private wsService: WebSocketService,
+    private sessionStore: SessionStoreService,
     private cdr: ChangeDetectorRef,
     private sanitizer: DomSanitizer,
   ) {
@@ -88,6 +92,24 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         if (!connected) {
           this.addLine('info', 'Disconnected from server.');
         }
+      }),
+    );
+
+    this.subscriptions.add(
+      this.sessionStore.activeSession$.subscribe((session) => {
+        this.loadSessionHistory(session);
+      }),
+    );
+
+    this.subscriptions.add(
+      this.sessionStore.terminalEvents$.subscribe((event) => {
+        this.addLine(event.type, event.content);
+      }),
+    );
+
+    this.subscriptions.add(
+      this.sessionStore.isLoading$.subscribe((loading) => {
+        this.isSessionLoading = loading;
       }),
     );
 
@@ -131,7 +153,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       .catch(() => {});
   }
 
-  executeCommand() {
+  async executeCommand() {
     const cmd = this.currentCommand.trim();
     if (!cmd) return;
 
@@ -162,6 +184,18 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     if (!this.isConnected) {
       this.addLine('error', 'Not connected to server.');
+      return;
+    }
+
+    if (this.isSessionLoading) {
+      this.addLine('info', 'Session is loading. Please wait...');
+      return;
+    }
+
+    try {
+      await this.sessionStore.ensureActiveSession();
+    } catch (err: any) {
+      this.addLine('error', `Session error: ${err?.message || err}`);
       return;
     }
 
@@ -307,6 +341,72 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private updateLsCache(lsOutput: string) {
     this.autocompleteHelper.updateCache(lsOutput);
+  }
+
+  private loadSessionHistory(session: SessionData | null) {
+    if (!session) {
+      this.lines = [];
+      this.historyHelper.setHistory([]);
+      this.prompt = '$';
+      this.lastPwd = '';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const newLines: TerminalLine[] = [];
+    const commands: string[] = [];
+
+    for (const entry of session.history) {
+      const prompt = this.formatPrompt(entry.workingDirectory);
+      newLines.push({
+        type: 'command',
+        content: `${prompt} ${entry.command}`,
+        timestamp: entry.timestamp,
+      });
+      commands.push(entry.command);
+
+      if (entry.output) {
+        const html = this.ansiConverter.toHtml(entry.output);
+        newLines.push({
+          type: 'output',
+          content: this.sanitizer.bypassSecurityTrustHtml(html),
+          timestamp: entry.timestamp,
+        });
+      }
+
+      if (entry.exitCode !== 0 && !entry.output) {
+        newLines.push({
+          type: 'error',
+          content: `Program exited with code ${entry.exitCode}`,
+          timestamp: entry.timestamp,
+        });
+      }
+    }
+
+    this.lines = newLines;
+    this.historyHelper.setHistory(commands);
+    if (session.history.length > 0) {
+      const last = session.history[session.history.length - 1];
+      this.updatePwd(last.workingDirectory);
+    }
+    this.cdr.detectChanges();
+    this.scrollToBottom();
+  }
+
+  private formatPrompt(workingDirectory: string): string {
+    const pwd = (workingDirectory || '').trim();
+    if (!pwd) return '$';
+    const displayPath = pwd.replace(/\\/g, '/');
+    const home = this.getHomePathFromPath(displayPath);
+    return home && displayPath.startsWith(home) ? `~${displayPath.slice(home.length)} $` : `${displayPath} $`;
+  }
+
+  private getHomePathFromPath(path: string): string {
+    const match = path.match(/^(\/[a-z]\/Users\/[^\/]+|\/home\/[^\/]+|C:\/Users\/[^\/]+)/i);
+    if (match) {
+      return match[1];
+    }
+    return '';
   }
 
   // Wrapper for template
