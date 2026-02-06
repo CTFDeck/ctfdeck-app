@@ -55,4 +55,12 @@ Most features are static or mocked and do not yet interact with real backend log
 
 ---
 
-## Project Structure
+## Licence
+
+- MIT
+
+## Documentation
+
+- 📘 **User documentation**  
+  Application Installation and User Guide.  
+  👉 [Installation & Usage](https://github.com/CTFDeck/ctfdeck-app/blob/stage/docs/USER.md#installation)
