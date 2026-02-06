@@ -48,6 +48,8 @@ export class WebSocketService {
   // Streaming callbacks per messageId
   private streamingCallbacks = new Map<string, StreamingCallbacks>();
 
+  private messageHandlers = new Set<(data: Uint8Array) => boolean>();
+
   private currentUrl = 'ws://localhost:42712';
 
   constructor(private zone: NgZone) {}
@@ -124,6 +126,18 @@ export class WebSocketService {
       this.isConnectedSubject.next(false);
       this.rejectAllPending(new Error('Disconnected'));
     });
+  }
+
+  registerHandler(handler: (data: Uint8Array) => boolean): () => void {
+    this.messageHandlers.add(handler);
+    return () => this.messageHandlers.delete(handler);
+  }
+
+  sendBinary(data: Uint8Array): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      throw new Error('WebSocket not connected');
+    }
+    this.ws.send(data);
   }
 
   /**
@@ -215,29 +229,56 @@ export class WebSocketService {
   }
 
   private handleMessage(data: ArrayBuffer): void {
-    let message: StreamMessage;
+    const u8 = new Uint8Array(data);
+    const type = u8[0] as MessageType;
 
-    try {
-      message = deserializeMessage(data);
-    } catch (e) {
-      console.error('Failed to parse message:', e);
+    if (
+      type === MessageType.CompleteResponse ||
+      type === MessageType.StreamOutput ||
+      type === MessageType.StreamError ||
+      type === MessageType.StreamEnd
+    ) {
+      let message: StreamMessage;
+
+      try {
+        message = deserializeMessage(u8);
+      } catch (e) {
+        console.error('Failed to parse message:', e);
+        return;
+      }
+
+      this.zone.run(() => {
+        switch (message.type) {
+          case MessageType.CompleteResponse:
+            this.handleCompleteResponse(message);
+            break;
+          case MessageType.StreamOutput:
+          case MessageType.StreamError:
+            this.handleStreamChunk(message);
+            break;
+          case MessageType.StreamEnd:
+            this.handleStreamEnd(message);
+            break;
+        }
+      });
       return;
     }
 
-    this.zone.run(() => {
-      switch (message.type) {
-        case MessageType.CompleteResponse:
-          this.handleCompleteResponse(message);
+    let handled = false;
+    for (const handler of this.messageHandlers) {
+      try {
+        if (handler(u8)) {
+          handled = true;
           break;
-        case MessageType.StreamOutput:
-        case MessageType.StreamError:
-          this.handleStreamChunk(message);
-          break;
-        case MessageType.StreamEnd:
-          this.handleStreamEnd(message);
-          break;
+        }
+      } catch (e) {
+        console.error('Message handler error:', e);
       }
-    });
+    }
+
+    if (!handled) {
+      console.warn('Unhandled message type:', type);
+    }
   }
 
   private handleCompleteResponse(response: CommandResponse): void {

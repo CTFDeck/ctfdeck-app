@@ -47,3 +47,5 @@ Thumbs.db
 dist
 dist-electron
 
+client_litedb_test/*
+.nx/*
