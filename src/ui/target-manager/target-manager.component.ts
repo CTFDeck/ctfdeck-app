@@ -79,7 +79,15 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
         this.targets = session?.targets || [];
-        this.selectedIds.clear();
+        
+        // Keep only IDs that still exist in the updated targets list
+        const currentTargetIds = new Set(this.targets.map(t => t.id));
+        this.selectedIds.forEach(id => {
+          if (!currentTargetIds.has(id)) {
+            this.selectedIds.delete(id);
+          }
+        });
+
         if (this.editingId && !this.targets.find((t) => t.id === this.editingId)) {
           this.editingId = null;
         }
@@ -250,14 +258,15 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   }
 
   async deleteSelected() {
-    const count = this.selectedIds.size;
+    const idsToDelete = Array.from(this.selectedIds);
+    const count = idsToDelete.length;
     if (count === 0) return;
     try {
-      for (const id of this.selectedIds) {
+      for (const id of idsToDelete) {
         await this.sessionStore.deleteTarget(id);
       }
       this.selectedIds.clear();
-      toast.error('Deletion successful', {
+      toast.success('Deletion successful', {
         description: `${count} targets removed.`,
         closeButton: true,
       });
