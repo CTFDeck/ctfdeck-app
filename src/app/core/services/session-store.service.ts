@@ -240,6 +240,17 @@ export class SessionStoreService implements OnDestroy {
     const loadSessions = this.refreshSessions();
     const restoreLastSession = lastSession ? this.selectSession(lastSession) : Promise.resolve();
     await Promise.all([loadSessions, restoreLastSession]);
+
+    // If no active session was restored (fresh window or invalid last session), try to fallback to the most recent one
+    if (!this.activeSessionIdSubject.value) {
+      const sessions = this.sessionsSubject.value;
+      if (sessions.length > 0) {
+        const sorted = [...sessions].sort((a, b) => 
+          (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)
+        );
+        await this.selectSession(sorted[0].id);
+      }
+    }
   }
 
   getActiveSessionId(): string | null {
