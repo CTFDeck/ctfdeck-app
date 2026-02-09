@@ -27,6 +27,7 @@
   </ng-template>
 
   <!-- ✅ Scripts : tri corrigé -->
+  <!-- ✅ Scripts : tri corrigé -->
   <ng-template #scripts>
     <hlm-menu variant="menubar" class="w-48">
       <hlm-menu-group>
@@ -125,15 +126,19 @@
 
   <ng-template #customscripts>
     <hlm-sub-menu>
-      <button hlmMenuItem *ngFor="let script of customScripts" (click)="openCommandRunner(script.id)">
+      <div *ngIf="customScriptsLoading && customScripts.length === 0" class="px-2 py-2 space-y-1">
+        <div class="h-6 w-36 rounded bg-muted/70 animate-pulse"></div>
+        <div class="h-6 w-32 rounded bg-muted/70 animate-pulse"></div>
+      </div>
+      <button hlmMenuItem *ngFor="let script of recentCustomScripts" (click)="openCommandRunner(script.id)">
         {{ script.name }}
       </button>
-      <ng-container *ngIf="customScripts.length > 0">
+      <div *ngIf="!customScriptsLoading && recentCustomScripts.length === 0" class="px-3 py-2 text-sm text-muted-foreground">
+        No custom scripts yet
+      </div>
+      <ng-container *ngIf="recentCustomScripts.length > 0">
         <hlm-menu-separator />
       </ng-container>
-      <button hlmMenuItem (click)="openScriptImporter()">
-        Import Personal Scripts
-      </button>
       <button hlmMenuItem (click)="manageCustomScripts()">
         Manage Scripts
       </button>
@@ -153,6 +158,7 @@
         <button hlmMenuItem (click)="openExternal('https://cve.org')">CVE.org</button>
         <button hlmMenuItem (click)="openExternal('https://www.exploit-db.com')">ExploitDB</button>
         <button hlmMenuItem (click)="navigate('/docs')">Documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs')">Documentation</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
@@ -171,7 +177,10 @@
       <hlm-menu-group>
         <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
         <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
+        <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
 </div>
+

@@ -12,8 +12,15 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { TargetService, Target } from '../../app/core/services/target.service';
+import { TargetService } from '../../app/core/services/target.service';
 import { WebSocketService } from '../../app/core/services/websocket.service';
+import { SessionStoreService } from '../../app/core/services/session-store.service';
+import { ScriptService } from '../../app/core/services/script.service';
+import {
+  ScriptCategory,
+  scriptCategoryName,
+  SessionTarget,
+} from '../../app/core/services/session.protocol';
 import AnsiToHtml from 'ansi-to-html';
 import { Subscription } from 'rxjs';
 import { provideIcons } from '@ng-icons/core';
@@ -25,6 +32,7 @@ import {
   lucideSquare,
   lucideLoader,
   lucideCircleHelp,
+  lucidePlus,
 } from '@ng-icons/lucide';
 import { TOOLS } from '../../app/core/constants/tools';
 import { Input, SimpleChanges } from '@angular/core';
@@ -35,6 +43,9 @@ import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
+import { toast } from 'ngx-sonner';
+
+type CommandOption = { id: string; name: string; kind: 'tool' | 'script' };
 
 @Component({
   selector: 'app-command-runner',
@@ -59,259 +70,31 @@ import { HlmDialogImports } from '@ctfdeck/helm/dialog';
       lucideSquare,
       lucideLoader,
       lucideCircleHelp,
+      lucidePlus,
     }),
   ],
-  template: `
-    <div class="h-full flex flex-col bg-background text-foreground p-6">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-6 border-b border-border pb-4">
-        <div class="flex items-center gap-2">
-          <ng-icon hlm name="lucideTerminal" class="text-primary text-2xl" />
-          <h2 class="text-2xl font-bold tracking-tight">Command Runner</h2>
-        </div>
-      </div>
-
-      <!-- Settings Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-        <!-- Left: Target & Tool -->
-        <div class="space-y-6">
-          <!-- Target Section -->
-          <div class="space-y-2">
-            <div class="flex justify-between items-center h-9">
-              <label hlmLabel>Target</label>
-            </div>
-
-            <ng-container *ngIf="targets.length > 0; else noTargets">
-              <select
-                [(ngModel)]="selectedTargetId"
-                (ngModelChange)="onTargetChange()"
-                class="flex w-full h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="" disabled selected>Select a target...</option>
-                <option *ngFor="let target of targets" [value]="target.id">
-                  {{ target.name }} ({{ target.host }})
-                </option>
-              </select>
-            </ng-container>
-
-            <ng-template #noTargets>
-              <div
-                class="flex items-center justify-center p-3 border border-dashed border-border rounded-md bg-muted/50 text-muted-foreground text-sm"
-              >
-                No targets available
-              </div>
-            </ng-template>
-          </div>
-
-          <!-- Tool Section -->
-          <div class="space-y-2">
-            <div class="flex justify-between items-center h-9">
-              <label hlmLabel>Tool</label>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                *ngFor="let tool of tools"
-                hlmBtn
-                [variant]="selectedToolId === tool.id ? 'default' : 'outline'"
-                size="sm"
-                (click)="selectTool(tool.id)"
-              >
-                {{ tool.name }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Command & Controls -->
-        <div class="space-y-6">
-          <div class="space-y-2">
-            <div class="flex justify-between items-center h-9">
-              <label hlmLabel>Command</label>
-            </div>
-            <div class="flex gap-2">
-              <input
-                hlmInput
-                class="flex-1 font-mono"
-                [(ngModel)]="currentCommand"
-                placeholder="Select target & tool..."
-              />
-
-              <button
-                hlmBtn
-                variant="outline"
-                size="icon"
-                (click)="saveCommand()"
-                title="Save as default"
-              >
-                <ng-icon hlm name="lucideSave" size="sm" />
-              </button>
-
-              <!-- Help Dialog Trigger -->
-              <hlm-dialog>
-                <button
-                  brnDialogTrigger
-                  hlmBtn
-                  variant="outline"
-                  size="icon"
-                  (click)="runHelp()"
-                  [disabled]="!selectedToolId"
-                  title="Show Help"
-                >
-                  <ng-icon hlm name="lucideCircleHelp" />
-                </button>
-                <hlm-dialog-content
-                  *brnDialogContent="let ctx"
-                  class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-                >
-                  <hlm-dialog-header class="p-6 border-b border-border">
-                    <h3 hlmDialogTitle>Help: {{ selectedToolId }}</h3>
-                    <p hlmDialogDescription class="mt-2 text-sm text-muted-foreground">
-                      Output of
-                      <code class="px-1.5 py-0.5 rounded bg-muted text-xs font-mono"
-                        >{{ selectedToolId }} -h</code
-                      >
-                    </p>
-                  </hlm-dialog-header>
-
-                  <div
-                    class="p-6 flex-1 overflow-auto bg-muted rounded-md m-6 border border-border font-mono text-sm"
-                  >
-                    <div
-                      *ngIf="isHelpRunning"
-                      class="flex items-center gap-2 text-muted-foreground p-4"
-                    >
-                      <ng-icon hlm name="lucideLoader" class="animate-spin" /> Loading help...
-                    </div>
-                    <div
-                      *ngIf="!isHelpRunning"
-                      class="whitespace-pre-wrap text-foreground p-2 leading-relaxed"
-                      [innerHTML]="helpOutput"
-                    ></div>
-                  </div>
-
-                  <hlm-dialog-footer class="p-6 border-t border-border flex justify-end">
-                    <button hlmBtn variant="outline" (click)="ctx.close()">Close</button>
-                  </hlm-dialog-footer>
-                </hlm-dialog-content>
-              </hlm-dialog>
-            </div>
-            <p class="text-xs text-muted-foreground">
-              Customize the command and click
-              <ng-icon hlm name="lucideSave" class="inline h-3 w-3" /> to save.
-            </p>
-          </div>
-
-          <div class="flex justify-end gap-3 pt-2">
-            <button
-              *ngIf="isRunning"
-              hlmBtn
-              variant="destructive"
-              (click)="stopCommand()"
-              class="gap-2"
-            >
-              <ng-icon hlm name="lucideSquare" class="h-4 w-4" /> Stop
-            </button>
-            <button
-              hlmBtn
-              [disabled]="isRunning || !currentCommand"
-              (click)="runCommand()"
-              class="gap-2 min-w-[120px]"
-            >
-              <ng-icon
-                hlm
-                [name]="isRunning ? 'lucideLoader' : 'lucidePlay'"
-                [class]="isRunning ? 'animate-spin h-4 w-4' : 'h-4 w-4'"
-              />
-              {{ isRunning ? 'Running...' : 'Run' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Output Terminal -->
-      <div
-        class="flex-1 flex flex-col min-h-0 rounded-md border border-border bg-card text-card-foreground overflow-hidden font-mono"
-      >
-        <div
-          class="flex justify-between items-center px-3 py-2 bg-muted/30 border-b border-border"
-        >
-          <span class="text-xs font-medium text-muted-foreground">Terminal Output</span>
-          <button
-            class="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            (click)="clearOutput()"
-          >
-            Clear
-          </button>
-        </div>
-        <div
-          #outputContainer
-          class="flex-1 overflow-auto p-3 text-sm leading-relaxed whitespace-pre-wrap"
-        >
-          <div *ngFor="let line of outputLines" [innerHTML]="line" class="mb-0.5 break-all"></div>
-          <div *ngIf="outputLines.length === 0" class="text-muted-foreground italic">
-            Ready to execute...
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      :host {
-        display: block;
-        height: 100%;
-      }
-
-      .ft-dir {
-        color: #60a5fa;
-      } /* blue */
-      .ft-arc {
-        color: #fbbf24;
-      } /* yellow */
-      .ft-bin {
-        color: #f87171;
-      } /* red */
-      .ft-lnk {
-        color: #a78bfa;
-      } /* purple */
-      .ft-txt {
-        color: #d1d5db;
-      } /* light grey */
-      .ft-img {
-        color: #34d399;
-      } /* green */
-      .ft-vid {
-        color: #fb7185;
-      } /* pink */
-      .ft-aud {
-        color: #22c55e;
-      } /* green */
-      .ft-unk {
-        color: #9ca3af;
-      } /* grey */
-
-      /* Hide the auto-generated close button in the dialog header */
-      ::ng-deep [data-slot="dialog-close"] {
-        display: none !important;
-      }
-    `,
-  ],
+  templateUrl: './command-runner.component.html',
+  styleUrl: './command-runner.component.css',
 })
 export class CommandRunnerComponent implements OnInit, OnDestroy {
   @Output() closeEvent = new EventEmitter<void>();
 
   private targetService = inject(TargetService);
   private wsService = inject(WebSocketService);
+  private sessionStore = inject(SessionStoreService);
+  private scriptService = inject(ScriptService);
   private cdr = inject(ChangeDetectorRef);
   private sanitizer = inject(DomSanitizer);
 
   @ViewChild('outputContainer') private outputContainer!: ElementRef;
 
-  targets: Target[] = [];
+  targets: SessionTarget[] = [];
   selectedTargetId: string = '';
   selectedToolId: string = '';
+  selectedScriptId: string = '';
   currentCommand: string = '';
   isRunning: boolean = false;
+  isSessionEnsuring: boolean = false;
 
   outputLines: SafeHtml[] = [];
   private subscriptions: Subscription = new Subscription();
@@ -324,6 +107,20 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   // Tools definition
   readonly tools = TOOLS;
+  commandOptions: CommandOption[] = [];
+  customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
+  customScriptsLoading = false;
+  showManageScripts = false;
+  editingScriptId: string | null = null;
+  scriptForm = { name: '', category: ScriptCategory.Other, template: '' };
+  private pendingInitialSelection: string | null = null;
+  readonly scriptCategoryOptions = [
+    { value: ScriptCategory.Discovery, label: scriptCategoryName(ScriptCategory.Discovery) },
+    { value: ScriptCategory.Web, label: scriptCategoryName(ScriptCategory.Web) },
+    { value: ScriptCategory.ReverseShell, label: scriptCategoryName(ScriptCategory.ReverseShell) },
+    { value: ScriptCategory.Exploit, label: scriptCategoryName(ScriptCategory.Exploit) },
+    { value: ScriptCategory.Other, label: scriptCategoryName(ScriptCategory.Other) },
+  ];
 
   private ansiConverter = new AnsiToHtml({
     fg: '#d4d4d4',
@@ -337,11 +134,40 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     console.log('CommandRunnerComponent initialized with initialToolId:', this.initialToolId);
-    this.targets = this.targetService.getTargets();
-    console.log('Loaded targets:', this.targets);
+    this.subscriptions.add(
+      this.sessionStore.activeSession$.subscribe((session) => {
+        this.targets = session?.targets || [];
+        if (this.selectedTargetId && !this.targets.find((t) => t.id === this.selectedTargetId)) {
+          this.selectedTargetId = '';
+        }
+        this.updateCommandOptions();
+        this.updateCommandPreview();
+      }),
+    );
+
+    this.subscriptions.add(
+      this.scriptService.scripts$.subscribe((scripts) => {
+        console.log('[CommandRunner] Received scripts update, count:', scripts.length);
+        this.customScripts = scripts;
+        this.updateCommandOptions();
+        this.applyPendingSelection();
+        this.updateCommandPreview();
+        this.cdr.detectChanges();
+      }),
+    );
+
+    this.subscriptions.add(
+      this.scriptService.isLoading$.subscribe((loading) => {
+        console.log('[CommandRunner] Scripts loading state:', loading);
+        this.customScriptsLoading = loading;
+      }),
+    );
+    this.updateCommandOptions();
+    void this.scriptService.list();
+
     if (this.initialToolId) {
-      console.log('Selecting initial tool:', this.initialToolId);
-      this.selectTool(this.initialToolId);
+      this.pendingInitialSelection = this.initialToolId;
+      this.applyPendingSelection();
     }
   }
 
@@ -349,7 +175,13 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     console.log('CommandRunnerComponent ngOnChanges:', changes);
     if (changes['initialToolId'] && changes['initialToolId'].currentValue) {
       console.log('Selecting tool from ngOnChanges:', changes['initialToolId'].currentValue);
-      this.selectTool(changes['initialToolId'].currentValue);
+      const value = changes['initialToolId'].currentValue;
+      if (value === '__manage_scripts__') {
+        this.showManageScripts = true;
+        return;
+      }
+      this.pendingInitialSelection = value;
+      this.applyPendingSelection();
     }
   }
 
@@ -365,49 +197,91 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.updateCommandPreview();
   }
 
+  private updateCommandOptions() {
+    const toolOptions: CommandOption[] = this.tools.map((tool) => ({
+      id: tool.id,
+      name: tool.name,
+      kind: 'tool',
+    }));
+    const scriptOptions: CommandOption[] = this.customScripts.map((script) => ({
+      id: script.id,
+      name: script.name,
+      kind: 'script',
+    }));
+    this.commandOptions = [...toolOptions, ...scriptOptions];
+  }
+
+  selectCommandOption(option: CommandOption) {
+    if (option.kind === 'tool') {
+      this.selectTool(option.id);
+      return;
+    }
+    this.selectScript(option.id);
+  }
+
+  isCommandSelected(option: CommandOption): boolean {
+    return option.kind === 'tool'
+      ? this.selectedToolId === option.id
+      : this.selectedScriptId === option.id;
+  }
+
   selectTool(toolId: string) {
     this.selectedToolId = toolId;
+    this.selectedScriptId = '';
+    this.updateCommandPreview();
+  }
+
+  selectScript(scriptId: string) {
+    this.selectedScriptId = scriptId;
+    this.selectedToolId = '';
     this.updateCommandPreview();
   }
 
   updateCommandPreview() {
-    if (!this.selectedTargetId || !this.selectedToolId) return;
+    if (!this.selectedTargetId || (!this.selectedToolId && !this.selectedScriptId)) return;
 
     const target = this.targets.find((t) => t.id === this.selectedTargetId);
     if (!target) return;
 
     // Check if we have a saved command for this target+tool
-    if (target.commands && target.commands[this.selectedToolId]) {
-      this.currentCommand = target.commands[this.selectedToolId];
-    } else {
-      // Generate from template
-      const tool = this.tools.find((t) => t.id === this.selectedToolId);
-      if (tool) {
-        let cmd = tool.template;
-        cmd = cmd.replace(/{host}/g, target.host);
-        cmd = cmd.replace(/{port}/g, (target.port || (cmd.includes('http') ? 80 : '')).toString());
-        this.currentCommand = cmd;
-      }
+    const selectedId = this.selectedToolId || this.selectedScriptId;
+    const savedCommand = this.targetService.getSavedCommand(target.id, selectedId);
+    if (savedCommand) {
+      this.currentCommand = savedCommand;
+      return;
+    }
+
+    const template = this.selectedToolId
+      ? this.tools.find((t) => t.id === this.selectedToolId)?.template
+      : this.customScripts.find((s) => s.id === this.selectedScriptId)?.template;
+
+    if (template) {
+      let cmd = template;
+      cmd = cmd.replace(/{host}/g, target.address);
+      const port = target.port ?? (cmd.includes('http') ? 80 : '');
+      cmd = cmd.replace(/{port}/g, port.toString());
+      this.currentCommand = cmd;
     }
   }
 
   saveCommand() {
-    if (this.selectedTargetId && this.selectedToolId && this.currentCommand) {
-      this.targetService.saveTargetCommand(
-        this.selectedTargetId,
-        this.selectedToolId,
-        this.currentCommand,
-      );
-      this.targets = this.targetService.getTargets();
+    const selectedId = this.selectedToolId || this.selectedScriptId;
+    if (this.selectedTargetId && selectedId && this.currentCommand) {
+      this.targetService.saveTargetCommand(this.selectedTargetId, selectedId, this.currentCommand);
     }
   }
 
-  runCommand() {
+  async runCommand() {
     if (!this.currentCommand) return;
 
     this.isRunning = true;
     this.outputLines = [];
     this.addLine(`<span class="text-blue-400">Running: ${this.currentCommand}</span>`);
+
+    if (!(await this.ensureActiveSession())) {
+      this.isRunning = false;
+      return;
+    }
 
     // High-performance streaming - similar to terminal component
     let outputLineIndex = -1;
@@ -433,6 +307,12 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       }
     };
 
+    // Broadcast command start
+    this.sessionStore.broadcastTerminalEvent({
+      type: 'command',
+      content: `${this.currentCommand}`,
+    });
+
     this.wsService
       .executeCommandStreaming(
         this.currentCommand,
@@ -442,10 +322,14 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
             outputLineIndex = this.outputLines.length;
             this.outputLines.push(this.createSafeHtml('')); // Initialize with empty content
           }
+          // Broadcast output
+          this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
           scheduleRender();
         },
         (data: string) => {
           errorBuffer += data;
+          // Broadcast error
+          this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
           this.appendToLastError(data);
         },
       )
@@ -457,12 +341,28 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.isRunning = false;
         this.addLine(`<span class="text-green-400">Done. Exit code: ${result.exitCode}</span>`);
         this.cdr.detectChanges();
+        // Refresh session to sync history
+        void this.sessionStore.refreshActiveSession();
       })
       .catch((err: any) => {
         this.isRunning = false;
         this.addLine(`<span class="text-red-500">Error: ${err.message}</span>`);
         this.cdr.detectChanges();
       });
+  }
+
+  private async ensureActiveSession(): Promise<boolean> {
+    this.isSessionEnsuring = true;
+    try {
+      await this.sessionStore.ensureActiveSession();
+      return true;
+    } catch (err: any) {
+      this.addLine(`<span class="text-red-500">Session error: ${err?.message || err}</span>`);
+      return false;
+    } finally {
+      this.isSessionEnsuring = false;
+      this.cdr.detectChanges();
+    }
   }
 
   stopCommand() {
@@ -533,6 +433,103 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         );
         this.cdr.detectChanges();
       });
+  }
+
+  get canShowHelp(): boolean {
+    return !!this.selectedToolId;
+  }
+
+  openManageScripts() {
+    this.showManageScripts = true;
+    this.resetScriptForm();
+  }
+
+  closeManageScripts() {
+    this.showManageScripts = false;
+    this.resetScriptForm();
+  }
+
+  editScript(script: { id: string; name: string; category: number; template: string }) {
+    this.editingScriptId = script.id;
+    this.scriptForm = {
+      name: script.name,
+      category: script.category as ScriptCategory,
+      template: script.template,
+    };
+    this.showManageScripts = true;
+  }
+
+  async saveScript() {
+    const name = this.scriptForm.name.trim();
+    const template = this.scriptForm.template.trim();
+    if (!name || !template) {
+      toast.error('Missing fields', { description: 'Name and template are required.' });
+      return;
+    }
+
+    try {
+      if (this.editingScriptId) {
+        await this.scriptService.update(
+          this.editingScriptId,
+          name,
+          this.scriptForm.category,
+          template,
+        );
+        toast.success('Script updated');
+      } else {
+        await this.scriptService.create(name, this.scriptForm.category, template);
+        toast.success('Script created');
+      }
+      this.resetScriptForm();
+    } catch (err: any) {
+      toast.error('Script operation failed', { description: err?.message || 'Unknown error' });
+    }
+  }
+
+  async deleteScript(scriptId: string) {
+    try {
+      await this.scriptService.delete(scriptId);
+      toast.success('Script deleted');
+      if (this.selectedScriptId === scriptId) {
+        this.selectedScriptId = '';
+        this.currentCommand = '';
+      }
+    } catch (err: any) {
+      toast.error('Delete failed', { description: err?.message || 'Unknown error' });
+    }
+  }
+
+  getScriptCategoryLabel(category: number): string {
+    return (
+      this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown'
+    );
+  }
+
+  resetScriptForm() {
+    this.editingScriptId = null;
+    this.scriptForm = { name: '', category: ScriptCategory.Other, template: '' };
+  }
+
+  private applyPendingSelection() {
+    if (!this.pendingInitialSelection) return;
+    const value = this.pendingInitialSelection;
+    if (value === '__manage_scripts__') {
+      this.showManageScripts = true;
+      this.pendingInitialSelection = null;
+      return;
+    }
+
+    if (this.tools.find((t) => t.id === value)) {
+      this.selectTool(value);
+      this.pendingInitialSelection = null;
+      return;
+    }
+
+    const script = this.customScripts.find((s) => s.id === value);
+    if (script) {
+      this.selectScript(script.id);
+      this.pendingInitialSelection = null;
+    }
   }
 
   private appendOutput(data: string, isError: boolean = false) {

@@ -3,13 +3,54 @@
  */
 
 /**
- * Message types matching the backend
+ * Message types matching the backend protocol
  */
 export enum MessageType {
+  // Terminal messages
   CompleteResponse = 0,
   StreamOutput = 1,
   StreamError = 2,
   StreamEnd = 3,
+  CommandKill = 4,
+  CommandKillResult = 5,
+  CommandExecute = 6,
+
+  // Session requests (client -> server)
+  SessionCreate = 10,
+  SessionSetActive = 11,
+  SessionLoad = 12,
+  SessionList = 13,
+  SessionDelete = 14,
+  SessionUpdateTargets = 15,
+  SessionUpdate = 16,
+  SessionAddTarget = 17,
+  SessionDeleteTarget = 18,
+  SessionEditTarget = 19,
+
+  // Session responses (server -> client)
+  SessionCreateResult = 20,
+  SessionSetActiveResult = 21,
+  SessionLoadResult = 22,
+  SessionListResult = 23,
+  SessionDeleteResult = 24,
+  SessionUpdateResult = 25,
+  SessionAddTargetResult = 26,
+  SessionDeleteTargetResult = 27,
+  SessionEditTargetResult = 28,
+  SessionOperationError = 29,
+
+  // Custom Script requests (client -> server)
+  CustomScriptCreate = 30,
+  CustomScriptUpdate = 31,
+  CustomScriptDelete = 32,
+  CustomScriptList = 33,
+
+  // Custom Script responses (server -> client)
+  CustomScriptCreateResult = 40,
+  CustomScriptUpdateResult = 41,
+  CustomScriptDeleteResult = 42,
+  CustomScriptListResult = 43,
+  CustomScriptOperationError = 49,
 }
 
 export interface CommandResponse {
@@ -92,12 +133,13 @@ export function serializeCommand(command: string, messageId: string): Uint8Array
   const cmd = enc.encode(command);
   const id = uuidToBytes(messageId);
 
-  const buf = new Uint8Array(4 + cmd.length + 16);
+  const buf = new Uint8Array(1 + 4 + cmd.length + 16);
   const view = new DataView(buf.buffer);
 
-  view.setInt32(0, cmd.length, true);
-  buf.set(cmd, 4);
-  buf.set(id, 4 + cmd.length);
+  view.setUint8(0, MessageType.CommandExecute);
+  view.setInt32(1, cmd.length, true);
+  buf.set(cmd, 5);
+  buf.set(id, 5 + cmd.length);
 
   return buf;
 }
