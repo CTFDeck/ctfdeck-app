@@ -1,5 +1,5 @@
 import { Injectable, NgZone } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import {
   serializeCommand,
   deserializeMessage,
@@ -9,19 +9,16 @@ import {
   StreamEnd,
   StreamMessage,
   MessageType,
+  serializePasswordProvide,
+  PasswordRequest,
 } from './websocket.protocol';
+import { SudoPasswordModalService } from './sudo-password-modal.service';
 
-/**
- * Streaming command result that accumulates output
- */
 export interface StreamingResult {
   exitCode: number;
   workingDirectory: string;
 }
 
-/**
- * Callbacks for streaming command execution
- */
 export interface StreamingCallbacks {
   onOutput: (data: string) => void;
   onError: (data: string) => void;
@@ -35,7 +32,6 @@ export class WebSocketService {
   private isConnectedSubject = new BehaviorSubject<boolean>(false);
   public isConnected$ = this.isConnectedSubject.asObservable();
 
-  // Legacy pending for complete responses
   private pending = new Map<
     string,
     {
@@ -45,14 +41,11 @@ export class WebSocketService {
     }
   >();
 
-  // Streaming callbacks per messageId
   private streamingCallbacks = new Map<string, StreamingCallbacks>();
-
   private messageHandlers = new Set<(data: Uint8Array) => boolean>();
-
   private currentUrl = 'ws://localhost:42712';
 
-  constructor(private zone: NgZone) {}
+  constructor(private zone: NgZone, private sudoModal: SudoPasswordModalService) {}
 
   setUrl(url: string) {
     this.currentUrl = url;
@@ -68,7 +61,6 @@ export class WebSocketService {
 
     return new Promise((resolve, reject) => {
       try {
-        // Close existing socket if any
         if (this.ws) {
           try {
             this.ws.onopen = null;
@@ -92,13 +84,11 @@ export class WebSocketService {
         };
 
         ws.onmessage = (event) => {
-          // data is ArrayBuffer because binaryType='arraybuffer'
           this.handleMessage(event.data as ArrayBuffer);
         };
 
         ws.onerror = (err) => {
           this.zone.run(() => {
-            // If never connected, reject connect()
             if (!this.isConnectedSubject.value) reject(err);
           });
         };
@@ -140,10 +130,6 @@ export class WebSocketService {
     this.ws.send(data);
   }
 
-  /**
-   * Execute command with streaming output.
-   * Returns a promise that resolves when all output is received.
-   */
   executeCommandStreaming(
     command: string,
     onOutput: (data: string) => void,
@@ -161,9 +147,8 @@ export class WebSocketService {
         this.streamingCallbacks.delete(messageId);
         this.pending.delete(messageId);
         reject(new Error('Command timeout'));
-      }, 300_000); // 5 minute timeout for long commands
+      }, 300_000);
 
-      // Register streaming callbacks
       this.streamingCallbacks.set(messageId, {
         onOutput,
         onError,
@@ -174,12 +159,10 @@ export class WebSocketService {
         },
       });
 
-      // Also register pending for fallback to complete response
       this.pending.set(messageId, {
         resolve: (response) => {
           clearTimeout(timeoutId);
           this.streamingCallbacks.delete(messageId);
-          // Convert complete response to streaming result format
           if (response.output) onOutput(response.output);
           if (response.error) onError(response.error);
           resolve({
@@ -202,18 +185,10 @@ export class WebSocketService {
     });
   }
 
-  /**
-   * Legacy non-streaming execute (for backward compatibility)
-   */
   executeCommand(command: string): Promise<CommandResponse> {
     return new Promise<CommandResponse>((resolve, reject) => {
-      this.executeCommandStreaming(
-        command,
-        () => {}, // Ignore streaming output
-        () => {}, // Ignore streaming errors
-      )
+      this.executeCommandStreaming(command, () => {}, () => {})
         .then((result) => {
-          // This shouldn't happen with streaming, but handle it
           resolve({
             type: MessageType.CompleteResponse,
             exitCode: result.exitCode,
@@ -231,6 +206,26 @@ export class WebSocketService {
   private handleMessage(data: ArrayBuffer): void {
     const u8 = new Uint8Array(data);
     const type = u8[0] as MessageType;
+
+    // Handle sudo password request first
+
+    if (type === MessageType.PasswordRequest) {
+      let msg: PasswordRequest;
+      try {
+        msg = deserializeMessage(u8) as PasswordRequest;
+      } catch (e) {
+        console.error('Failed to parse PasswordRequest:', e);
+        return;
+      }
+
+      this.zone.run(async () => {
+        const password = await this.sudoModal.requestPassword(msg.messageId, msg.prompt);
+        const payload = serializePasswordProvide(msg.messageId, password ?? '');
+        this.sendBinary(payload);
+      });
+
+      return;
+    }
 
     if (
       type === MessageType.CompleteResponse ||
@@ -250,14 +245,14 @@ export class WebSocketService {
       this.zone.run(() => {
         switch (message.type) {
           case MessageType.CompleteResponse:
-            this.handleCompleteResponse(message);
+            this.handleCompleteResponse(message as CommandResponse);
             break;
           case MessageType.StreamOutput:
           case MessageType.StreamError:
-            this.handleStreamChunk(message);
+            this.handleStreamChunk(message as StreamChunk);
             break;
           case MessageType.StreamEnd:
-            this.handleStreamEnd(message);
+            this.handleStreamEnd(message as StreamEnd);
             break;
         }
       });
@@ -294,11 +289,8 @@ export class WebSocketService {
     const callbacks = this.streamingCallbacks.get(chunk.messageId);
     if (!callbacks) return;
 
-    if (chunk.isError) {
-      callbacks.onError(chunk.data);
-    } else {
-      callbacks.onOutput(chunk.data);
-    }
+    if (chunk.isError) callbacks.onError(chunk.data);
+    else callbacks.onOutput(chunk.data);
   }
 
   private handleStreamEnd(end: StreamEnd): void {
@@ -310,7 +302,6 @@ export class WebSocketService {
       });
     }
 
-    // Also clean up pending (if registered)
     const pending = this.pending.get(end.messageId);
     if (pending) {
       clearTimeout(pending.timeoutId);
@@ -330,5 +321,4 @@ export class WebSocketService {
   }
 }
 
-// Re-export for existing imports
 export type { CommandResponse, StreamChunk, StreamEnd };

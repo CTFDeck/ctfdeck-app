@@ -6,6 +6,7 @@ import { ChatSidebar } from '../ui/sidebar/chat-sidebar';
 import { TargetManagerComponent } from '../ui/target-manager/target-manager.component';
 import { CommandRunnerComponent } from '../ui/command-runner/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
+import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -17,25 +18,26 @@ import { HlmToaster } from '@ctfdeck/helm/sonner';
     ChatSidebar,
     TargetManagerComponent,
     CommandRunnerComponent,
-    HlmToaster
+    HlmToaster,
+    SudoPasswordModalComponent,
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.css'],
 })
 export class App {
   protected readonly title = signal('CTFDeck-app');
-  
+
   targetManagerVisible = false;
   targetManagerMode: 'view' | 'add' | 'delete' = 'view';
   commandRunnerVisible = false;
   selectedToolId: string = '';
-  
+
   @ViewChild('targetManager', { static: false }) targetManager?: TargetManagerComponent;
 
   openTargetManager(mode: 'view' | 'add' | 'delete') {
     this.targetManagerMode = mode;
     this.targetManagerVisible = true;
-    
+
     setTimeout(() => {
       if (this.targetManager) {
         this.targetManager.open(this.targetManagerMode);

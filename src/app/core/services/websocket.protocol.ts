@@ -2,9 +2,6 @@
  * Binary Protocol Utilities for CtfDeck - with Streaming Support
  */
 
-/**
- * Message types matching the backend protocol
- */
 export enum MessageType {
   // Terminal messages
   CompleteResponse = 0,
@@ -14,6 +11,10 @@ export enum MessageType {
   CommandKill = 4,
   CommandKillResult = 5,
   CommandExecute = 6,
+
+  // Sudo password flow
+  PasswordRequest = 7, // Server -> Client
+  PasswordProvide = 8, // Client -> Server
 
   // Session requests (client -> server)
   SessionCreate = 10,
@@ -77,7 +78,13 @@ export interface StreamEnd {
   workingDirectory: string;
 }
 
-export type StreamMessage = CommandResponse | StreamChunk | StreamEnd;
+export interface PasswordRequest {
+  type: MessageType.PasswordRequest;
+  messageId: string;
+  prompt: string;
+}
+
+export type StreamMessage = CommandResponse | StreamChunk | StreamEnd | PasswordRequest;
 
 export function uuidToBytes(uuid: string): Uint8Array {
   const hex = uuid.replace(/-/g, '');
@@ -144,16 +151,28 @@ export function serializeCommand(command: string, messageId: string): Uint8Array
   return buf;
 }
 
-/**
- * Deserialize a streaming message from the server.
- * Returns the appropriate message type based on the first byte.
- */
+// type=8: [1][16 msgId][4 pwdLen][pwdBytes]
+export function serializePasswordProvide(messageId: string, password: string): Uint8Array {
+  const enc = new TextEncoder();
+  const pwd = enc.encode(password);
+  const id = uuidToBytes(messageId);
+
+  const buf = new Uint8Array(1 + 16 + 4 + pwd.length);
+  const view = new DataView(buf.buffer);
+
+  view.setUint8(0, MessageType.PasswordProvide);
+  buf.set(id, 1);
+  view.setInt32(17, pwd.length, true);
+  buf.set(pwd, 21);
+
+  return buf;
+}
+
 export function deserializeMessage(data: ArrayBuffer | Uint8Array): StreamMessage {
   const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
   const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const dec = new TextDecoder();
 
-  // First byte is message type
   const messageType = u8[0] as MessageType;
 
   switch (messageType) {
@@ -164,17 +183,15 @@ export function deserializeMessage(data: ArrayBuffer | Uint8Array): StreamMessag
       return deserializeStreamChunk(u8, v, dec, messageType);
     case MessageType.StreamEnd:
       return deserializeStreamEnd(u8, v, dec);
+    case MessageType.PasswordRequest:
+      return deserializePasswordRequest(u8, v, dec);
     default:
       throw new Error(`Unknown message type: ${messageType}`);
   }
 }
 
-function deserializeCompleteResponse(
-  u8: Uint8Array,
-  v: DataView,
-  dec: TextDecoder,
-): CommandResponse {
-  let o = 1; // Skip message type byte
+function deserializeCompleteResponse(u8: Uint8Array, v: DataView, dec: TextDecoder): CommandResponse {
+  let o = 1;
 
   const exitCode = v.getInt32(o, true);
   o += 4;
@@ -190,7 +207,6 @@ function deserializeCompleteResponse(
   const commandOutput = readString();
   const error = readString();
   const workingDirectory = readString();
-
   const messageId = bytesToUuid(u8.slice(o, o + 16));
 
   return {
@@ -210,7 +226,7 @@ function deserializeStreamChunk(
   dec: TextDecoder,
   type: MessageType.StreamOutput | MessageType.StreamError,
 ): StreamChunk {
-  let o = 1; // Skip message type byte
+  let o = 1;
 
   const messageId = bytesToUuid(u8.slice(o, o + 16));
   o += 16;
@@ -229,7 +245,7 @@ function deserializeStreamChunk(
 }
 
 function deserializeStreamEnd(u8: Uint8Array, v: DataView, dec: TextDecoder): StreamEnd {
-  let o = 1; // Skip message type byte
+  let o = 1;
 
   const messageId = bytesToUuid(u8.slice(o, o + 16));
   o += 16;
@@ -250,11 +266,27 @@ function deserializeStreamEnd(u8: Uint8Array, v: DataView, dec: TextDecoder): St
   };
 }
 
-// Legacy function for backward compatibility
+// type=7: [1][16 msgId][4 promptLen][promptBytes]
+function deserializePasswordRequest(u8: Uint8Array, v: DataView, dec: TextDecoder): PasswordRequest {
+  let o = 1;
+
+  const messageId = bytesToUuid(u8.slice(o, o + 16));
+  o += 16;
+
+  const promptLen = v.getInt32(o, true);
+  o += 4;
+
+  const prompt = dec.decode(u8.slice(o, o + promptLen));
+
+  return {
+    type: MessageType.PasswordRequest,
+    messageId,
+    prompt,
+  };
+}
+
 export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResponse {
   const message = deserializeMessage(data);
-  if (message.type === MessageType.CompleteResponse) {
-    return message;
-  }
+  if (message.type === MessageType.CompleteResponse) return message;
   throw new Error('Expected CompleteResponse but got: ' + message.type);
 }
