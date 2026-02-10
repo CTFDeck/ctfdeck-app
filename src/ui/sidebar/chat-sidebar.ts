@@ -111,9 +111,9 @@ export class ChatSidebar {
     if (!this.sessionToRename) return;
     const session = this.sessionToRename;
     const nextName = (this.renameDraftById[session.id] ?? '').trim();
-    
+
     if (!nextName) return;
-    
+
     ctx.close();
     await this.sessionStore.renameSession(session.id, nextName, session.description || '');
     this.sessionToRename = null;
@@ -128,7 +128,7 @@ export class ChatSidebar {
   async deleteSession(ctx: { close: () => void }) {
     if (!this.sessionToDelete) return;
     const session = this.sessionToDelete;
-    
+
     ctx.close();
     if (this.isDeletingSession(session.id)) return;
 

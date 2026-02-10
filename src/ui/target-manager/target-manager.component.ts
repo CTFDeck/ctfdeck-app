@@ -79,10 +79,10 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
         this.targets = session?.targets || [];
-        
+
         // Keep only IDs that still exist in the updated targets list
-        const currentTargetIds = new Set(this.targets.map(t => t.id));
-        this.selectedIds.forEach(id => {
+        const currentTargetIds = new Set(this.targets.map((t) => t.id));
+        this.selectedIds.forEach((id) => {
           if (!currentTargetIds.has(id)) {
             this.selectedIds.delete(id);
           }

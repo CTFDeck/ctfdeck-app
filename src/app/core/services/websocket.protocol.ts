@@ -190,7 +190,11 @@ export function deserializeMessage(data: ArrayBuffer | Uint8Array): StreamMessag
   }
 }
 
-function deserializeCompleteResponse(u8: Uint8Array, v: DataView, dec: TextDecoder): CommandResponse {
+function deserializeCompleteResponse(
+  u8: Uint8Array,
+  v: DataView,
+  dec: TextDecoder,
+): CommandResponse {
   let o = 1;
 
   const exitCode = v.getInt32(o, true);
@@ -267,7 +271,11 @@ function deserializeStreamEnd(u8: Uint8Array, v: DataView, dec: TextDecoder): St
 }
 
 // type=7: [1][16 msgId][4 promptLen][promptBytes]
-function deserializePasswordRequest(u8: Uint8Array, v: DataView, dec: TextDecoder): PasswordRequest {
+function deserializePasswordRequest(
+  u8: Uint8Array,
+  v: DataView,
+  dec: TextDecoder,
+): PasswordRequest {
   let o = 1;
 
   const messageId = bytesToUuid(u8.slice(o, o + 16));

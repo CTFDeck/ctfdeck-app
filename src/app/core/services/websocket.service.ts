@@ -45,7 +45,10 @@ export class WebSocketService {
   private messageHandlers = new Set<(data: Uint8Array) => boolean>();
   private currentUrl = 'ws://localhost:42712';
 
-  constructor(private zone: NgZone, private sudoModal: SudoPasswordModalService) {}
+  constructor(
+    private zone: NgZone,
+    private sudoModal: SudoPasswordModalService,
+  ) {}
 
   setUrl(url: string) {
     this.currentUrl = url;
@@ -187,7 +190,11 @@ export class WebSocketService {
 
   executeCommand(command: string): Promise<CommandResponse> {
     return new Promise<CommandResponse>((resolve, reject) => {
-      this.executeCommandStreaming(command, () => {}, () => {})
+      this.executeCommandStreaming(
+        command,
+        () => {},
+        () => {},
+      )
         .then((result) => {
           resolve({
             type: MessageType.CompleteResponse,

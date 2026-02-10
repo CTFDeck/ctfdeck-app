@@ -1,7 +1,7 @@
 <div class="p-8 bg-background text-foreground">
   <div class="mb-8 flex items-center gap-3">
     <ng-icon hlm name="lucideTarget" size="lg" class="text-primary" />
-    
+
     <div>
       <h3 class="text-2xl font-semibold tracking-tight">Target Management</h3>
       <p class="text-sm text-muted-foreground">Configure and oversee your network targets.</p>
@@ -9,42 +9,78 @@
   </div>
 
   <div hlmButtonGroup class="w-full flex mb-6">
-    <button hlmBtn [variant]="mode === 'view' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('view')">Configuration</button>
-    <button hlmBtn [variant]="mode === 'add' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('add')">Add Target</button>
-    <button hlmBtn [variant]="mode === 'delete' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('delete')">Bulk Delete</button>
+    <button
+      hlmBtn
+      [variant]="mode === 'view' ? 'default' : 'outline'"
+      class="flex-1 h-10"
+      (click)="setMode('view')"
+    >
+      Configuration
+    </button>
+    <button
+      hlmBtn
+      [variant]="mode === 'add' ? 'default' : 'outline'"
+      class="flex-1 h-10"
+      (click)="setMode('add')"
+    >
+      Add Target
+    </button>
+    <button
+      hlmBtn
+      [variant]="mode === 'delete' ? 'default' : 'outline'"
+      class="flex-1 h-10"
+      (click)="setMode('delete')"
+    >
+      Bulk Delete
+    </button>
   </div>
 
   <hlm-tabs [tab]="mode" class="w-full">
-
-    <div hlmTabsContent="view" class="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
-      <div *ngIf="targets.length === 0" class="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl border-border bg-card/30">
+    <div
+      hlmTabsContent="view"
+      class="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar"
+    >
+      <div
+        *ngIf="targets.length === 0"
+        class="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl border-border bg-card/30"
+      >
         <p class="text-muted-foreground font-medium">No targets configured.</p>
       </div>
 
-      <div *ngFor="let target of targets" class="group relative flex flex-col gap-2 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-all">
+      <div
+        *ngFor="let target of targets"
+        class="group relative flex flex-col gap-2 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-all"
+      >
         <div *ngIf="editingId !== target.id" class="flex justify-between items-start">
           <div class="space-y-1">
             <h4 class="font-bold uppercase tracking-wider text-primary">{{ target.name }}</h4>
             <div class="flex items-center gap-2">
-                <code class="px-2 py-0.5 rounded bg-muted text-xs font-mono border border-border">
-                    {{ target.address }}{{ target.port ? ':' + target.port : '' }}
-                </code>
+              <code class="px-2 py-0.5 rounded bg-muted text-xs font-mono border border-border">
+                {{ target.address }}{{ target.port ? ':' + target.port : '' }}
+              </code>
             </div>
             <!-- Session Membership Badges -->
             <div class="flex flex-wrap gap-1 mt-1">
-              <span *ngFor="let sessionName of getSessionsForTarget(target)" 
-                    class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+              <span
+                *ngFor="let sessionName of getSessionsForTarget(target)"
+                class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20"
+              >
                 {{ sessionName }}
               </span>
             </div>
           </div>
           <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button hlmBtn size="sm" variant="outline" (click)="startEditing(target)">Edit</button>
-            <button hlmBtn size="sm" variant="destructive" (click)="deleteOneTarget(target.id)">Delete</button>
+            <button hlmBtn size="sm" variant="destructive" (click)="deleteOneTarget(target.id)">
+              Delete
+            </button>
           </div>
         </div>
 
-        <div *ngIf="editingId === target.id" class="space-y-3 p-2 animate-in fade-in slide-in-from-top-1">
+        <div
+          *ngIf="editingId === target.id"
+          class="space-y-3 p-2 animate-in fade-in slide-in-from-top-1"
+        >
           <input hlmInput [(ngModel)]="editForm.name" placeholder="Server name" class="w-full" />
           <div class="flex gap-2">
             <input hlmInput [(ngModel)]="editForm.address" placeholder="IP / Host" class="flex-1" />
@@ -61,30 +97,43 @@
           <label hlmLabel for="add-name">Resource Name</label>
           <input hlmInput id="add-name" [(ngModel)]="addForm.name" placeholder="e.g., PROD-DB-01" />
         </div>
-        
+
         <div class="grid gap-2">
           <label hlmLabel>Sessions</label>
-          <brn-select class="inline-block" [multiple]="true" placeholder="Select sessions" [(ngModel)]="addForm.sessionIds">
+          <brn-select
+            class="inline-block"
+            [multiple]="true"
+            placeholder="Select sessions"
+            [(ngModel)]="addForm.sessionIds"
+          >
             <hlm-select-trigger class="w-full">
               <hlm-select-value />
             </hlm-select-trigger>
             <hlm-select-content>
-                <hlm-option *ngFor="let session of sessions$ | async" [value]="session.id">
-                    {{ session.name }}
-                </hlm-option>
+              <hlm-option *ngFor="let session of sessions$ | async" [value]="session.id">
+                {{ session.name }}
+              </hlm-option>
             </hlm-select-content>
           </brn-select>
-          <p class="text-[0.8rem] text-muted-foreground">Select one or more sessions to add this target to.</p>
+          <p class="text-[0.8rem] text-muted-foreground">
+            Select one or more sessions to add this target to.
+          </p>
         </div>
 
         <div class="grid grid-cols-3 gap-4">
           <div class="col-span-2 grid gap-2">
-          <label hlmLabel for="add-host">IP Address or Hostname</label>
-          <input hlmInput id="add-host" [(ngModel)]="addForm.address" placeholder="10.0.0.5" />
+            <label hlmLabel for="add-host">IP Address or Hostname</label>
+            <input hlmInput id="add-host" [(ngModel)]="addForm.address" placeholder="10.0.0.5" />
           </div>
           <div class="grid gap-2">
             <label hlmLabel for="add-port">Port</label>
-            <input hlmInput id="add-port" type="number" [(ngModel)]="addForm.port" placeholder="80" />
+            <input
+              hlmInput
+              id="add-port"
+              type="number"
+              [(ngModel)]="addForm.port"
+              placeholder="80"
+            />
           </div>
         </div>
       </div>
@@ -93,20 +142,31 @@
 
     <div hlmTabsContent="delete" class="space-y-4 pt-2">
       <div class="rounded-md border border-border overflow-hidden">
-        <div *ngFor="let target of targets" 
-             (click)="toggleSelection(target.id)" 
-             [class.bg-accent]="selectedIds.has(target.id)"
-             class="flex items-center gap-3 p-4 border-b border-border last:border-0 cursor-pointer hover:bg-accent/50 transition-colors">
-          <div class="h-4 w-4 rounded border border-primary flex items-center justify-center" 
-               [class.bg-primary]="selectedIds.has(target.id)">
-            <div *ngIf="selectedIds.has(target.id)" class="text-[10px] text-primary-foreground">✔</div>
+        <div
+          *ngFor="let target of targets"
+          (click)="toggleSelection(target.id)"
+          [class.bg-accent]="selectedIds.has(target.id)"
+          class="flex items-center gap-3 p-4 border-b border-border last:border-0 cursor-pointer hover:bg-accent/50 transition-colors"
+        >
+          <div
+            class="h-4 w-4 rounded border border-primary flex items-center justify-center"
+            [class.bg-primary]="selectedIds.has(target.id)"
+          >
+            <div *ngIf="selectedIds.has(target.id)" class="text-[10px] text-primary-foreground">
+              ✔
+            </div>
           </div>
           <span class="font-medium">{{ target.name }}</span>
           <span class="text-xs text-muted-foreground ml-auto font-mono">{{ target.address }}</span>
         </div>
       </div>
-      <button hlmBtn variant="destructive" class="w-full" 
-              [disabled]="selectedIds.size === 0" (click)="deleteSelected()">
+      <button
+        hlmBtn
+        variant="destructive"
+        class="w-full"
+        [disabled]="selectedIds.size === 0"
+        (click)="deleteSelected()"
+      >
         Delete Selection ({{ selectedIds.size }})
       </button>
     </div>

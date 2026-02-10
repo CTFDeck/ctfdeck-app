@@ -32,6 +32,6 @@
 } /* grey */
 
 /* Hide the auto-generated close button in the dialog header */
-::ng-deep [data-slot="dialog-close"] {
+::ng-deep [data-slot='dialog-close'] {
   display: none !important;
 }

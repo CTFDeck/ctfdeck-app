@@ -31,7 +31,10 @@ export class SessionStoreService implements OnDestroy {
   private creatingSessionPromise: Promise<string> | null = null;
   private sessionsListPromise: Promise<void> | null = null;
 
-  constructor(private sessions: SessionService, private ws: WebSocketService) {
+  constructor(
+    private sessions: SessionService,
+    private ws: WebSocketService,
+  ) {
     this.subscriptions.add(
       this.ws.isConnected$.subscribe((connected) => {
         if (connected) {
@@ -245,8 +248,8 @@ export class SessionStoreService implements OnDestroy {
     if (!this.activeSessionIdSubject.value) {
       const sessions = this.sessionsSubject.value;
       if (sessions.length > 0) {
-        const sorted = [...sessions].sort((a, b) => 
-          (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)
+        const sorted = [...sessions].sort(
+          (a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0),
         );
         await this.selectSession(sorted[0].id);
       }

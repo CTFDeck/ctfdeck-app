@@ -106,19 +106,25 @@
 
   <ng-template #revshell>
     <hlm-sub-menu>
-      <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.REVERSE_SHELL)" (click)="openCommandRunner(tool.id)">
+      <button
+        hlmMenuItem
+        *ngFor="let tool of getToolsByCategory(ToolCategory.REVERSE_SHELL)"
+        (click)="openCommandRunner(tool.id)"
+      >
         {{ tool.name }}
       </button>
       <hlm-menu-separator />
-      <button hlmMenuItem (click)="openExternal('https://www.revshells.com')">
-        RevShells.com
-      </button>
+      <button hlmMenuItem (click)="openExternal('https://www.revshells.com')">RevShells.com</button>
     </hlm-sub-menu>
   </ng-template>
 
   <ng-template #exploit>
     <hlm-sub-menu>
-      <button hlmMenuItem *ngFor="let tool of getToolsByCategory(ToolCategory.EXPLOIT)" (click)="openCommandRunner(tool.id)">
+      <button
+        hlmMenuItem
+        *ngFor="let tool of getToolsByCategory(ToolCategory.EXPLOIT)"
+        (click)="openCommandRunner(tool.id)"
+      >
         {{ tool.name }}
       </button>
     </hlm-sub-menu>
@@ -130,18 +136,23 @@
         <div class="h-6 w-36 rounded bg-muted/70 animate-pulse"></div>
         <div class="h-6 w-32 rounded bg-muted/70 animate-pulse"></div>
       </div>
-      <button hlmMenuItem *ngFor="let script of recentCustomScripts" (click)="openCommandRunner(script.id)">
+      <button
+        hlmMenuItem
+        *ngFor="let script of recentCustomScripts"
+        (click)="openCommandRunner(script.id)"
+      >
         {{ script.name }}
       </button>
-      <div *ngIf="!customScriptsLoading && recentCustomScripts.length === 0" class="px-3 py-2 text-sm text-muted-foreground">
+      <div
+        *ngIf="!customScriptsLoading && recentCustomScripts.length === 0"
+        class="px-3 py-2 text-sm text-muted-foreground"
+      >
         No custom scripts yet
       </div>
       <ng-container *ngIf="recentCustomScripts.length > 0">
         <hlm-menu-separator />
       </ng-container>
-      <button hlmMenuItem (click)="manageCustomScripts()">
-        Manage Scripts
-      </button>
+      <button hlmMenuItem (click)="manageCustomScripts()">Manage Scripts</button>
     </hlm-sub-menu>
   </ng-template>
 
@@ -183,4 +194,3 @@
     </hlm-menu>
   </ng-template>
 </div>
-

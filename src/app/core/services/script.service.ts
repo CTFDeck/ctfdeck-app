@@ -97,7 +97,11 @@ export class ScriptService {
     return true;
   }
 
-  create(name: string, category: number, template: string): Promise<{ success: boolean; scriptId: string }> {
+  create(
+    name: string,
+    category: number,
+    template: string,
+  ): Promise<{ success: boolean; scriptId: string }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
       const buffer = serializeCustomScriptCreate(name, category, template, messageId);
@@ -167,7 +171,12 @@ export class ScriptService {
   }
 
   list(force = false): Promise<CustomScript[]> {
-    console.log('[ScriptService] list() called, force=', force, 'current length=', this.scriptsSubject.value.length);
+    console.log(
+      '[ScriptService] list() called, force=',
+      force,
+      'current length=',
+      this.scriptsSubject.value.length,
+    );
     if (!force && this.scriptsSubject.value.length > 0) {
       return Promise.resolve(this.scriptsSubject.value);
     }
@@ -226,7 +235,7 @@ export class ScriptService {
         this.pending.delete(messageId);
         this.loadingSubject.next(false);
         this.listRequest = null;
-        
+
         // If it was a forced refresh or we have no scripts, retry after a delay
         if (this.isConnected) {
           console.log('[ScriptService] Scheduling retry in', ScriptService.RETRY_DELAY_MS, 'ms');
@@ -234,7 +243,7 @@ export class ScriptService {
             void this.refreshList(true);
           }, ScriptService.RETRY_DELAY_MS);
         }
-        
+
         resolve(this.scriptsSubject.value);
       }
     });
