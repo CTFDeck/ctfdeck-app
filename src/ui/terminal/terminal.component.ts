@@ -398,7 +398,9 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (!pwd) return '$';
     const displayPath = pwd.replace(/\\/g, '/');
     const home = this.getHomePathFromPath(displayPath);
-    return home && displayPath.startsWith(home) ? `~${displayPath.slice(home.length)} $` : `${displayPath} $`;
+    return home && displayPath.startsWith(home)
+      ? `~${displayPath.slice(home.length)} $`
+      : `${displayPath} $`;
   }
 
   private getHomePathFromPath(path: string): string {

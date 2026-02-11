@@ -282,18 +282,7 @@ export function serializeSessionEditTarget(
   const nameBytes = encoder.encode(name);
   const descBytes = encoder.encode(description || '');
   const buffer = new Uint8Array(
-    1 +
-      16 +
-      16 +
-      16 +
-      4 +
-      addrBytes.length +
-      4 +
-      4 +
-      nameBytes.length +
-      4 +
-      descBytes.length +
-      4,
+    1 + 16 + 16 + 16 + 4 + addrBytes.length + 4 + 4 + nameBytes.length + 4 + descBytes.length + 4,
   );
   const view = new DataView(buffer.buffer);
 
@@ -627,9 +616,7 @@ export function serializeCustomScriptUpdate(
 ): Uint8Array {
   const nameBytes = encoder.encode(name);
   const templateBytes = encoder.encode(template);
-  const buffer = new Uint8Array(
-    1 + 16 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length,
-  );
+  const buffer = new Uint8Array(1 + 16 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length);
   const view = new DataView(buffer.buffer);
 
   let offset = 0;
