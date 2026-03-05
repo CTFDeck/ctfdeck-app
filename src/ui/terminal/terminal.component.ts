@@ -118,12 +118,23 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
-    this.wsService.disconnect();
+    // Do NOT disconnect the WebSocket here — it is a shared singleton used by all
+    // services and components (WriteUpEditor, ScriptService, etc.). Its lifecycle
+    // is managed by WebSocketService itself via auto-connect/retry.
   }
 
   ngAfterViewChecked(): void {}
 
   private connect() {
+    if (this.wsService.isConnected$.value) {
+      // Already connected (e.g. navigated back from writeup editor) — just init state.
+      this.addLine('info', 'Connected to WebSocket server.');
+      this.addLine('info', 'Type "help" for a list of available commands or just type away!');
+      this.scrollToBottom();
+      this.initializeTerminalState();
+      return;
+    }
+
     this.wsService
       .connect()
       .then(() => {

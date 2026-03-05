@@ -18,16 +18,41 @@
   <hlm-sidebar-content>
     <ng-scrollbar hlm class="h-full">
       <hlm-sidebar-group>
+        <div class="px-3 py-2 flex gap-1" *ngIf="!isCollapsed()">
+          <button
+            hlmBtn
+            variant="ghost"
+            class="flex-1 h-8 text-xs gap-2"
+            [class.bg-accent]="currentMode() === SidebarMode.Chats"
+            (click)="setMode(SidebarMode.Chats)"
+          >
+            <ng-icon name="lucideMessageCircleDashed" />
+            Chats
+          </button>
+          <button
+            hlmBtn
+            variant="ghost"
+            class="flex-1 h-8 text-xs gap-2"
+            [class.bg-accent]="currentMode() === SidebarMode.WriteUps"
+            (click)="setMode(SidebarMode.WriteUps)"
+          >
+            <ng-icon name="lucideFileText" />
+            Writeups
+          </button>
+        </div>
+
         <div class="px-3 py-2">
           <button
             hlmSidebarMenuButton
-            (click)="newChat()"
-            class="text-sm text-left flex items-center gap-2 h-9"
+            (click)="newAction()"
+            class="text-sm text-left flex items-center gap-2 h-9 w-full"
             [ngClass]="{ 'justify-center': isCollapsed() }"
-            title="New chat"
+            [title]="currentMode() === SidebarMode.Chats ? 'New chat' : 'New writeup'"
           >
             <ng-icon name="lucidePlus" />
-            <span *ngIf="!isCollapsed()" class="truncate">New chat</span>
+            <span *ngIf="!isCollapsed()" class="truncate">
+              {{ currentMode() === SidebarMode.Chats ? 'New chat' : 'New writeup' }}
+            </span>
           </button>
         </div>
 
@@ -41,83 +66,132 @@
               hlmInputGroupInput
               class="w-full"
               placeholder="Search..."
-              aria-label="Search chats"
+              [aria-label]="currentMode() === SidebarMode.Chats ? 'Search chats' : 'Search writeups'"
               [(ngModel)]="search"
             />
           </div>
         </div>
 
-        <div
-          class="px-3 py-1 text-xs text-muted-foreground"
-          *ngIf="!isCollapsed() && (sessionsLoading$ | async)"
-        >
-          Loading sessions...
-        </div>
-
-        <hlm-sidebar-separator />
-
-        <div class="px-3 py-2">
-          <div *ngIf="!isCollapsed()" class="text-xs font-medium mb-2 flex items-center gap-2">
-            <ng-icon name="lucideMessageCircleDashed" /> <span>Chats</span>
+        <!-- Chats List -->
+        <ng-container *ngIf="currentMode() === SidebarMode.Chats">
+          <div
+            class="px-3 py-1 text-xs text-muted-foreground"
+            *ngIf="!isCollapsed() && (sessionsLoading$ | async)"
+          >
+            Loading sessions...
           </div>
-          <div class="flex flex-col gap-2" *ngIf="sessions$ | async as sessions">
-            <div
-              *ngIf="(sessionsLoading$ | async) && sessions.length === 0 && !isCollapsed()"
-              class="space-y-2"
-            >
-              <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
-              <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
-              <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
-            </div>
 
-            <div
-              *ngFor="let c of filteredChats(sessions)"
-              class="group relative"
-              [class.ctf-session-deleting]="isDeletingSession(c.id)"
-            >
-              <button
-                hlmSidebarMenuButton
-                (click)="openChat(c)"
-                class="text-sm text-left truncate flex items-center gap-2 h-9 pr-14"
-                [ngClass]="{
-                  'justify-center': isCollapsed(),
-                  'ctf-session-active': c.id === (activeSessionId$ | async),
-                }"
-                title="{{ c.name }}"
+          <hlm-sidebar-separator />
+
+          <div class="px-3 py-2">
+            <div class="flex flex-col gap-2" *ngIf="sessions$ | async as sessions">
+              <div
+                *ngIf="(sessionsLoading$ | async) && sessions.length === 0 && !isCollapsed()"
+                class="space-y-2"
               >
-                <ng-icon name="lucideMessageCircleDashed" />
-                <span *ngIf="!isCollapsed()" class="truncate">
-                  {{ c.name }}
-                </span>
-              </button>
+                <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+                <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+                <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+              </div>
 
               <div
-                *ngIf="!isCollapsed()"
-                class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                *ngFor="let c of filteredChats(sessions)"
+                class="group relative"
+                [class.ctf-session-deleting]="isDeletingSession(c.id)"
               >
                 <button
-                  hlmBtn
-                  size="sm"
-                  variant="ghost"
-                  (click)="$event.stopPropagation(); openRenameDialog(c)"
-                  title="Rename session"
+                  hlmSidebarMenuButton
+                  (click)="openChat(c)"
+                  class="text-sm text-left truncate flex items-center gap-2 h-9 pr-14 w-full"
+                  [ngClass]="{
+                    'justify-center': isCollapsed(),
+                    'ctf-session-active': c.id === (activeSessionId$ | async),
+                  }"
+                  title="{{ c.name }}"
                 >
-                  <ng-icon name="lucidePencil" />
+                  <ng-icon name="lucideMessageCircleDashed" />
+                  <span *ngIf="!isCollapsed()" class="truncate">
+                    {{ c.name }}
+                  </span>
                 </button>
-                <button
-                  hlmBtn
-                  size="sm"
-                  variant="ghost"
-                  class="text-destructive hover:text-destructive"
-                  (click)="$event.stopPropagation(); openDeleteDialog(c)"
-                  title="Delete session"
+
+                <div
+                  *ngIf="!isCollapsed()"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <ng-icon name="lucideTrash2" />
+                  <button
+                    hlmBtn
+                    size="sm"
+                    variant="ghost"
+                    (click)="$event.stopPropagation(); openRenameDialog(c)"
+                    title="Rename session"
+                  >
+                    <ng-icon name="lucidePencil" />
+                  </button>
+                  <button
+                    hlmBtn
+                    size="sm"
+                    variant="ghost"
+                    class="text-destructive hover:text-destructive"
+                    (click)="$event.stopPropagation(); openDeleteDialog(c)"
+                    title="Delete session"
+                  >
+                    <ng-icon name="lucideTrash2" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- WriteUps List -->
+        <ng-container *ngIf="currentMode() === SidebarMode.WriteUps">
+          <div
+            class="px-3 py-1 text-xs text-muted-foreground"
+            *ngIf="!isCollapsed() && (writeUpsLoading$ | async)"
+          >
+            Loading writeups...
+          </div>
+
+          <hlm-sidebar-separator />
+
+          <div class="px-3 py-2">
+            <div class="flex flex-col gap-2" *ngIf="writeUps$ | async as writeUps">
+              <div
+                *ngIf="(writeUpsLoading$ | async) && writeUps.length === 0 && !isCollapsed()"
+                class="space-y-2"
+              >
+                <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+                <div class="h-8 rounded-md bg-muted/70 animate-pulse"></div>
+              </div>
+
+              <div *ngIf="writeUps.length === 0 && !(writeUpsLoading$ | async)" class="text-xs text-muted-foreground px-1 py-4 text-center">
+                No writeups for this session.
+              </div>
+
+              <div
+                *ngFor="let w of filteredWriteUps(writeUps)"
+                class="group relative"
+              >
+                <button
+                  hlmSidebarMenuButton
+                  (click)="openWriteUp(w)"
+                  class="text-sm text-left truncate flex items-center gap-2 h-9 pr-14 w-full"
+                  [ngClass]="{
+                    'justify-center': isCollapsed(),
+                    'ctf-session-active': w.id === (activeWriteUpId$ | async),
+                  }"
+                  title="{{ w.name }}"
+                >
+                  <ng-icon name="lucideFileText" />
+                  <span *ngIf="!isCollapsed()" class="truncate">
+                    {{ w.name }}
+                  </span>
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
       </hlm-sidebar-group>
     </ng-scrollbar>
   </hlm-sidebar-content>

@@ -186,3 +186,15 @@
     transition: none;
   }
 }
+
+/* Mode Switcher Styles */
+.ctf-chat-sidebar button.bg-accent {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ctf-chat-sidebar button[hlmBtn] {
+  transition: all 0.2s ease;
+}

@@ -65,18 +65,14 @@ export class Menubar implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.subscriptions.add(
       this.scriptService.scripts$.subscribe((scripts) => {
-        console.log('[Menubar] Received scripts update, count:', scripts.length);
         this.customScripts = scripts;
       }),
     );
     this.subscriptions.add(
       this.scriptService.isLoading$.subscribe((loading) => {
-        console.log('[Menubar] Scripts loading state:', loading);
         this.customScriptsLoading = loading;
       }),
     );
-    console.log('[Menubar] Requesting initial script list');
-    void this.scriptService.list();
   }
 
   ngOnDestroy(): void {

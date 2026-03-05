@@ -30,7 +30,7 @@ export class WebSocketService {
   private ws: WebSocket | null = null;
 
   private isConnectedSubject = new BehaviorSubject<boolean>(false);
-  public isConnected$ = this.isConnectedSubject.asObservable();
+  public isConnected$ = this.isConnectedSubject; // BehaviorSubject — .value is readable synchronously
 
   private pending = new Map<
     string,
@@ -45,10 +45,19 @@ export class WebSocketService {
   private messageHandlers = new Set<(data: Uint8Array) => boolean>();
   private currentUrl = 'ws://localhost:42712';
 
+  private retryCount = 0;
+  private readonly MAX_RETRIES = 10;
+  private retryTimeout: ReturnType<typeof setTimeout> | null = null;
+  private manualDisconnect = false;
+
   constructor(
     private zone: NgZone,
     private sudoModal: SudoPasswordModalService,
-  ) {}
+  ) {
+    // Connect immediately — works on Chrome. Firefox may cancel the connection
+    // during page load; onclose will fire and scheduleRetry handles the reconnect.
+    this.connectWithRetry();
+  }
 
   setUrl(url: string) {
     this.currentUrl = url;
@@ -61,6 +70,12 @@ export class WebSocketService {
   connect(url?: string): Promise<void> {
     const target = url ?? this.currentUrl;
     this.currentUrl = target;
+    this.manualDisconnect = false;
+    this.retryCount = 0;
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+      this.retryTimeout = null;
+    }
 
     return new Promise((resolve, reject) => {
       try {
@@ -81,6 +96,7 @@ export class WebSocketService {
 
         ws.onopen = () => {
           this.zone.run(() => {
+            this.retryCount = 0;
             this.isConnectedSubject.next(true);
             resolve();
           });
@@ -100,15 +116,94 @@ export class WebSocketService {
           this.zone.run(() => {
             this.isConnectedSubject.next(false);
             this.rejectAllPending(new Error('Connection closed'));
+            // Auto-reconnect if not a manual disconnect
+            if (!this.manualDisconnect) {
+              this.scheduleRetry();
+            }
           });
         };
       } catch (e) {
         reject(e);
+        this.scheduleRetry();
       }
     });
   }
 
+  private connectWithRetry(): void {
+    this.manualDisconnect = false;
+    this.connectInternal();
+  }
+
+  private connectInternal(): void {
+    if (this.manualDisconnect) return;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
+
+    try {
+      if (this.ws) {
+        try {
+          this.ws.onopen = null;
+          this.ws.onclose = null;
+          this.ws.onerror = null;
+          this.ws.onmessage = null;
+          this.ws.close();
+        } catch {}
+        this.ws = null;
+      }
+
+      const ws = new WebSocket(this.currentUrl);
+      ws.binaryType = 'arraybuffer';
+      this.ws = ws;
+
+      ws.onopen = () => {
+        this.zone.run(() => {
+          this.retryCount = 0;
+          this.isConnectedSubject.next(true);
+        });
+      };
+
+      ws.onmessage = (event) => {
+        this.handleMessage(event.data as ArrayBuffer);
+      };
+
+      ws.onerror = () => {
+        // handled by onclose
+      };
+
+      ws.onclose = () => {
+        this.zone.run(() => {
+          this.isConnectedSubject.next(false);
+          this.rejectAllPending(new Error('Connection closed'));
+          if (!this.manualDisconnect) {
+            this.scheduleRetry();
+          }
+        });
+      };
+    } catch {
+      this.scheduleRetry();
+    }
+  }
+
+  private scheduleRetry(): void {
+    if (this.manualDisconnect || this.retryCount >= this.MAX_RETRIES) return;
+    if (this.retryTimeout) return; // already scheduled
+
+    // First retry is immediate (catches Firefox page-load cancellation).
+    // Subsequent retries use exponential backoff: 500ms, 1s, 2s, 4s… capped at 10s.
+    const delay = this.retryCount === 0 ? 0 : Math.min(500 * Math.pow(2, this.retryCount - 1), 10_000);
+    this.retryCount++;
+    this.retryTimeout = setTimeout(() => {
+      this.retryTimeout = null;
+      this.connectInternal();
+    }, delay);
+  }
+
   disconnect(): void {
+    this.manualDisconnect = true;
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+      this.retryTimeout = null;
+    }
+    this.retryCount = 0;
     if (this.ws) {
       try {
         this.ws.close();

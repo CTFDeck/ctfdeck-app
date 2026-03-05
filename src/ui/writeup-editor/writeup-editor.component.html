@@ -1,0 +1,135 @@
+<div class="editor-container flex flex-col h-full bg-background text-foreground overflow-hidden">
+  <!-- Header / Toolbar -->
+  <header class="flex items-center justify-between px-6 py-4 border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-10">
+    <div class="flex items-center gap-4">
+      <button hlmBtn variant="ghost" size="sm" (click)="goBack()" hlmTooltipTrigger="Back to terminal">
+        <ng-icon name="lucideChevronLeft" class="text-lg" />
+      </button>
+      <div class="flex flex-col">
+        <input
+          hlmInput
+          class="bg-transparent border-none text-xl font-bold p-0 h-auto focus-visible:ring-0 w-64 md:w-96"
+          [(ngModel)]="name"
+          placeholder="Untitled Writeup"
+        />
+        <span class="text-[10px] uppercase tracking-widest text-muted-foreground opacity-70">
+          Markdown Editor
+        </span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="bg-muted/50 p-1 rounded-lg flex gap-1 mr-4">
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="mode() === 'edit' ? 'secondary' : 'ghost'"
+          (click)="setEditorMode('edit')"
+          class="h-7 text-xs px-3"
+          hlmTooltipTrigger="Switch to Writing mode"
+        >
+          <ng-icon name="lucideEdit" class="mr-2" />
+          Write
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="mode() === 'split' ? 'secondary' : 'ghost'"
+          (click)="setEditorMode('split')"
+          class="h-7 text-xs px-3 hidden lg:flex"
+          hlmTooltipTrigger="Parallel Edit & Preview"
+        >
+          Split
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="mode() === 'preview' ? 'secondary' : 'ghost'"
+          (click)="setEditorMode('preview')"
+          class="h-7 text-xs px-3 border-r border-border rounded-r-none"
+          hlmTooltipTrigger="Switch to Preview mode"
+        >
+          <ng-icon name="lucideEye" class="mr-2" />
+          Preview
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          variant="ghost"
+          (click)="exportMarkdown()"
+          class="h-7 text-xs px-3 rounded-l-none"
+          hlmTooltipTrigger="Download as .md file"
+        >
+          <ng-icon name="lucideDownload" class="mr-2" />
+          Export
+        </button>
+      </div>
+
+      <button hlmBtn variant="outline" size="sm" (click)="delete()" class="text-destructive border-destructive/20 hover:bg-destructive/10" hlmTooltipTrigger="Delete this WriteUp">
+        <ng-icon name="lucideTrash2" />
+      </button>
+
+      <button hlmBtn size="sm" (click)="save()" [disabled]="isSaving()" class="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[80px]" hlmTooltipTrigger="Save changes to backend">
+        <ng-icon *ngIf="!isSaving()" name="lucideSave" class="mr-2" />
+        <span *ngIf="!isSaving()">Save</span>
+        <span *ngIf="isSaving()" class="animate-pulse">Saving...</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Editor Content -->
+  <main class="flex-1 flex overflow-hidden relative" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+    <!-- Writing Area -->
+    <div 
+      class="flex-1 h-full overflow-hidden transition-all duration-300 ease-in-out border-r border-border"
+      [class.hidden]="mode() === 'preview'"
+      [class.w-1/2]="mode() === 'split'"
+    >
+      <textarea
+        #editor
+        class="w-full h-full p-8 bg-transparent text-foreground resize-none focus:outline-none font-mono text-sm leading-relaxed"
+        [(ngModel)]="content"
+        (ngModelChange)="onContentChange()"
+        (paste)="onPaste($event)"
+        placeholder="Start writing your report... (Support for Drag & Drop and Paste images)"
+      ></textarea>
+    </div>
+
+    <!-- Preview Area -->
+    <div 
+      class="flex-1 h-full overflow-y-auto transition-all duration-300 ease-in-out bg-card/20 relative"
+      [class.hidden]="mode() === 'edit'"
+      [class.w-1/2]="mode() === 'split'"
+    >
+      <!-- Type indicator: absolute overlay, always in DOM, no layout impact -->
+      <span
+        class="absolute top-3 right-4 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest rounded-full bg-card/80 text-primary border border-primary/30 backdrop-blur-sm shadow-sm pointer-events-none transition-opacity duration-150"
+        [class.opacity-0]="!hoveredTag()"
+        [class.opacity-100]="!!hoveredTag()"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse flex-shrink-0"></span>
+        {{ hoveredTag() ?? '' }}
+      </span>
+
+      <div 
+        class="markdown-body p-8 prose prose-invert prose-blue max-w-none"
+        (mouseover)="onPreviewMouseOver($event)"
+        (mouseout)="onPreviewMouseOut($event)"
+        [innerHTML]="previewHtml"
+      ></div>
+
+      <div *ngIf="!content" class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
+        <ng-icon name="lucideFileText" class="text-64 mb-4" />
+        <p>Preview will appear here</p>
+      </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div *ngIf="isLoading()" class="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-20">
+      <div class="flex flex-col items-center gap-4">
+        <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-sm font-medium">Loading writeup...</span>
+      </div>
+    </div>
+  </main>
+</div>

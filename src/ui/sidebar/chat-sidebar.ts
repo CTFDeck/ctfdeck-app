@@ -16,14 +16,23 @@ import {
   lucideArrowUp,
   lucideCheck,
   lucideMessageCircleDashed,
-  lucideFolder,
   lucidePanelLeft,
   lucidePencil,
   lucideTrash2,
+  lucideFileText,
+  lucideFolderOpen,
 } from '@ng-icons/lucide';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { SessionMetadata } from '../../app/core/services/session.protocol';
+import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
+import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
 import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
+
+export enum SidebarMode {
+  Chats = 'chats',
+  WriteUps = 'writeups',
+}
 
 @Component({
   selector: 'ctf-chat-sidebar',
@@ -48,10 +57,11 @@ import { Observable } from 'rxjs';
       lucideArrowUp,
       lucideCheck,
       lucideMessageCircleDashed,
-      lucideFolder,
       lucidePanelLeft,
       lucidePencil,
       lucideTrash2,
+      lucideFileText,
+      lucideFolderOpen,
     }),
   ],
 
@@ -59,6 +69,9 @@ import { Observable } from 'rxjs';
   styleUrls: ['./chat-sidebar.css'],
 })
 export class ChatSidebar {
+  SidebarMode = SidebarMode;
+  currentMode = signal<SidebarMode>(SidebarMode.Chats);
+
   isCollapsed = signal(false);
   deletingSessionIds = signal<Set<string>>(new Set());
   renameDraftById: Record<string, string> = {};
@@ -79,16 +92,49 @@ export class ChatSidebar {
   activeSessionId$: Observable<string | null>;
   sessionsLoading$: Observable<boolean>;
 
+  writeUps$: Observable<WriteUpMetadata[]>;
+  writeUpsLoading$: Observable<boolean>;
+  activeWriteUpId$: Observable<string | null>;
+
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
 
   sessionToRename: SessionMetadata | null = null;
   sessionToDelete: SessionMetadata | null = null;
 
-  constructor(private sessionStore: SessionStoreService) {
+  writeUpToRename: WriteUpMetadata | null = null;
+  writeUpToDelete: WriteUpMetadata | null = null;
+
+  constructor(
+    private sessionStore: SessionStoreService,
+    private writeUpStore: WriteUpStoreService,
+    private router: Router,
+  ) {
     this.sessions$ = this.sessionStore.sessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
     this.sessionsLoading$ = this.sessionStore.sessionsLoading$;
+
+    this.writeUps$ = this.writeUpStore.writeUps$;
+    this.writeUpsLoading$ = this.writeUpStore.loading$;
+    this.activeWriteUpId$ = new Observable((sub) => {
+      this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
+    });
+  }
+
+  setMode(mode: SidebarMode) {
+    this.currentMode.set(mode);
+  }
+
+  newAction() {
+    if (this.currentMode() === SidebarMode.Chats) {
+      void this.sessionStore.createSession('New chat').then(() => {
+        void this.router.navigate(['/terminal']);
+      });
+    } else {
+      void this.writeUpStore.createWriteUp('New writeup').then((id) => {
+        if (id) void this.router.navigate(['/writeup', id]);
+      });
+    }
   }
 
   newChat() {
@@ -97,6 +143,12 @@ export class ChatSidebar {
 
   openChat(session: SessionMetadata) {
     void this.sessionStore.selectSession(session.id);
+    void this.router.navigate(['/terminal']);
+  }
+
+  async openWriteUp(writeUp: WriteUpMetadata) {
+    await this.writeUpStore.selectWriteUp(writeUp.id);
+    void this.router.navigate(['/writeup', writeUp.id]);
   }
 
   // Rename Logic
@@ -165,6 +217,12 @@ export class ChatSidebar {
   /** Number of results currently shown by the search filter */
   resultsCount(sessions: SessionMetadata[]): number {
     return this.filteredChats(sessions).length;
+  }
+
+  filteredWriteUps(writeUps: WriteUpMetadata[]) {
+    const term = this.search?.toLowerCase().trim();
+    if (!term) return writeUps;
+    return writeUps.filter((w) => w.name.toLowerCase().includes(term));
   }
 
   toggleSidebar() {
