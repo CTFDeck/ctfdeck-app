@@ -7,6 +7,7 @@ import { MediaService } from '../../app/core/services/media.service';
 import { Marked } from 'marked';
 import DOMPurify from 'dompurify';
 import JSZip from 'jszip';
+import morphdom from 'morphdom';
 import { Subject, Subscription, timer } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -55,10 +56,11 @@ import { toast } from 'ngx-sonner';
 })
 export class WriteUpEditorComponent implements OnInit, OnDestroy {
   @ViewChild('editor') editor!: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('previewBody') previewBody!: ElementRef<HTMLDivElement>;
 
   content = '';
   name = '';
-  previewHtml = '';
+  // previewHtml no longer needed — morphdom patches the live DOM directly
   
   mode = signal<'edit' | 'preview' | 'split'>('split');
   isSaving = signal(false);
@@ -177,26 +179,42 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   updatePreview() {
-    console.log('[WriteUpEditor] updatePreview: content length =', this.content.length);
-    console.log('[WriteUpEditor] first 100 chars:', this.content.substring(0, 100));
-    
     // Auto-prefix UUID-like media IDs in markdown image syntax to ensure marked identifies them as URLs
-    const contentWithPrefixes = this.content.replace(/(!\[[^\]]*\]\()([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(\))/gi, '$1media://$2$3');
+    const contentWithPrefixes = this.content.replace(/(\!\[[^\]]*\]\()([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(\))/gi, '$1media://$2$3');
     
     const rawHtml = this.markedInstance.parse(contentWithPrefixes) as string;
     
-    // Resolve paths in video tags manually since marked doesn't have a default video token
-    const processedHtml = rawHtml.replace(/<(video|source)[^>]+src="([^"]+)"/g, (match, tag, mediaId) => {
-      const resolved = this.resolveMedia(mediaId);
-      console.log(`[WriteUpEditor] Video tag match: ${tag}, mediaId: ${mediaId} -> ${resolved}`);
-      return match.replace(mediaId, resolved);
+    // Resolve paths in video/source tags manually
+    const processedHtml = rawHtml.replace(/<(video|source)[^>]+src="([^"]+)"/g, (match, _tag, mediaId) => {
+      return match.replace(mediaId, this.resolveMedia(mediaId));
     });
 
-    this.previewHtml = DOMPurify.sanitize(processedHtml, {
+    const sanitized = DOMPurify.sanitize(processedHtml, {
       ADD_TAGS: ['video', 'source'],
       ADD_ATTR: ['controls', 'autoplay', 'loop', 'muted', 'playsinline', 'src', 'type'],
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data|blob|media):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i
     });
+
+    // Use morphdom to patch only changed nodes — preserves videos, scroll, loaded images
+    if (this.previewBody?.nativeElement) {
+      const temp = document.createElement('div');
+      temp.innerHTML = sanitized;
+      morphdom(this.previewBody.nativeElement, temp, {
+        childrenOnly: true,
+        onBeforeElUpdated: (fromEl, toEl) => {
+          // Never touch a video element — it would interrupt playback
+          if (fromEl.nodeName === 'VIDEO') return false;
+          // Don't wipe a loaded image src with an empty one (still fetching)
+          if (fromEl.nodeName === 'IMG') {
+            const fromSrc = (fromEl as HTMLImageElement).src;
+            const toSrc = (toEl as HTMLImageElement).getAttribute('src');
+            if (fromSrc && fromSrc.startsWith('blob:') && !toSrc) return false;
+          }
+          // Skip if identical
+          return !fromEl.isEqualNode(toEl);
+        },
+      });
+    }
   }
 
   private resolveMedia(mediaId: string): string {

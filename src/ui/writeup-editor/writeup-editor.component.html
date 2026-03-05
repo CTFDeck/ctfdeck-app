@@ -108,10 +108,10 @@
       </span>
 
       <div 
+        #previewBody
         class="markdown-body p-8 prose prose-invert prose-blue max-w-none"
         (mouseover)="onPreviewMouseOver($event)"
         (mouseout)="onPreviewMouseOut($event)"
-        [innerHTML]="previewHtml"
       ></div>
 
       <div *ngIf="!content" class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
