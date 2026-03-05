@@ -6,6 +6,7 @@ import { WriteUpStoreService } from '../../app/core/services/writeup-store.servi
 import { MediaService } from '../../app/core/services/media.service';
 import { Marked } from 'marked';
 import DOMPurify from 'dompurify';
+import JSZip from 'jszip';
 import { Subject, Subscription, timer } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -264,18 +265,63 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     }
   }
 
-  exportMarkdown() {
-    const blob = new Blob([this.content], { type: 'text/markdown' });
+  async exportZip() {
+    const fileName = (this.name || 'Untitled').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    toast.info('Preparing export...');
+
+    // 1. Extract all media UUIDs from the content
+    const uuidPattern = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi;
+    const mediaIds = [...new Set(this.content.match(uuidPattern) ?? [])];
+
+    // 2. Fetch each media (use cache if available, else hit server)
+    const mediaFiles = new Map<string, { fileName: string; mimeType: string; data: Uint8Array }>();
+
+    await Promise.all(mediaIds.map(async (id) => {
+      try {
+        const result = await this.mediaService.load(id);
+        if (result.success && result.media) {
+          mediaFiles.set(id, result.media);
+        }
+      } catch (e) {
+        console.warn(`[Export] Could not load media ${id}`, e);
+      }
+    }));
+
+    // 3. Build the updated markdown content with ./media/<filename> paths
+    let exportedContent = this.content;
+    // Strip media:// prefix first (may or may not be present)
+    exportedContent = exportedContent.replace(/media:\/\//g, '');
+
+    for (const [id, file] of mediaFiles) {
+      const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      exportedContent = exportedContent.replace(new RegExp(id.replace(/-/g, '\\-'), 'g'), `./media/${safeName}`);
+    }
+
+    // 4. Build the ZIP
+    const zip = new JSZip();
+    const folder = zip.folder(fileName)!;
+    folder.file('writeup.md', exportedContent);
+
+    if (mediaFiles.size > 0) {
+      const mediaFolder = folder.folder('media')!;
+      for (const [, file] of mediaFiles) {
+        const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        mediaFolder.file(safeName, file.data);
+      }
+    }
+
+    // 5. Generate and trigger download
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const fileName = (this.name || 'Untitled').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    a.download = `${fileName}.md`;
+    a.download = `${fileName}.zip`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
-    toast.success('Writeup exported as Markdown');
+
+    toast.success(`Exported ${mediaFiles.size} media file(s) + writeup.md`);
   }
 
   private setBadgeTag(value: string | null) {
