@@ -62,7 +62,12 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   mode = signal<'edit' | 'preview' | 'split'>('split');
   isSaving = signal(false);
   isLoading = signal(false);
+  /** Drives badge opacity (null = transparent) */
   hoveredTag = signal<string | null>(null);
+  /** Keeps last non-null value during fade-out so text doesn't flash to empty */
+  displayedTag = signal<string | null>(null);
+
+  private clearTagTimer: any;
 
   private mediaUrls = new Map<string, string>();
   private loadingMedia = new Set<string>();
@@ -273,6 +278,18 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     toast.success('Writeup exported as Markdown');
   }
 
+  private setBadgeTag(value: string | null) {
+    clearTimeout(this.clearTagTimer);
+    if (value) {
+      this.displayedTag.set(value);
+      this.hoveredTag.set(value);
+    } else {
+      this.hoveredTag.set(null);
+      // keep displayedTag alive during the CSS transition, then clear
+      this.clearTagTimer = setTimeout(() => this.displayedTag.set(null), 200);
+    }
+  }
+
   onPreviewMouseOver(event: MouseEvent) {
     // Walk from the exact target up to find the closest element with a "Type:" title
     // This ensures that hovering an <img> inside a <p> shows "Image" not "Paragraph"
@@ -280,7 +297,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     while (el && el !== event.currentTarget) {
       const title = el.getAttribute('title') || el.getAttribute('data-title');
       if (title?.startsWith('Type: ')) {
-        this.hoveredTag.set(title.replace('Type: ', ''));
+        this.setBadgeTag(title.replace('Type: ', ''));
         // Suppress the native browser tooltip bubble
         if (el.hasAttribute('title')) {
           el.setAttribute('data-title', title);
@@ -290,7 +307,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       }
       el = el.parentElement;
     }
-    this.hoveredTag.set(null);
+    this.setBadgeTag(null);
   }
 
   onPreviewMouseOut(event: MouseEvent) {
@@ -300,7 +317,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       el.setAttribute('title', el.getAttribute('data-title')!);
       el.removeAttribute('data-title');
     });
-    this.hoveredTag.set(null);
+    this.setBadgeTag(null);
   }
 
   goBack() {

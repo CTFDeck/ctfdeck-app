@@ -5,17 +5,12 @@
       <button hlmBtn variant="ghost" size="sm" (click)="goBack()" hlmTooltipTrigger="Back to terminal">
         <ng-icon name="lucideChevronLeft" class="text-lg" />
       </button>
-      <div class="flex flex-col">
-        <input
-          hlmInput
-          class="bg-transparent border-none text-xl font-bold p-0 h-auto focus-visible:ring-0 w-64 md:w-96"
-          [(ngModel)]="name"
-          placeholder="Untitled Writeup"
-        />
-        <span class="text-[10px] uppercase tracking-widest text-muted-foreground opacity-70">
-          Markdown Editor
-        </span>
-      </div>
+      <input
+        hlmInput
+        class="bg-transparent border-none text-xl font-bold p-0 h-auto focus-visible:ring-0 w-56 md:w-80"
+        [(ngModel)]="name"
+        placeholder="Untitled Writeup"
+      />
     </div>
 
     <div class="flex items-center gap-2">
@@ -101,14 +96,15 @@
       [class.hidden]="mode() === 'edit'"
       [class.w-1/2]="mode() === 'split'"
     >
-      <!-- Type indicator: absolute overlay, always in DOM, no layout impact -->
+      <!-- Type indicator: absolute overlay, always in DOM, opacity+scale transition, no layout impact -->
       <span
-        class="absolute top-3 right-4 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest rounded-full bg-card/80 text-primary border border-primary/30 backdrop-blur-sm shadow-sm pointer-events-none transition-opacity duration-150"
-        [class.opacity-0]="!hoveredTag()"
-        [class.opacity-100]="!!hoveredTag()"
+        class="absolute top-3 right-4 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest rounded-full bg-card/80 text-primary border border-primary/30 backdrop-blur-sm shadow-sm pointer-events-none"
+        [style.opacity]="hoveredTag() ? '1' : '0'"
+        [style.transform]="hoveredTag() ? 'scale(1) translateY(0)' : 'scale(0.85) translateY(-4px)'"
+        style="transition: opacity 0.18s cubic-bezier(0.4,0,0.2,1), transform 0.18s cubic-bezier(0.4,0,0.2,1);"
       >
-        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse flex-shrink-0"></span>
-        {{ hoveredTag() ?? '' }}
+        <span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+        {{ displayedTag() ?? '' }}
       </span>
 
       <div 
