@@ -90,8 +90,24 @@
 }
 
 .ctf-chat-sidebar button[hlmSidebarMenuButton].ctf-session-active {
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
   color: var(--primary);
+  font-weight: 500;
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.ctf-chat-sidebar button[hlmSidebarMenuButton].ctf-session-active::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 1rem;
+  background: var(--primary);
+  border-radius: 99px;
+  box-shadow: 0 0 10px var(--primary);
 }
 
 .ctf-chat-sidebar .truncate {
@@ -187,12 +203,28 @@
   }
 }
 
-/* Mode Switcher Styles */
+/* Mode Switcher Styles (Segmented Control look) */
+.ctf-chat-sidebar .ctf-mode-switcher {
+  background: color-mix(in srgb, var(--sidebar-border) 30%, transparent);
+  backdrop-filter: blur(8px);
+  padding: 0.25rem;
+  border-radius: 0.5rem; /* 8px outer */
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.5rem 0.75rem;
+  border: 1px solid var(--sidebar-border);
+}
+
+.ctf-chat-sidebar .ctf-mode-switcher button {
+  flex: 1;
+  border-radius: calc(0.5rem - 0.25rem); /* 4px inner */
+}
+
 .ctf-chat-sidebar button.bg-accent {
-  background: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--background);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--sidebar-border);
 }
 
 .ctf-chat-sidebar button[hlmBtn] {

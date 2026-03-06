@@ -80,6 +80,11 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private writeUpId: string | null = null;
   private markedInstance = new Marked();
 
+  // Performance tools
+  private render$ = new Subject<void>();
+  private lastHoveredEl: HTMLElement | null = null;
+  private mediaUpdateTimer: any;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -111,17 +116,30 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         },
         image: (token: any) => {
           const { href, title, text } = token;
-          console.log(`[WriteUpEditor] renderer.image hit! Token:`, token);
           const resolvedHref = this.resolveMedia(href);
-          console.log(`[WriteUpEditor] renderer.image resolved href: ${resolvedHref}`);
-          return `<img src="${resolvedHref}" alt="${text}" title="Type: Image${title ? ' - ' + title : ''}" style="max-width: 100%; border-radius: 8px;">`;
-        }
-      },
-      walkTokens: (token: any) => {
-        if (token.type === 'text' && token.text.includes('![')) {
-          console.log(`[WriteUpEditor] Found text token that looks like an image but wasn't parsed:`, token);
-        } else if (token.type === 'image') {
-          console.log(`[WriteUpEditor] Found image token:`, token);
+          // Removed inline styles as they are handled in CSS
+          return `<img src="${resolvedHref}" alt="${text}" title="Type: Image${title ? ' - ' + title : ''}">`;
+        },
+        table: (token: any) => {
+          let headerHtml = '<thead><tr>';
+          token.header.forEach((cell: any) => {
+            const style = cell.align ? `style="text-align: ${cell.align}"` : '';
+            headerHtml += `<th title="Type: Table Header" ${style}>${this.markedInstance.parseInline(cell.text)}</th>`;
+          });
+          headerHtml += '</tr></thead>';
+
+          let bodyHtml = '<tbody>';
+          token.rows.forEach((row: any) => {
+            bodyHtml += '<tr>';
+            row.forEach((cell: any) => {
+              const style = cell.align ? `style="text-align: ${cell.align}"` : '';
+              bodyHtml += `<td title="Type: Table Cell" ${style}>${this.markedInstance.parseInline(cell.text)}</td>`;
+            });
+            bodyHtml += '</tr>';
+          });
+          bodyHtml += '</tbody>';
+
+          return `<div class="table-wrapper" title="Type: Table"><table title="Type: Table">${headerHtml}${bodyHtml}</table></div>`;
         }
       }
     });
@@ -161,6 +179,15 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         this.save('Auto-saved');
       })
     );
+
+    // Optimized Preview Rendering
+    this.subscriptions.add(
+      this.render$.pipe(
+        debounceTime(32) // Frame-budget friendly debounce (approx 2 frames at 60fps)
+      ).subscribe(() => {
+        this.executePreviewUpdate();
+      })
+    );
   }
 
   ngOnDestroy(): void {
@@ -179,6 +206,12 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   updatePreview() {
+    this.render$.next();
+  }
+
+  private executePreviewUpdate() {
+    if (!this.previewBody?.nativeElement) return;
+    
     // Auto-prefix UUID-like media IDs in markdown image syntax to ensure marked identifies them as URLs
     const contentWithPrefixes = this.content.replace(/(\!\[[^\]]*\]\()([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(\))/gi, '$1media://$2$3');
     
@@ -190,31 +223,29 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     });
 
     const sanitized = DOMPurify.sanitize(processedHtml, {
-      ADD_TAGS: ['video', 'source'],
-      ADD_ATTR: ['controls', 'autoplay', 'loop', 'muted', 'playsinline', 'src', 'type'],
+      ADD_TAGS: ['video', 'source', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+      ADD_ATTR: ['controls', 'autoplay', 'loop', 'muted', 'playsinline', 'src', 'type', 'style'],
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data|blob|media):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i
     });
 
     // Use morphdom to patch only changed nodes — preserves videos, scroll, loaded images
-    if (this.previewBody?.nativeElement) {
-      const temp = document.createElement('div');
-      temp.innerHTML = sanitized;
-      morphdom(this.previewBody.nativeElement, temp, {
-        childrenOnly: true,
-        onBeforeElUpdated: (fromEl, toEl) => {
-          // Never touch a video element — it would interrupt playback
-          if (fromEl.nodeName === 'VIDEO') return false;
-          // Don't wipe a loaded image src with an empty one (still fetching)
-          if (fromEl.nodeName === 'IMG') {
-            const fromSrc = (fromEl as HTMLImageElement).src;
-            const toSrc = (toEl as HTMLImageElement).getAttribute('src');
-            if (fromSrc && fromSrc.startsWith('blob:') && !toSrc) return false;
-          }
-          // Skip if identical
-          return !fromEl.isEqualNode(toEl);
-        },
-      });
-    }
+    const temp = document.createElement('div');
+    temp.innerHTML = sanitized;
+    morphdom(this.previewBody.nativeElement, temp, {
+      childrenOnly: true,
+      onBeforeElUpdated: (fromEl, toEl) => {
+        // Never touch a video element — it would interrupt playback
+        if (fromEl.nodeName === 'VIDEO') return false;
+        // Don't wipe a loaded image src with an empty one (still fetching)
+        if (fromEl.nodeName === 'IMG') {
+          const fromSrc = (fromEl as HTMLImageElement).src;
+          const toSrc = (toEl as HTMLImageElement).getAttribute('src');
+          if (fromSrc && fromSrc.startsWith('blob:') && !toSrc) return false;
+        }
+        // Skip if identical
+        return !fromEl.isEqualNode(toEl);
+      },
+    });
   }
 
   private resolveMedia(mediaId: string): string {
@@ -234,15 +265,16 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     // If not already loading, trigger load
     if (!this.loadingMedia.has(cleanId)) {
-      console.log(`[WriteUpEditor] Loading media: ${cleanId}`);
       this.loadingMedia.add(cleanId);
       this.mediaService.load(cleanId).then(result => {
         if (result.success && result.media) {
           const blob = new Blob([result.media.data as any], { type: result.media.mimeType });
           const url = window.URL.createObjectURL(blob);
-          console.log(`[WriteUpEditor] Media loaded: ${cleanId} -> ${url}`);
           this.mediaUrls.set(cleanId, url);
-          this.updatePreview(); // Re-render to show the now-loaded media
+          
+          // Batch re-renders for multiple media items loading simultaneously
+          clearTimeout(this.mediaUpdateTimer);
+          this.mediaUpdateTimer = setTimeout(() => this.updatePreview(), 50);
         } else {
           console.warn(`[WriteUpEditor] Failed to load media ${cleanId}:`, result);
         }
@@ -342,6 +374,18 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     toast.success(`Exported ${mediaFiles.size} media file(s) + writeup.md`);
   }
 
+  goBack() {
+    this.router.navigate(['/terminal']);
+  }
+
+  setMode(mode: 'edit' | 'preview' | 'split') {
+    this.mode.set(mode);
+    if (mode !== 'edit') {
+      // Small delay to ensure the ViewChild previewBody is available before patching
+      setTimeout(() => this.updatePreview());
+    }
+  }
+
   private setBadgeTag(value: string | null) {
     clearTimeout(this.clearTagTimer);
     if (value) {
@@ -362,38 +406,36 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       const title = el.getAttribute('title') || el.getAttribute('data-title');
       if (title?.startsWith('Type: ')) {
         this.setBadgeTag(title.replace('Type: ', ''));
+        
         // Suppress the native browser tooltip bubble
         if (el.hasAttribute('title')) {
           el.setAttribute('data-title', title);
           el.removeAttribute('title');
+          this.lastHoveredEl = el; // Track the element
         }
         return;
       }
       el = el.parentElement;
     }
-    this.setBadgeTag(null);
+    this.restoreLastHovered();
   }
 
-  onPreviewMouseOut(event: MouseEvent) {
-    // Restore all elements inside the container that had their title swapped
-    const container = event.currentTarget as HTMLElement;
-    container.querySelectorAll<HTMLElement>('[data-title]').forEach(el => {
-      el.setAttribute('title', el.getAttribute('data-title')!);
-      el.removeAttribute('data-title');
-    });
-    this.setBadgeTag(null);
+  onPreviewMouseOut() {
+    this.restoreLastHovered();
   }
 
-  goBack() {
-    this.router.navigate(['/terminal']);
-  }
-
-  setEditorMode(mode: 'edit' | 'preview' | 'split') {
-    this.mode.set(mode);
-    if (mode !== 'edit') {
-      this.updatePreview();
+  private restoreLastHovered() {
+    if (this.lastHoveredEl) {
+      const title = this.lastHoveredEl.getAttribute('data-title');
+      if (title) {
+        this.lastHoveredEl.setAttribute('title', title);
+        this.lastHoveredEl.removeAttribute('data-title');
+      }
+      this.lastHoveredEl = null;
     }
+    this.setBadgeTag(null);
   }
+
 
   // Media handling
   async onPaste(event: ClipboardEvent) {
@@ -437,7 +479,6 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         // This ensures the preview works instantly without waiting for a re-load
         const url = window.URL.createObjectURL(file);
         this.mediaUrls.set(result.mediaId, url);
-        console.log(`[WriteUpEditor] Media uploaded and cached locally: ${result.mediaId} -> ${url}`);
 
         const isVideo = file.type.startsWith('video/');
         const markdown = isVideo 

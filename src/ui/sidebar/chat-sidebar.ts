@@ -72,6 +72,8 @@ export class ChatSidebar {
   SidebarMode = SidebarMode;
   currentMode = signal<SidebarMode>(SidebarMode.Chats);
 
+  private readonly STORAGE_KEY = 'ctf_sidebar_mode';
+
   isCollapsed = signal(false);
   deletingSessionIds = signal<Set<string>>(new Set());
   renameDraftById: Record<string, string> = {};
@@ -119,10 +121,17 @@ export class ChatSidebar {
     this.activeWriteUpId$ = new Observable((sub) => {
       this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
     });
+
+    // Load persisted mode
+    const savedMode = localStorage.getItem(this.STORAGE_KEY) as SidebarMode;
+    if (savedMode && Object.values(SidebarMode).includes(savedMode)) {
+      this.currentMode.set(savedMode);
+    }
   }
 
   setMode(mode: SidebarMode) {
     this.currentMode.set(mode);
+    localStorage.setItem(this.STORAGE_KEY, mode);
   }
 
   newAction() {

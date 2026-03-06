@@ -7,20 +7,21 @@
       </button>
       <input
         hlmInput
-        class="bg-transparent border-none text-xl font-bold p-0 h-auto focus-visible:ring-0 w-56 md:w-80"
+        class="bg-muted/30 border-none text-xl font-bold px-3 py-1.5 h-auto focus-visible:ring-1 focus-visible:ring-primary/20 rounded-md w-56 md:w-80 transition-all hover:bg-muted/50"
         [(ngModel)]="name"
+        (ngModelChange)="onContentChange()"
         placeholder="Untitled Writeup"
       />
     </div>
 
     <div class="flex items-center gap-2">
-      <div class="bg-muted/50 p-1 rounded-lg flex gap-1 mr-4">
+      <div class="bg-muted/40 p-1 rounded-lg flex gap-1 mr-4 border border-border/40 backdrop-blur-sm">
         <button
           hlmBtn
           size="sm"
           [variant]="mode() === 'edit' ? 'secondary' : 'ghost'"
-          (click)="setEditorMode('edit')"
-          class="h-7 text-xs px-3"
+          (click)="setMode('edit')"
+          class="h-7 text-xs px-3 rounded-[calc(0.5rem-4px)]"
           hlmTooltipTrigger="Switch to Writing mode"
         >
           <ng-icon name="lucideEdit" class="mr-2" />
@@ -30,8 +31,8 @@
           hlmBtn
           size="sm"
           [variant]="mode() === 'split' ? 'secondary' : 'ghost'"
-          (click)="setEditorMode('split')"
-          class="h-7 text-xs px-3 hidden lg:flex"
+          (click)="setMode('split')"
+          class="h-7 text-xs px-3 hidden lg:flex rounded-[calc(0.5rem-4px)]"
           hlmTooltipTrigger="Parallel Edit & Preview"
         >
           Split
@@ -40,8 +41,8 @@
           hlmBtn
           size="sm"
           [variant]="mode() === 'preview' ? 'secondary' : 'ghost'"
-          (click)="setEditorMode('preview')"
-          class="h-7 text-xs px-3 border-r border-border rounded-r-none"
+          (click)="setMode('preview')"
+          class="h-7 text-xs px-3 rounded-[calc(0.5rem-4px)]"
           hlmTooltipTrigger="Switch to Preview mode"
         >
           <ng-icon name="lucideEye" class="mr-2" />
@@ -111,7 +112,7 @@
         #previewBody
         class="markdown-body p-8 prose prose-invert prose-blue max-w-none"
         (mouseover)="onPreviewMouseOver($event)"
-        (mouseout)="onPreviewMouseOut($event)"
+        (mouseout)="onPreviewMouseOut()"
       ></div>
 
       <div *ngIf="!content" class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
