@@ -1,4 +1,4 @@
-<hlm-sidebar class="ctf-chat-sidebar">
+<hlm-sidebar class="ctf-chat-sidebar" collapsible="none">
   <hlm-sidebar-header>
     <div class="flex w-full items-center justify-between px-4 py-3">
       <div *ngIf="!isCollapsed()" class="overflow-hidden whitespace-nowrap">
@@ -96,45 +96,38 @@
 
               <div
                 *ngFor="let c of filteredChats(sessions)"
-                class="group relative"
+                class="ctf-item-group relative"
                 [class.ctf-session-deleting]="isDeletingSession(c.id)"
               >
                 <button
                   hlmSidebarMenuButton
                   (click)="openChat(c)"
-                  class="text-sm text-left truncate flex items-center gap-2 h-9 pr-14 w-full"
+                  class="text-sm text-left flex items-center gap-2 h-9 pr-14 w-full min-w-0"
                   [ngClass]="{
                     'justify-center': isCollapsed(),
                     'ctf-session-active': c.id === (activeSessionId$ | async),
                   }"
                   title="{{ c.name }}"
                 >
-                  <ng-icon name="lucideMessageCircleDashed" />
+                  <ng-icon name="lucideMessageCircleDashed" class="shrink-0" />
                   <span *ngIf="!isCollapsed()" class="truncate">
                     {{ c.name }}
                   </span>
                 </button>
 
-                <div
-                  *ngIf="!isCollapsed()"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
+                <!-- Boutons flottants au hover de l'item -->
+                <div *ngIf="!isCollapsed()" class="ctf-item-actions">
                   <button
-                    hlmBtn
-                    size="sm"
-                    variant="ghost"
+                    class="ctf-action-btn"
                     (click)="$event.stopPropagation(); openRenameDialog(c)"
-                    title="Rename session"
+                    title="Rename"
                   >
                     <ng-icon name="lucidePencil" />
                   </button>
                   <button
-                    hlmBtn
-                    size="sm"
-                    variant="ghost"
-                    class="text-destructive hover:text-destructive"
+                    class="ctf-action-btn ctf-action-destroy"
                     (click)="$event.stopPropagation(); openDeleteDialog(c)"
-                    title="Delete session"
+                    title="Delete"
                   >
                     <ng-icon name="lucideTrash2" />
                   </button>
@@ -171,23 +164,42 @@
 
               <div
                 *ngFor="let w of filteredWriteUps(writeUps)"
-                class="group relative"
+                class="ctf-item-group relative"
+                [class.ctf-session-deleting]="isDeletingWriteUp(w.id)"
               >
                 <button
                   hlmSidebarMenuButton
                   (click)="openWriteUp(w)"
-                  class="text-sm text-left truncate flex items-center gap-2 h-9 pr-14 w-full"
+                  class="text-sm text-left flex items-center gap-2 h-9 pr-14 w-full min-w-0"
                   [ngClass]="{
                     'justify-center': isCollapsed(),
                     'ctf-session-active': w.id === (activeWriteUpId$ | async),
                   }"
                   title="{{ w.name }}"
                 >
-                  <ng-icon name="lucideFileText" />
+                  <ng-icon name="lucideFileText" class="shrink-0" />
                   <span *ngIf="!isCollapsed()" class="truncate">
                     {{ w.name }}
                   </span>
                 </button>
+
+                <!-- Boutons flottants au hover de l'item -->
+                <div *ngIf="!isCollapsed()" class="ctf-item-actions">
+                  <button
+                    class="ctf-action-btn"
+                    (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)"
+                    title="Rename"
+                  >
+                    <ng-icon name="lucidePencil" />
+                  </button>
+                  <button
+                    class="ctf-action-btn ctf-action-destroy"
+                    (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)"
+                    title="Delete"
+                  >
+                    <ng-icon name="lucideTrash2" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -251,6 +263,58 @@
     <hlm-dialog-footer class="p-6 border-t border-border flex justify-between">
       <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
       <button hlmBtn variant="destructive" (click)="deleteSession(ctx)">Delete</button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- WriteUp Rename Dialog -->
+<hlm-dialog>
+  <button #renameWriteUpTrigger brnDialogTrigger class="hidden"></button>
+  <hlm-dialog-content
+    *brnDialogContent="let ctx"
+    [showCloseButton]="false"
+    class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-[425px] w-full overflow-hidden flex flex-col"
+  >
+    <hlm-dialog-header class="p-6 border-b border-border">
+      <h3 hlmDialogTitle>Rename Writeup</h3>
+    </hlm-dialog-header>
+    <div class="p-6 space-y-4" *ngIf="writeUpToRename">
+      <div class="space-y-2">
+        <label hlmLabel for="rename-writeup-input">Name</label>
+        <input
+          id="rename-writeup-input"
+          hlmInput
+          class="w-full"
+          [(ngModel)]="renameDraftById[writeUpToRename.id]"
+          (keydown.enter)="renameWriteUp(ctx)"
+          placeholder="Writeup name"
+        />
+      </div>
+    </div>
+    <hlm-dialog-footer class="p-6 border-t border-border flex justify-between">
+      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
+      <button hlmBtn (click)="renameWriteUp(ctx)">Save</button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- WriteUp Delete Dialog -->
+<hlm-dialog>
+  <button #deleteWriteUpTrigger brnDialogTrigger class="hidden"></button>
+  <hlm-dialog-content
+    *brnDialogContent="let ctx"
+    [showCloseButton]="false"
+    class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-[425px] w-full overflow-hidden flex flex-col"
+  >
+    <hlm-dialog-header class="p-6 border-b border-border">
+      <h3 hlmDialogTitle>Delete Writeup</h3>
+      <p hlmDialogDescription class="mt-2 text-sm text-muted-foreground" *ngIf="writeUpToDelete">
+        Delete "{{ writeUpToDelete.name }}"? This action cannot be undone.
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer class="p-6 border-t border-border flex justify-between">
+      <button hlmBtn variant="outline" (click)="ctx.close()">Cancel</button>
+      <button hlmBtn variant="destructive" (click)="deleteWriteUp(ctx)">Delete</button>
     </hlm-dialog-footer>
   </hlm-dialog-content>
 </hlm-dialog>

@@ -1,4 +1,5 @@
 import { Component, signal, HostBinding, ViewChild, ElementRef } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -75,7 +76,12 @@ export class ChatSidebar {
   private readonly STORAGE_KEY = 'ctf_sidebar_mode';
 
   isCollapsed = signal(false);
+
+  // Session delete animation tracking
   deletingSessionIds = signal<Set<string>>(new Set());
+  // WriteUp delete animation tracking
+  deletingWriteUpIds = signal<Set<string>>(new Set());
+
   renameDraftById: Record<string, string> = {};
 
   @HostBinding('class.w-64')
@@ -83,7 +89,7 @@ export class ChatSidebar {
     return !this.isCollapsed();
   }
 
-  @HostBinding('class.w-20') // 5rem = 80px
+  @HostBinding('class.w-20')
   get collapsed() {
     return this.isCollapsed();
   }
@@ -98,12 +104,15 @@ export class ChatSidebar {
   writeUpsLoading$: Observable<boolean>;
   activeWriteUpId$: Observable<string | null>;
 
+  // Session dialog state
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
-
   sessionToRename: SessionMetadata | null = null;
   sessionToDelete: SessionMetadata | null = null;
 
+  // WriteUp dialog state
+  @ViewChild('renameWriteUpTrigger') renameWriteUpTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('deleteWriteUpTrigger') deleteWriteUpTrigger!: ElementRef<HTMLButtonElement>;
   writeUpToRename: WriteUpMetadata | null = null;
   writeUpToDelete: WriteUpMetadata | null = null;
 
@@ -160,11 +169,10 @@ export class ChatSidebar {
     void this.router.navigate(['/writeup', writeUp.id]);
   }
 
-  // Rename Logic
+  // ── Session: Rename ─────────────────────────────────────────────────────
   openRenameDialog(session: SessionMetadata) {
     this.sessionToRename = session;
     this.renameDraftById[session.id] = session.name;
-    // Defer click to ensure state update propagates if needed, though usually sync is fine here
     setTimeout(() => this.renameTrigger.nativeElement.click());
   }
 
@@ -172,15 +180,13 @@ export class ChatSidebar {
     if (!this.sessionToRename) return;
     const session = this.sessionToRename;
     const nextName = (this.renameDraftById[session.id] ?? '').trim();
-
     if (!nextName) return;
-
     ctx.close();
     await this.sessionStore.renameSession(session.id, nextName, session.description || '');
     this.sessionToRename = null;
   }
 
-  // Delete Logic
+  // ── Session: Delete ──────────────────────────────────────────────────────
   openDeleteDialog(session: SessionMetadata) {
     this.sessionToDelete = session;
     setTimeout(() => this.deleteTrigger.nativeElement.click());
@@ -189,10 +195,8 @@ export class ChatSidebar {
   async deleteSession(ctx: { close: () => void }) {
     if (!this.sessionToDelete) return;
     const session = this.sessionToDelete;
-
     ctx.close();
     if (this.isDeletingSession(session.id)) return;
-
     this.setSessionDeleting(session.id, true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 220));
@@ -209,21 +213,65 @@ export class ChatSidebar {
 
   private setSessionDeleting(sessionId: string, deleting: boolean) {
     const next = new Set(this.deletingSessionIds());
-    if (deleting) {
-      next.add(sessionId);
-    } else {
-      next.delete(sessionId);
-    }
+    if (deleting) next.add(sessionId); else next.delete(sessionId);
     this.deletingSessionIds.set(next);
   }
 
+  // ── WriteUp: Rename ──────────────────────────────────────────────────────
+  openRenameWriteUpDialog(writeUp: WriteUpMetadata) {
+    this.writeUpToRename = writeUp;
+    this.renameDraftById[writeUp.id] = writeUp.name;
+    setTimeout(() => this.renameWriteUpTrigger.nativeElement.click());
+  }
+
+  async renameWriteUp(ctx: { close: () => void }) {
+    if (!this.writeUpToRename) return;
+    const writeUp = this.writeUpToRename;
+    const nextName = (this.renameDraftById[writeUp.id] ?? '').trim();
+    if (!nextName) return;
+    ctx.close();
+    await this.writeUpStore.renameWriteUp(writeUp.id, nextName);
+    this.writeUpToRename = null;
+  }
+
+  // ── WriteUp: Delete ──────────────────────────────────────────────────────
+  openDeleteWriteUpDialog(writeUp: WriteUpMetadata) {
+    this.writeUpToDelete = writeUp;
+    setTimeout(() => this.deleteWriteUpTrigger.nativeElement.click());
+  }
+
+  async deleteWriteUp(ctx: { close: () => void }) {
+    if (!this.writeUpToDelete) return;
+    const writeUp = this.writeUpToDelete;
+    ctx.close();
+    if (this.isDeletingWriteUp(writeUp.id)) return;
+    this.setWriteUpDeleting(writeUp.id, true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 220));
+      await this.writeUpStore.deleteWriteUp(writeUp.id);
+    } finally {
+      this.setWriteUpDeleting(writeUp.id, false);
+      this.writeUpToDelete = null;
+    }
+  }
+
+  isDeletingWriteUp(writeUpId: string): boolean {
+    return this.deletingWriteUpIds().has(writeUpId);
+  }
+
+  private setWriteUpDeleting(writeUpId: string, deleting: boolean) {
+    const next = new Set(this.deletingWriteUpIds());
+    if (deleting) next.add(writeUpId); else next.delete(writeUpId);
+    this.deletingWriteUpIds.set(next);
+  }
+
+  // ── Filters ──────────────────────────────────────────────────────────────
   filteredChats(sessions: SessionMetadata[]) {
     const term = this.search?.toLowerCase().trim();
     if (!term) return sessions;
     return sessions.filter((s) => s.name.toLowerCase().includes(term));
   }
 
-  /** Number of results currently shown by the search filter */
   resultsCount(sessions: SessionMetadata[]): number {
     return this.filteredChats(sessions).length;
   }

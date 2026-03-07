@@ -130,6 +130,26 @@ export class WriteUpStoreService implements OnDestroy {
     }
   }
 
+  async renameWriteUp(writeUpId: string, newName: string): Promise<void> {
+    try {
+      // We need content to update, so load it first
+      const loadResult = await this.writeUpService.load(writeUpId);
+      if (!loadResult.success || !loadResult.writeUp) {
+        throw new Error('Failed to load writeup for renaming');
+      }
+
+      const success = await this.writeUpService.update(writeUpId, newName, loadResult.writeUp.content);
+      if (success) {
+        if (this.activeWriteUpSubject.value?.id === writeUpId) {
+          this.activeWriteUpSubject.next({ ...this.activeWriteUpSubject.value, name: newName });
+        }
+        await this.refreshWriteUps();
+      }
+    } catch (err: any) {
+      toast.error('Rename failed', { description: err?.message || 'Unknown error' });
+    }
+  }
+
   closeActiveWriteUp(): void {
     this.activeWriteUpSubject.next(null);
   }
