@@ -84,7 +84,11 @@
     </div>
   </div>
 
-  <div class="terminal-output flex-1 p-3 overflow-auto text-sm leading-relaxed" #scrollContainer>
+  <div
+    class="terminal-output flex-1 p-3 overflow-auto text-sm leading-relaxed relative"
+    #scrollContainer
+    (mouseup)="onMouseUp($event)"
+  >
     <div
       *ngFor="let line of lines"
       class="line mb-0.5 break-all"
@@ -122,6 +126,15 @@
       </ng-template>
     </div>
 
+    <!-- Selection Menu Trigger (Invisible) -->
+    <button
+      #selectionTrigger
+      [brnMenuTriggerFor]="selectionMenu"
+      class="fixed pointer-events-none opacity-0"
+      [style.left.px]="selectionMenuPosition.x"
+      [style.top.px]="selectionMenuPosition.y"
+    ></button>
+
     <!-- Autocomplete suggestions shown inline near input -->
     <div *ngIf="autocompleteSuggestions.length > 0" class="autocomplete-suggestions mb-2">
       <div class="autocomplete-grid">
@@ -152,3 +165,38 @@
     </div>
   </div>
 </div>
+
+<ng-template #selectionMenu>
+  <div hlmMenu class="w-56 shadow-xl border-border/50 bg-background/95 backdrop-blur-sm">
+    <hlm-menu-label>Selection Action</hlm-menu-label>
+    <hlm-menu-separator />
+    <hlm-menu-group>
+      <button hlmMenuItem [brnMenuTriggerFor]="writeupsSubMenu">
+        <ng-icon name="lucideFileText" hlmMenuIcon class="mr-2" />
+        <span>Add to Write-up</span>
+        <hlm-menu-item-sub-indicator />
+      </button>
+    </hlm-menu-group>
+  </div>
+</ng-template>
+
+<ng-template #writeupsSubMenu>
+  <div hlmMenu class="w-64 max-h-80 overflow-y-auto shadow-xl border-border/50 bg-background/95 backdrop-blur-sm">
+    <hlm-menu-label>Select Write-up</hlm-menu-label>
+    <hlm-menu-separator />
+    <hlm-menu-group *ngIf="(writeUps$ | async)?.length; else noWriteUps">
+      <button
+        hlmMenuItem
+        *ngFor="let writeUp of writeUps$ | async"
+        (click)="appendToWriteUp(writeUp)"
+      >
+        <span class="truncate">{{ writeUp.name }}</span>
+      </button>
+    </hlm-menu-group>
+    <ng-template #noWriteUps>
+      <div class="px-2 py-4 text-center text-xs text-muted-foreground">
+        No write-ups available
+      </div>
+    </ng-template>
+  </div>
+</ng-template>

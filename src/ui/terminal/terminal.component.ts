@@ -6,6 +6,7 @@ import {
   ElementRef,
   AfterViewChecked,
   ChangeDetectorRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,23 +15,31 @@ import { WebSocketService } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideServer, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
+import { lucideServer, lucidePlus, lucideTrash2, lucideFileText } from '@ng-icons/lucide';
 import AnsiToHtml from 'ansi-to-html';
 import { TerminalLine, LsEntry, FilePrefix } from './helpers/terminal-types';
 import { TerminalHistoryHelper } from './helpers/terminal-history.helper';
 import { TerminalAutocompleteHelper } from './helpers/terminal-autocomplete.helper';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { SessionData } from '../../app/core/services/session.protocol';
+import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
+import { WriteUpService } from '../../app/core/services/writeup.service';
+import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
+import { toast } from 'ngx-sonner';
+import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
+import { HlmMenuImports } from '@ctfdeck/helm/menu';
+
 
 @Component({
   selector: 'app-terminal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports],
+  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, BrnMenuTrigger, ...HlmMenuImports],
   providers: [
     provideIcons({
       lucideServer,
       lucidePlus,
       lucideTrash2,
+      lucideFileText,
     }),
   ],
   templateUrl: './terminal.component.html',
@@ -39,6 +48,7 @@ import { SessionData } from '../../app/core/services/session.protocol';
 export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   @ViewChild('commandInput') private commandInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('selectionTrigger', { read: BrnMenuTrigger }) private selectionTrigger?: BrnMenuTrigger;
 
   lines: TerminalLine[] = [];
   currentCommand: string = '';
@@ -57,9 +67,16 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private subscriptions: Subscription = new Subscription();
 
-  // Helpers
   private historyHelper = new TerminalHistoryHelper();
   public autocompleteHelper = new TerminalAutocompleteHelper();
+
+  private writeUpStore = inject(WriteUpStoreService);
+  private writeUpService = inject(WriteUpService);
+  writeUps$ = this.writeUpStore.writeUps$;
+
+  // Selection menu
+  selectedText: string = '';
+  selectionMenuPosition = { x: 0, y: 0 };
 
   private ansiConverter = new AnsiToHtml({
     fg: '#d4d4d4',
@@ -525,5 +542,50 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectServer(url: string) {
     this.serverUrl = url;
     this.reconnect();
+  }
+
+  onMouseUp(event: MouseEvent) {
+    const selection = window.getSelection();
+    const text = selection?.toString().trim();
+    if (text && text.length > 0) {
+      this.selectedText = text;
+      this.selectionMenuPosition = { x: event.clientX, y: event.clientY };
+      // Small timeout to ensure the trigger is positioned before opening
+      setTimeout(() => {
+        if (this.selectionTrigger) {
+          // Triggering the internal CDK menu trigger
+          (this.selectionTrigger as any)._cdkTrigger?.open();
+        }
+      }, 50);
+    }
+  }
+
+  async appendToWriteUp(writeUp: WriteUpMetadata) {
+    if (!this.selectedText) return;
+
+    try {
+      // Use the store to load and then save with appended content
+      const { success, writeUp: fullWriteUp } = await this.writeUpService.load(writeUp.id);
+      if (success && fullWriteUp) {
+        const appended = `\n\n\`\`\`bash\n${this.selectedText}\n\`\`\`\n`;
+        const newContent = fullWriteUp.content + appended;
+        const saveOk = await this.writeUpStore.saveActiveWriteUp(newContent, fullWriteUp.name);
+
+        // If it's not the currently active writeup in the store, we need a manual update
+        if (!saveOk) {
+          await this.writeUpService.update(writeUp.id, fullWriteUp.name, newContent);
+        }
+
+        toast.success('Added to write-up!', {
+          description: `Content appended to "${writeUp.name}"`,
+        });
+      }
+    } catch (err: any) {
+      toast.error('Failed to append to write-up', {
+        description: err?.message || 'Unknown error',
+      });
+    } finally {
+      this.selectedText = '';
+    }
   }
 }
