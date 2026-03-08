@@ -167,7 +167,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
-      this.writeUpStore.loading$.subscribe((loading) => {
+      this.writeUpStore.isLoading$.subscribe((loading: boolean) => {
         this.isLoading.set(loading);
       })
     );

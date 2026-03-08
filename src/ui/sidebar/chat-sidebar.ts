@@ -126,7 +126,7 @@ export class ChatSidebar {
     this.sessionsLoading$ = this.sessionStore.sessionsLoading$;
 
     this.writeUps$ = this.writeUpStore.writeUps$;
-    this.writeUpsLoading$ = this.writeUpStore.loading$;
+    this.writeUpsLoading$ = this.writeUpStore.writeUpsLoading$;
     this.activeWriteUpId$ = new Observable((sub) => {
       this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
     });

@@ -74,13 +74,6 @@
 
         <!-- Chats List -->
         <ng-container *ngIf="currentMode() === SidebarMode.Chats">
-          <div
-            class="px-3 py-1 text-xs text-muted-foreground"
-            *ngIf="!isCollapsed() && (sessionsLoading$ | async)"
-          >
-            Loading sessions...
-          </div>
-
           <hlm-sidebar-separator />
 
           <div class="px-3 py-2">
@@ -139,13 +132,6 @@
 
         <!-- WriteUps List -->
         <ng-container *ngIf="currentMode() === SidebarMode.WriteUps">
-          <div
-            class="px-3 py-1 text-xs text-muted-foreground"
-            *ngIf="!isCollapsed() && (writeUpsLoading$ | async)"
-          >
-            Loading writeups...
-          </div>
-
           <hlm-sidebar-separator />
 
           <div class="px-3 py-2">

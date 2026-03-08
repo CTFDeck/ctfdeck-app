@@ -10,8 +10,11 @@ export class WriteUpStoreService implements OnDestroy {
   private writeUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
   writeUps$ = this.writeUpsSubject.asObservable();
 
-  private loadingSubject = new BehaviorSubject<boolean>(false);
-  loading$ = this.loadingSubject.asObservable();
+  private writeUpsLoadingSubject = new BehaviorSubject<boolean>(false);
+  writeUpsLoading$ = this.writeUpsLoadingSubject.asObservable();
+
+  private isLoadingSubject = new BehaviorSubject<boolean>(false);
+  isLoading$ = this.isLoadingSubject.asObservable();
 
   private activeWriteUpSubject = new BehaviorSubject<WriteUpData | null>(null);
   activeWriteUp$ = this.activeWriteUpSubject.asObservable();
@@ -44,19 +47,19 @@ export class WriteUpStoreService implements OnDestroy {
     const sid = sessionId || this.sessionStore.getActiveSessionId();
     if (!sid) return;
 
-    this.loadingSubject.next(true);
+    this.writeUpsLoadingSubject.next(true);
     try {
       const list = await this.writeUpService.list(sid);
       this.writeUpsSubject.next(list);
     } catch (err: any) {
       toast.error('Failed to load writeups', { description: err?.message || 'Unknown error' });
     } finally {
-      this.loadingSubject.next(false);
+      this.writeUpsLoadingSubject.next(false);
     }
   }
 
   async selectWriteUp(writeUpId: string): Promise<void> {
-    this.loadingSubject.next(true);
+    this.isLoadingSubject.next(true);
     try {
       const result = await this.writeUpService.load(writeUpId);
       if (result.success && result.writeUp) {
@@ -68,7 +71,7 @@ export class WriteUpStoreService implements OnDestroy {
       toast.error('Writeup load failed', { description: err?.message || 'Unknown error' });
       this.activeWriteUpSubject.next(null);
     } finally {
-      this.loadingSubject.next(false);
+      this.isLoadingSubject.next(false);
     }
   }
 
@@ -79,7 +82,7 @@ export class WriteUpStoreService implements OnDestroy {
       return null;
     }
 
-    this.loadingSubject.next(true);
+    this.isLoadingSubject.next(true);
     try {
       const result = await this.writeUpService.create(sessionId, name);
       if (result.success) {
@@ -92,7 +95,7 @@ export class WriteUpStoreService implements OnDestroy {
       toast.error('Writeup creation failed', { description: err?.message || 'Unknown error' });
       return null;
     } finally {
-      this.loadingSubject.next(false);
+      this.isLoadingSubject.next(false);
     }
   }
 
@@ -102,6 +105,7 @@ export class WriteUpStoreService implements OnDestroy {
 
     const newName = name || active.name;
 
+    this.isLoadingSubject.next(true);
     try {
       const success = await this.writeUpService.update(active.id, newName, content);
       if (success) {
@@ -113,6 +117,8 @@ export class WriteUpStoreService implements OnDestroy {
     } catch (err: any) {
       toast.error('Save failed', { description: err?.message || 'Unknown error' });
       return false;
+    } finally {
+      this.isLoadingSubject.next(false);
     }
   }
 
