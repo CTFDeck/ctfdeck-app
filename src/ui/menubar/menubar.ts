@@ -92,7 +92,6 @@ export class Menubar implements OnInit, OnDestroy {
   }
 
   openCommandRunner(toolId?: string) {
-    console.log('Menubar emitting openCommandRunner event with toolId:', toolId);
     this.openCommandRunnerEvent.emit(toolId);
   }
 
@@ -109,6 +108,5 @@ export class Menubar implements OnInit, OnDestroy {
   }
 
   saveTargets() {
-    console.log('Targets already saved in cookies');
   }
 }

@@ -50,7 +50,6 @@ export class App {
   }
 
   openCommandRunner(toolId?: string) {
-    console.log('Opening command runner with toolId:', toolId);
     this.selectedToolId = toolId || '';
     this.commandRunnerVisible = true;
   }
@@ -60,6 +59,5 @@ export class App {
   }
 
   saveTargets() {
-    console.log('Targets already saved in cookies');
   }
 }

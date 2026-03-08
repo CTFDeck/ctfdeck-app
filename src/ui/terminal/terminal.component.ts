@@ -428,9 +428,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private addLine(type: 'command' | 'output' | 'error' | 'info', content: string) {
-    if (type === 'output') {
-      console.log('Received output content:', JSON.stringify(content));
-    }
 
     let renderedContent: SafeHtml | string = content;
 

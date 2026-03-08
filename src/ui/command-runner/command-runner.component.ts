@@ -133,7 +133,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    console.log('CommandRunnerComponent initialized with initialToolId:', this.initialToolId);
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
         this.targets = session?.targets || [];
@@ -147,7 +146,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.scriptService.scripts$.subscribe((scripts) => {
-        console.log('[CommandRunner] Received scripts update, count:', scripts.length);
         this.customScripts = scripts;
         this.updateCommandOptions();
         this.applyPendingSelection();
@@ -158,7 +156,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.scriptService.isLoading$.subscribe((loading) => {
-        console.log('[CommandRunner] Scripts loading state:', loading);
         this.customScriptsLoading = loading;
       }),
     );
@@ -172,9 +169,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('CommandRunnerComponent ngOnChanges:', changes);
     if (changes['initialToolId'] && changes['initialToolId'].currentValue) {
-      console.log('Selecting tool from ngOnChanges:', changes['initialToolId'].currentValue);
       const value = changes['initialToolId'].currentValue;
       if (value === '__manage_scripts__') {
         this.showManageScripts = true;
@@ -376,7 +371,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
   // Help Logic
   runHelp() {
-    console.log('Running help for tool:', this.selectedToolId);
     if (!this.selectedToolId) return;
 
     this.isHelpRunning = true;
@@ -409,24 +403,20 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       .executeCommandStreaming(
         `${this.selectedToolId} -h`,
         (data: string) => {
-          console.log('Help output received:', data);
           outputBuffer += data;
           scheduleRender();
         },
         (error: string) => {
-          console.error('Help error received:', error);
           errorBuffer += error;
         },
       )
       .then((result) => {
-        console.log('Help command completed with result:', result);
         this.isHelpRunning = false;
         // Render final output
         this.renderHelpOutput(outputBuffer);
         this.cdr.detectChanges();
       })
       .catch((err: any) => {
-        console.error('Help command failed:', err);
         this.isHelpRunning = false;
         this.helpOutput = this.sanitizer.bypassSecurityTrustHtml(
           `<span class="text-red-500">Error running help: ${err.message}</span>`,
@@ -583,9 +573,5 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
           this.outputContainer.nativeElement.scrollHeight;
       }
     }, 0);
-  }
-
-  consoleLog(message: string) {
-    console.log(message);
   }
 }
