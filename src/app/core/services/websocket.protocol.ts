@@ -52,6 +52,13 @@ export enum MessageType {
   CustomScriptDeleteResult = 42,
   CustomScriptListResult = 43,
   CustomScriptOperationError = 49,
+
+  ToolInventoryRequest = 120,
+  ToolInventoryResult = 121,
+  ToolInstallRequest = 122,
+  ToolInstallAccepted = 123,
+  ToolInstallProgress = 124,
+  ToolOperationError = 125,
 }
 
 export interface CommandResponse {
@@ -297,4 +304,259 @@ export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResp
   const message = deserializeMessage(data);
   if (message.type === MessageType.CompleteResponse) return message;
   throw new Error('Expected CompleteResponse but got: ' + message.type);
+}
+
+export interface ToolStatus {
+  id: string;
+  displayName: string;
+  description: string;
+  isInstalled: boolean;
+  isInstallable: boolean;
+  installedPath: string | null;
+  version: string | null;
+  reason: string | null;
+}
+
+export enum ToolInstallState {
+  Pending = 0,
+  Downloading = 1,
+  Extracting = 2,
+  Installing = 3,
+  Verifying = 4,
+  Success = 5,
+  Failed = 6,
+}
+
+export interface ToolInstallAccepted {
+  type: MessageType.ToolInstallAccepted;
+  messageId: string;
+  success: boolean;
+}
+
+export interface ToolInventoryResult {
+  type: MessageType.ToolInventoryResult;
+  messageId: string;
+  tools: ToolStatus[];
+}
+
+export interface ToolInstallProgress {
+  type: MessageType.ToolInstallProgress;
+  messageId: string;
+  toolId: string;
+  state: ToolInstallState;
+  message: string | null;
+  progressPercent: number | null;
+  installedPath: string | null;
+  error: string | null;
+}
+
+export interface ToolOperationError {
+  type: MessageType.ToolOperationError;
+  messageId: string;
+  error: string;
+}
+
+export function serializeToolInventoryRequest(messageId: string): Uint8Array {
+  const id = uuidToBytes(messageId);
+  const buf = new Uint8Array(1 + 16);
+
+  buf[0] = MessageType.ToolInventoryRequest;
+  buf.set(id, 1);
+
+  return buf;
+}
+
+export function serializeToolInstallRequest(toolIds: string[], messageId: string): Uint8Array {
+  const encoder = new TextEncoder();
+  const id = uuidToBytes(messageId);
+
+  const encodedToolIds = toolIds.map((toolId) => encoder.encode(toolId));
+  const totalToolIdsSize = encodedToolIds.reduce((sum, bytes) => sum + 4 + bytes.length, 0);
+
+  const buf = new Uint8Array(1 + 16 + 4 + totalToolIdsSize);
+  const view = new DataView(buf.buffer);
+
+  let offset = 0;
+  view.setUint8(offset, MessageType.ToolInstallRequest);
+  offset += 1;
+
+  buf.set(id, offset);
+  offset += 16;
+
+  view.setInt32(offset, toolIds.length, true);
+  offset += 4;
+
+  for (const bytes of encodedToolIds) {
+    view.setInt32(offset, bytes.length, true);
+    offset += 4;
+
+    buf.set(bytes, offset);
+    offset += bytes.length;
+  }
+
+  return buf;
+}
+
+export function deserializeToolInventoryResult(data: ArrayBuffer | Uint8Array): ToolInventoryResult {
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const dec = new TextDecoder();
+
+  let offset = 0;
+  const type = v.getUint8(offset) as MessageType;
+  offset += 1;
+
+  if (type !== MessageType.ToolInventoryResult) {
+    throw new Error(`Expected ToolInventoryResult but got ${type}`);
+  }
+
+  const messageId = bytesToUuid(u8.slice(offset, offset + 16));
+  offset += 16;
+
+  const count = v.getInt32(offset, true);
+  offset += 4;
+
+  const readString = () => {
+    const len = v.getInt32(offset, true);
+    offset += 4;
+    const str = dec.decode(u8.slice(offset, offset + len));
+    offset += len;
+    return str;
+  };
+
+  const tools: ToolStatus[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const id = readString();
+    const displayName = readString();
+    const description = readString();
+    const isInstalled = v.getUint8(offset) === 1;
+    offset += 1;
+    const isInstallable = v.getUint8(offset) === 1;
+    offset += 1;
+    const installedPath = readString() || null;
+    const version = readString() || null;
+    const reason = readString() || null;
+
+    tools.push({
+      id,
+      displayName,
+      description,
+      isInstalled,
+      isInstallable,
+      installedPath,
+      version,
+      reason,
+    });
+  }
+
+  return {
+    type: MessageType.ToolInventoryResult,
+    messageId,
+    tools,
+  };
+}
+
+export function deserializeToolInstallAccepted(data: ArrayBuffer | Uint8Array): ToolInstallAccepted {
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+
+  let offset = 0;
+  const type = v.getUint8(offset) as MessageType;
+  offset += 1;
+
+  if (type !== MessageType.ToolInstallAccepted) {
+    throw new Error(`Expected ToolInstallAccepted but got ${type}`);
+  }
+
+  const messageId = bytesToUuid(u8.slice(offset, offset + 16));
+  offset += 16;
+
+  const success = v.getUint8(offset) === 1;
+
+  return {
+    type: MessageType.ToolInstallAccepted,
+    messageId,
+    success,
+  };
+}
+
+export function deserializeToolInstallProgress(data: ArrayBuffer | Uint8Array): ToolInstallProgress {
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const dec = new TextDecoder();
+
+  let offset = 0;
+  const type = v.getUint8(offset) as MessageType;
+  offset += 1;
+
+  if (type !== MessageType.ToolInstallProgress) {
+    throw new Error(`Expected ToolInstallProgress but got ${type}`);
+  }
+
+  const messageId = bytesToUuid(u8.slice(offset, offset + 16));
+  offset += 16;
+
+  const readString = () => {
+    const len = v.getInt32(offset, true);
+    offset += 4;
+    const str = dec.decode(u8.slice(offset, offset + len));
+    offset += len;
+    return str;
+  };
+
+  const toolId = readString();
+  const state = v.getInt32(offset, true) as ToolInstallState;
+  offset += 4;
+  const message = readString() || null;
+
+  const hasProgress = v.getUint8(offset) === 1;
+  offset += 1;
+
+  const progressPercent = hasProgress ? v.getFloat64(offset, true) : null;
+  if (hasProgress) {
+    offset += 8;
+  }
+
+  const installedPath = readString() || null;
+  const error = readString() || null;
+
+  return {
+    type: MessageType.ToolInstallProgress,
+    messageId,
+    toolId,
+    state,
+    message,
+    progressPercent,
+    installedPath,
+    error,
+  };
+}
+
+export function deserializeToolOperationError(data: ArrayBuffer | Uint8Array): ToolOperationError {
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const dec = new TextDecoder();
+
+  let offset = 0;
+  const type = v.getUint8(offset) as MessageType;
+  offset += 1;
+
+  if (type !== MessageType.ToolOperationError) {
+    throw new Error(`Expected ToolOperationError but got ${type}`);
+  }
+
+  const messageId = bytesToUuid(u8.slice(offset, offset + 16));
+  offset += 16;
+
+  const errorLen = v.getInt32(offset, true);
+  offset += 4;
+
+  const error = dec.decode(u8.slice(offset, offset + errorLen));
+
+  return {
+    type: MessageType.ToolOperationError,
+    messageId,
+    error,
+  };
 }
