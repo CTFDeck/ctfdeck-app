@@ -138,14 +138,14 @@
       </ng-template>
     </div>
 
-    <!-- Selection Menu Trigger (Invisible) -->
-    <div
+    <!-- Selection Menu Trigger (Invisible Button for better event handling) -->
+    <button
       #selectionTrigger
       [brnMenuTriggerFor]="selectionMenu"
-      class="fixed pointer-events-none w-1 h-1"
+      class="fixed pointer-events-none w-1 h-1 opacity-0"
       [style.left.px]="selectionMenuPosition.x"
       [style.top.px]="selectionMenuPosition.y"
-    ></div>
+    ></button>
 
     <!-- Autocomplete suggestions shown inline near input -->
     <div *ngIf="autocompleteSuggestions.length > 0" class="autocomplete-suggestions mb-2">
@@ -179,7 +179,7 @@
 </div>
 
 <ng-template #selectionMenu>
-  <div hlmMenu class="w-56 shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 rounded-xl">
+  <hlm-menu class="w-56 shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 rounded-xl">
     <hlm-menu-label class="flex items-center justify-between">
       <span>Selection Actions</span>
       <span class="text-[10px] opacity-40 font-mono">TEXT</span>
@@ -192,7 +192,7 @@
         <hlm-menu-shortcut>⌘C</hlm-menu-shortcut>
       </button>
       
-      <button hlmMenuItem [brnMenuTriggerFor]="writeupsSubMenu">
+      <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="writeupsSubMenu">
         <ng-icon name="lucideFileText" hlmMenuIcon class="mr-2" />
         <span>Add to Write-up</span>
         <hlm-menu-item-sub-indicator />
@@ -206,11 +206,11 @@
         <span>Dismiss</span>
       </button>
     </hlm-menu-group>
-  </div>
+  </hlm-menu>
 </ng-template>
 
 <ng-template #writeupsSubMenu>
-  <hlm-sub-menu class="w-64 max-h-80 overflow-y-auto shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in slide-in-from-right-1">
+  <hlm-sub-menu class="w-64 max-h-80 overflow-y-auto shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in slide-in-from-right-1 rounded-xl">
     <hlm-menu-label>Target Write-up</hlm-menu-label>
     <hlm-menu-separator />
     <hlm-menu-group *ngIf="(writeUps$ | async)?.length; else noWriteUps">
