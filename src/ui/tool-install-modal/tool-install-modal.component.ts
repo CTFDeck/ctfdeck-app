@@ -20,6 +20,7 @@ import {
   lucidePackageSearch,
   lucideDownload,
 } from '@ng-icons/lucide';
+import { HlmSpinner } from '@ctfdeck/helm/spinner';
 
 import { ToolsService } from '../../app/core/services/tools.service';
 import { WebSocketService } from '../../app/core/services/websocket.service';
@@ -37,6 +38,7 @@ import {
     FormsModule,
     NgIcon,
     HlmButtonImports,
+    HlmSpinner,
   ],
   providers: [
     provideIcons({
@@ -68,12 +70,19 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   private readonly subscriptions = new Subscription();
   private inventoryRequestedOnce = false;
+  private visibleToolIds = new Set<string>();
 
   constructor(
     private readonly toolsService: ToolsService,
     private readonly webSocketService: WebSocketService,
     private readonly cdr: ChangeDetectorRef,
   ) {}
+
+  get installableTools(): ToolStatus[] {
+    return this.tools.filter(
+      (tool) => tool.kind === 'binary' && this.visibleToolIds.has(tool.id),
+    );
+  }
 
   ngOnInit(): void {
     this.subscriptions.add(
@@ -100,7 +109,17 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
           }
         }
 
+        const wasVisible = this.visible;
         this.visible = this.hasMissingInstallableTools(tools);
+
+        if (!wasVisible && this.visible) {
+          this.visibleToolIds = new Set(
+            tools
+              .filter((t) => t.kind === 'binary' && !t.isInstalled)
+              .map((t) => t.id),
+          );
+        }
+
         this.installing = this.computeInstallingState();
         this.cdr.markForCheck();
       }),
@@ -123,6 +142,15 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.toolsService.progress$.subscribe((progress) => {
         this.progressByToolId[progress.toolId] = progress;
+
+        if (progress.state === ToolInstallState.Success && progress.installedPath) {
+          this.tools = this.tools.map((tool) =>
+            tool.id === progress.toolId
+              ? { ...tool, isInstalled: true, installedPath: progress.installedPath }
+              : tool,
+          );
+        }
+
         this.installing = this.computeInstallingState();
         this.cdr.markForCheck();
       }),
@@ -135,6 +163,16 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       }),
     );
+  }
+
+  forceOpen(): void {
+    this.visibleToolIds = new Set(
+      this.tools
+        .filter((t) => t.kind === 'binary' && !t.isInstalled)
+        .map((t) => t.id),
+    );
+    this.visible = true;
+    this.cdr.markForCheck();
   }
 
   ngOnDestroy(): void {
@@ -158,7 +196,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   installSelected(): void {
     this.errorMessage = null;
 
-    const selectedToolIds = this.tools
+    const selectedToolIds = this.installableTools
       .filter((tool) => this.isSelectable(tool) && this.selectedToolIds[tool.id])
       .map((tool) => tool.id);
 
@@ -172,7 +210,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   toggleAll(select: boolean): void {
-    for (const tool of this.tools) {
+    for (const tool of this.installableTools) {
       if (this.isSelectable(tool)) {
         this.selectedToolIds[tool.id] = select;
       }
@@ -186,7 +224,9 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   getSelectedCount(): number {
-    return this.tools.filter((tool) => this.isSelectable(tool) && this.selectedToolIds[tool.id]).length;
+    return this.installableTools.filter(
+      (tool) => this.isSelectable(tool) && this.selectedToolIds[tool.id],
+    ).length;
   }
 
   getProgressPercent(toolId: string): number | null {
@@ -233,7 +273,9 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   private hasMissingInstallableTools(tools: ToolStatus[]): boolean {
-    return tools.some((tool) => !tool.isInstalled && tool.isInstallable);
+    return tools.some(
+      (tool) => tool.kind === 'binary' && !tool.isInstalled && tool.isInstallable,
+    );
   }
 
   private computeInstallingState(): boolean {

@@ -8,6 +8,8 @@ import {
   ElementRef,
   OnInit,
   OnDestroy,
+  Input,
+  SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,11 +18,14 @@ import { TargetService } from '../../app/core/services/target.service';
 import { WebSocketService } from '../../app/core/services/websocket.service';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { ScriptService } from '../../app/core/services/script.service';
+import { ToolCatalogService } from '../../app/core/services/tool-catalog.service';
 import {
   ScriptCategory,
   scriptCategoryName,
   SessionTarget,
 } from '../../app/core/services/session.protocol';
+import { ToolCatalogItem } from '../../app/core/services/websocket.protocol';
+import { TOOL_TEMPLATES } from '../../app/core/constants/tool-templates';
 import AnsiToHtml from 'ansi-to-html';
 import { Subscription } from 'rxjs';
 import { provideIcons } from '@ng-icons/core';
@@ -34,8 +39,6 @@ import {
   lucideCircleHelp,
   lucidePlus,
 } from '@ng-icons/lucide';
-import { TOOLS } from '../../app/core/constants/tools';
-import { Input, SimpleChanges } from '@angular/core';
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -83,6 +86,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   private wsService = inject(WebSocketService);
   private sessionStore = inject(SessionStoreService);
   private scriptService = inject(ScriptService);
+  private toolCatalogService = inject(ToolCatalogService);
   private cdr = inject(ChangeDetectorRef);
   private sanitizer = inject(DomSanitizer);
 
@@ -93,20 +97,18 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   selectedToolId: string = '';
   selectedScriptId: string = '';
   currentCommand: string = '';
-  isRunning: boolean = false;
-  isSessionEnsuring: boolean = false;
+  isRunning = false;
+  isSessionEnsuring = false;
 
   outputLines: SafeHtml[] = [];
   private subscriptions: Subscription = new Subscription();
 
-  // Help State
   isHelpRunning = false;
   helpOutput: SafeHtml | null = null;
 
   @Input() initialToolId: string = '';
 
-  // Tools definition
-  readonly tools = TOOLS;
+  tools: ToolCatalogItem[] = [];
   commandOptions: CommandOption[] = [];
   customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
   customScriptsLoading = false;
@@ -114,6 +116,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   editingScriptId: string | null = null;
   scriptForm = { name: '', category: ScriptCategory.Other, template: '' };
   private pendingInitialSelection: string | null = null;
+
   readonly scriptCategoryOptions = [
     { value: ScriptCategory.Discovery, label: scriptCategoryName(ScriptCategory.Discovery) },
     { value: ScriptCategory.Web, label: scriptCategoryName(ScriptCategory.Web) },
@@ -133,7 +136,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    console.log('CommandRunnerComponent initialized with initialToolId:', this.initialToolId);
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
         this.targets = session?.targets || [];
@@ -146,8 +148,17 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
+      this.toolCatalogService.tools$.subscribe((tools) => {
+        this.tools = tools.filter((tool) => tool.kind === 'binary');
+        this.updateCommandOptions();
+        this.applyPendingSelection();
+        this.updateCommandPreview();
+        this.cdr.detectChanges();
+      }),
+    );
+
+    this.subscriptions.add(
       this.scriptService.scripts$.subscribe((scripts) => {
-        console.log('[CommandRunner] Received scripts update, count:', scripts.length);
         this.customScripts = scripts;
         this.updateCommandOptions();
         this.applyPendingSelection();
@@ -158,10 +169,10 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.scriptService.isLoading$.subscribe((loading) => {
-        console.log('[CommandRunner] Scripts loading state:', loading);
         this.customScriptsLoading = loading;
       }),
     );
+
     this.updateCommandOptions();
     void this.scriptService.list();
 
@@ -172,9 +183,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('CommandRunnerComponent ngOnChanges:', changes);
     if (changes['initialToolId'] && changes['initialToolId'].currentValue) {
-      console.log('Selecting tool from ngOnChanges:', changes['initialToolId'].currentValue);
       const value = changes['initialToolId'].currentValue;
       if (value === '__manage_scripts__') {
         this.showManageScripts = true;
@@ -200,14 +209,16 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   private updateCommandOptions() {
     const toolOptions: CommandOption[] = this.tools.map((tool) => ({
       id: tool.id,
-      name: tool.name,
+      name: tool.displayName,
       kind: 'tool',
     }));
+
     const scriptOptions: CommandOption[] = this.customScripts.map((script) => ({
       id: script.id,
       name: script.name,
       kind: 'script',
     }));
+
     this.commandOptions = [...toolOptions, ...scriptOptions];
   }
 
@@ -243,7 +254,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     const target = this.targets.find((t) => t.id === this.selectedTargetId);
     if (!target) return;
 
-    // Check if we have a saved command for this target+tool
     const selectedId = this.selectedToolId || this.selectedScriptId;
     const savedCommand = this.targetService.getSavedCommand(target.id, selectedId);
     if (savedCommand) {
@@ -252,7 +262,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     }
 
     const template = this.selectedToolId
-      ? this.tools.find((t) => t.id === this.selectedToolId)?.template
+      ? TOOL_TEMPLATES[this.selectedToolId]
       : this.customScripts.find((s) => s.id === this.selectedScriptId)?.template;
 
     if (template) {
@@ -283,7 +293,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // High-performance streaming - similar to terminal component
     let outputLineIndex = -1;
     let outputBuffer = '';
     let errorBuffer = '';
@@ -307,7 +316,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       }
     };
 
-    // Broadcast command start
     this.sessionStore.broadcastTerminalEvent({
       type: 'command',
       content: `${this.currentCommand}`,
@@ -320,15 +328,13 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
           outputBuffer += data;
           if (outputLineIndex === -1) {
             outputLineIndex = this.outputLines.length;
-            this.outputLines.push(this.createSafeHtml('')); // Initialize with empty content
+            this.outputLines.push(this.createSafeHtml(''));
           }
-          // Broadcast output
           this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
           scheduleRender();
         },
         (data: string) => {
           errorBuffer += data;
-          // Broadcast error
           this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
           this.appendToLastError(data);
         },
@@ -341,7 +347,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.isRunning = false;
         this.addLine(`<span class="text-green-400">Done. Exit code: ${result.exitCode}</span>`);
         this.cdr.detectChanges();
-        // Refresh session to sync history
         void this.sessionStore.refreshActiveSession();
       })
       .catch((err: any) => {
@@ -374,15 +379,12 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.outputLines = [];
   }
 
-  // Help Logic
   runHelp() {
-    console.log('Running help for tool:', this.selectedToolId);
     if (!this.selectedToolId) return;
 
     this.isHelpRunning = true;
-    this.helpOutput = null; // Clear previous help
+    this.helpOutput = null;
 
-    // High-performance streaming for help - similar to terminal component
     let outputBuffer = '';
     let errorBuffer = '';
     let pendingRender = false;
@@ -409,24 +411,19 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       .executeCommandStreaming(
         `${this.selectedToolId} -h`,
         (data: string) => {
-          console.log('Help output received:', data);
           outputBuffer += data;
           scheduleRender();
         },
         (error: string) => {
-          console.error('Help error received:', error);
           errorBuffer += error;
         },
       )
-      .then((result) => {
-        console.log('Help command completed with result:', result);
+      .then(() => {
         this.isHelpRunning = false;
-        // Render final output
         this.renderHelpOutput(outputBuffer);
         this.cdr.detectChanges();
       })
       .catch((err: any) => {
-        console.error('Help command failed:', err);
         this.isHelpRunning = false;
         this.helpOutput = this.sanitizer.bypassSecurityTrustHtml(
           `<span class="text-red-500">Error running help: ${err.message}</span>`,
@@ -513,6 +510,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   private applyPendingSelection() {
     if (!this.pendingInitialSelection) return;
     const value = this.pendingInitialSelection;
+
     if (value === '__manage_scripts__') {
       this.showManageScripts = true;
       this.pendingInitialSelection = null;
@@ -530,11 +528,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       this.selectScript(script.id);
       this.pendingInitialSelection = null;
     }
-  }
-
-  private appendOutput(data: string, isError: boolean = false) {
-    const html = this.ansiConverter.toHtml(data);
-    this.addLine(html);
   }
 
   private renderOutputBuffer(lineIndex: number, buffer: string): void {

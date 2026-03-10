@@ -66,6 +66,9 @@
       ],
       "@ctfdeck/helm/button-group": [
         "./libs/ui/button-group/src/index.ts"
+      ],
+      "@ctfdeck/helm/spinner": [
+        "./libs/ui/spinner/src/index.ts"
       ]
     }
   },

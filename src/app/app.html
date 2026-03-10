@@ -2,6 +2,7 @@
   <spartan-menubar
     (openTargetManagerEvent)="openTargetManager($event)"
     (openCommandRunnerEvent)="openCommandRunner($event)"
+    (openMissingToolsEvent)="toolModal.forceOpen()"
   ></spartan-menubar>
 
   <div class="app-layout flex-1 flex overflow-hidden">
@@ -47,7 +48,7 @@
   </div>
 
   <ctfdeck-sudo-password-modal></ctfdeck-sudo-password-modal>
-  <app-tool-install-modal />
+  <app-tool-install-modal #toolModal></app-tool-install-modal>
 
   <hlm-toaster />
 </div>

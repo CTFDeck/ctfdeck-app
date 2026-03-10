@@ -59,6 +59,7 @@ export enum MessageType {
   ToolInstallAccepted = 123,
   ToolInstallProgress = 124,
   ToolOperationError = 125,
+  ToolCatalogSnapshot = 126,
 }
 
 export interface CommandResponse {
@@ -89,6 +90,89 @@ export interface PasswordRequest {
   type: MessageType.PasswordRequest;
   messageId: string;
   prompt: string;
+}
+
+export interface ToolCatalogSnapshot {
+  type: MessageType.ToolCatalogSnapshot;
+  tools: ToolCatalogItem[];
+}
+
+export interface ToolCatalogItem {
+  id: string;
+  displayName: string;
+  category: string;
+  kind: 'binary' | 'externalWebApp';
+  description: string;
+  externalUrl: string | null;
+  isInstalled: boolean;
+  isInstallable: boolean;
+  installedPath: string | null;
+  version: string | null;
+  reason: string | null;
+}
+
+export function deserializeToolCatalogSnapshot(
+  data: ArrayBuffer | Uint8Array,
+): ToolCatalogSnapshot {
+  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const dec = new TextDecoder();
+
+  let offset = 0;
+  const type = v.getUint8(offset) as MessageType;
+  offset += 1;
+
+  if (type !== MessageType.ToolCatalogSnapshot) {
+    throw new Error(`Expected ToolCatalogSnapshot but got ${type}`);
+  }
+
+  const count = v.getInt32(offset, true);
+  offset += 4;
+
+  const readString = () => {
+    const len = v.getInt32(offset, true);
+    offset += 4;
+    const str = dec.decode(u8.slice(offset, offset + len));
+    offset += len;
+    return str;
+  };
+
+  const tools: ToolCatalogItem[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const id = readString();
+    const displayName = readString();
+    const category = readString();
+    const kind = readString() as 'binary' | 'externalWebApp';
+    const description = readString();
+    const externalUrl = readString() || null;
+    const isInstalled = v.getUint8(offset) === 1;
+    offset += 1;
+    const isInstallable = v.getUint8(offset) === 1;
+    offset += 1;
+    const installedPath = readString() || null;
+    const version = readString() || null;
+    const reason = readString() || null;
+
+    tools.push({
+      id,
+      displayName,
+      category,
+      kind,
+      description,
+      externalUrl,
+      isInstalled,
+      isInstallable,
+      installedPath,
+      version,
+      reason,
+    });
+  }
+
+  return {
+    type: MessageType.ToolCatalogSnapshot,
+    tools,
+  };
 }
 
 export type StreamMessage = CommandResponse | StreamChunk | StreamEnd | PasswordRequest;
@@ -310,6 +394,7 @@ export interface ToolStatus {
   id: string;
   displayName: string;
   description: string;
+  kind: 'binary' | 'externalWebApp';
   isInstalled: boolean;
   isInstallable: boolean;
   installedPath: string | null;
@@ -430,6 +515,7 @@ export function deserializeToolInventoryResult(data: ArrayBuffer | Uint8Array): 
     const id = readString();
     const displayName = readString();
     const description = readString();
+    const kind = readString() as 'binary' | 'externalWebApp';
     const isInstalled = v.getUint8(offset) === 1;
     offset += 1;
     const isInstallable = v.getUint8(offset) === 1;
@@ -442,6 +528,7 @@ export function deserializeToolInventoryResult(data: ArrayBuffer | Uint8Array): 
       id,
       displayName,
       description,
+      kind,
       isInstalled,
       isInstallable,
       installedPath,
