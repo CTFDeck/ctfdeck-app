@@ -7,6 +7,54 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+.editor-header {
+  background-color: color-mix(in srgb, var(--popover) 85%, var(--background) 15%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Figma-like Auto-resizing Title */
+.title-auto-resizer {
+  display: inline-grid;
+  align-items: center;
+  justify-items: start;
+  position: relative;
+  min-width: 120px;
+  max-width: 450px;
+}
+
+.title-auto-resizer span {
+  grid-area: 1 / 1 / 2 / 2;
+  visibility: hidden;
+  white-space: pre;
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 700;    /* font-bold */
+  padding: 0 4px;      /* small buffer */
+}
+
+.title-auto-resizer input {
+  grid-area: 1 / 1 / 2 / 2;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-align: left;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.title-auto-resizer input:hover {
+  background-color: color-mix(in srgb, var(--muted), transparent 40%);
+}
+
+.title-auto-resizer input:focus {
+  background-color: color-mix(in srgb, var(--muted), transparent 20%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary), transparent 80%);
+}
+
 textarea {
   outline: none;
   border: none;

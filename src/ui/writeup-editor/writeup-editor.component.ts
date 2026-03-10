@@ -24,6 +24,11 @@ import {
   lucideVideo,
   lucideChevronLeft,
   lucideDownload,
+  lucideCloud,
+  lucideCloudUpload,
+  lucideCheckCircle2,
+  lucideAlertCircle,
+  lucideX,
 } from '@ng-icons/lucide';
 import { toast } from 'ngx-sonner';
 
@@ -49,6 +54,11 @@ import { toast } from 'ngx-sonner';
       lucideVideo,
       lucideChevronLeft,
       lucideDownload,
+      lucideCloud,
+      lucideCloudUpload,
+      lucideCheckCircle2,
+      lucideAlertCircle,
+      lucideX,
     }),
   ],
   templateUrl: './writeup-editor.component.html',
@@ -65,6 +75,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   mode = signal<'edit' | 'preview' | 'split'>('split');
   isSaving = signal(false);
   isLoading = signal(false);
+  isInitialLoad = signal(true);
+  syncState = signal<'saved' | 'saving' | 'unsaved' | 'error'>('saved');
   /** Drives badge opacity (null = transparent) */
   hoveredTag = signal<string | null>(null);
   /** Keeps last non-null value during fade-out so text doesn't flash to empty */
@@ -161,6 +173,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         if (writeUp) {
           this.content = writeUp.content;
           this.name = writeUp.name;
+          this.isInitialLoad.set(false);
           this.updatePreview();
         }
       })
@@ -176,7 +189,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       this.autoSave$.pipe(
         debounceTime(1000)
       ).subscribe(() => {
-        this.save('Auto-saved');
+        this.save(true);
       })
     );
 
@@ -290,18 +303,35 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   onContentChange() {
+    this.syncState.set('unsaved');
     if (this.mode() === 'split' || this.mode() === 'preview') {
       this.updatePreview();
     }
     this.autoSave$.next();
   }
 
-  async save(successMessage = 'Writeup saved successfully') {
+  async save(silent = false) {
+    if (this.isSaving()) return;
+    
     this.isSaving.set(true);
+    this.syncState.set('saving');
     try {
       const success = await this.writeUpStore.saveActiveWriteUp(this.content, this.name);
       if (success) {
-        toast.success(successMessage);
+        this.syncState.set('saved');
+        if (!silent) {
+          toast.success('Writeup saved successfully');
+        }
+      } else {
+        this.syncState.set('error');
+        if (!silent) {
+          toast.error('Failed to save writeup');
+        }
+      }
+    } catch (err) {
+      this.syncState.set('error');
+      if (!silent) {
+        toast.error('Error saving writeup');
       }
     } finally {
       this.isSaving.set(false);
