@@ -482,7 +482,9 @@ export function serializeToolInstallRequest(toolIds: string[], messageId: string
   return buf;
 }
 
-export function deserializeToolInventoryResult(data: ArrayBuffer | Uint8Array): ToolInventoryResult {
+export function deserializeToolInventoryResult(
+  data: ArrayBuffer | Uint8Array,
+): ToolInventoryResult {
   const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
   const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const dec = new TextDecoder();
@@ -544,7 +546,9 @@ export function deserializeToolInventoryResult(data: ArrayBuffer | Uint8Array): 
   };
 }
 
-export function deserializeToolInstallAccepted(data: ArrayBuffer | Uint8Array): ToolInstallAccepted {
+export function deserializeToolInstallAccepted(
+  data: ArrayBuffer | Uint8Array,
+): ToolInstallAccepted {
   const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
   const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
 
@@ -568,7 +572,9 @@ export function deserializeToolInstallAccepted(data: ArrayBuffer | Uint8Array): 
   };
 }
 
-export function deserializeToolInstallProgress(data: ArrayBuffer | Uint8Array): ToolInstallProgress {
+export function deserializeToolInstallProgress(
+  data: ArrayBuffer | Uint8Array,
+): ToolInstallProgress {
   const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
   const v = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const dec = new TextDecoder();

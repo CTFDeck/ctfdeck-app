@@ -13,7 +13,7 @@ import {
   ToolInstallAccepted,
   ToolInstallProgress,
   ToolStatus,
-  ToolInstallState
+  ToolInstallState,
 } from './websocket.protocol';
 
 @Injectable({ providedIn: 'root' })
@@ -56,9 +56,7 @@ export class ToolsService implements OnDestroy {
   }
 
   installTools(toolIds: string[]): string {
-    const sanitized = toolIds
-      .map((id) => id.trim())
-      .filter((id) => id.length > 0);
+    const sanitized = toolIds.map((id) => id.trim()).filter((id) => id.length > 0);
 
     if (sanitized.length === 0) {
       throw new Error('No tool selected for installation');

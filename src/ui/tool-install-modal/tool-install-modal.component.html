@@ -40,7 +40,9 @@
       </div>
 
       <!-- Top actions -->
-      <div class="flex flex-wrap items-center gap-2 border-b border-border px-5 sm:px-8 py-3 sm:py-4 bg-card/30 flex-shrink-0">
+      <div
+        class="flex flex-wrap items-center gap-2 border-b border-border px-5 sm:px-8 py-3 sm:py-4 bg-card/30 flex-shrink-0"
+      >
         <button
           hlmBtn
           variant="outline"
@@ -104,7 +106,9 @@
         </div>
       } @else {
         <!-- Tools list -->
-        <div class="overflow-y-auto px-5 sm:px-8 py-4 sm:py-6 space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0">
+        <div
+          class="overflow-y-auto px-5 sm:px-8 py-4 sm:py-6 space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0"
+        >
           @for (tool of installableTools; track tool.id) {
             <div
               class="group rounded-xl border border-border bg-card/40 p-3 sm:p-4 transition-all hover:bg-accent/40"
@@ -184,7 +188,10 @@
                     <div class="mt-3 sm:mt-4 rounded-lg border border-border bg-background/60 p-3">
                       <div class="mb-2 flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2 text-sm font-medium">
-                          @if (progress.state !== toolInstallState.Success && progress.state !== toolInstallState.Failed) {
+                          @if (
+                            progress.state !== toolInstallState.Success &&
+                            progress.state !== toolInstallState.Failed
+                          ) {
                             <hlm-spinner size="sm" />
                           }
                           {{ getStateLabel(progress.state) }}
@@ -224,14 +231,18 @@
             >
               <ng-icon hlm name="lucidePackageSearch" class="mb-3 text-muted-foreground h-8 w-8" />
               <p class="font-medium text-foreground">No tools found</p>
-              <p class="text-sm text-muted-foreground">The backend did not return any tool definitions.</p>
+              <p class="text-sm text-muted-foreground">
+                The backend did not return any tool definitions.
+              </p>
             </div>
           }
         </div>
       }
 
       <!-- Footer -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border bg-accent/10 px-5 sm:px-8 py-4 sm:py-5 flex-shrink-0">
+      <div
+        class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border bg-accent/10 px-5 sm:px-8 py-4 sm:py-5 flex-shrink-0"
+      >
         <div class="text-sm text-muted-foreground text-center sm:text-left">
           {{ getSelectedCount() }} tool(s) selected
         </div>

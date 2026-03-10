@@ -33,13 +33,7 @@ import {
 @Component({
   selector: 'app-tool-install-modal',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    NgIcon,
-    HlmButtonImports,
-    HlmSpinner,
-  ],
+  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, HlmSpinner],
   providers: [
     provideIcons({
       lucideWrench,
@@ -79,9 +73,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   ) {}
 
   get installableTools(): ToolStatus[] {
-    return this.tools.filter(
-      (tool) => tool.kind === 'binary' && this.visibleToolIds.has(tool.id),
-    );
+    return this.tools.filter((tool) => tool.kind === 'binary' && this.visibleToolIds.has(tool.id));
   }
 
   ngOnInit(): void {
@@ -114,9 +106,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
         if (!wasVisible && this.visible) {
           this.visibleToolIds = new Set(
-            tools
-              .filter((t) => t.kind === 'binary' && !t.isInstalled)
-              .map((t) => t.id),
+            tools.filter((t) => t.kind === 'binary' && !t.isInstalled).map((t) => t.id),
           );
         }
 
@@ -167,9 +157,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   forceOpen(): void {
     this.visibleToolIds = new Set(
-      this.tools
-        .filter((t) => t.kind === 'binary' && !t.isInstalled)
-        .map((t) => t.id),
+      this.tools.filter((t) => t.kind === 'binary' && !t.isInstalled).map((t) => t.id),
     );
     this.visible = true;
     this.cdr.markForCheck();
@@ -273,16 +261,13 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   private hasMissingInstallableTools(tools: ToolStatus[]): boolean {
-    return tools.some(
-      (tool) => tool.kind === 'binary' && !tool.isInstalled && tool.isInstallable,
-    );
+    return tools.some((tool) => tool.kind === 'binary' && !tool.isInstalled && tool.isInstallable);
   }
 
   private computeInstallingState(): boolean {
     return Object.values(this.progressByToolId).some(
       (progress) =>
-        progress.state !== ToolInstallState.Success &&
-        progress.state !== ToolInstallState.Failed,
+        progress.state !== ToolInstallState.Success && progress.state !== ToolInstallState.Failed,
     );
   }
 }

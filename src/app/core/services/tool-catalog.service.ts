@@ -1,11 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { WebSocketService } from './websocket.service';
-import {
-  deserializeToolCatalogSnapshot,
-  MessageType,
-  ToolCatalogItem,
-} from './websocket.protocol';
+import { deserializeToolCatalogSnapshot, MessageType, ToolCatalogItem } from './websocket.protocol';
 import { ToolsService } from './tools.service';
 
 @Injectable({ providedIn: 'root' })
@@ -39,9 +35,7 @@ export class ToolCatalogService implements OnDestroy {
           return;
         }
 
-        const inventoryById = new Map(
-          inventory.map((tool) => [tool.id.toLowerCase(), tool]),
-        );
+        const inventoryById = new Map(inventory.map((tool) => [tool.id.toLowerCase(), tool]));
 
         const merged = current.map((tool) => {
           const status = inventoryById.get(tool.id.toLowerCase());
