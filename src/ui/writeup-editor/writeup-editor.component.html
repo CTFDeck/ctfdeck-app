@@ -2,12 +2,13 @@
   <!-- Header / Toolbar -->
   <header class="editor-header flex items-center justify-between px-6 h-14 border-b border-border/50 sticky top-0 z-10 transition-colors">
     <div class="flex items-center gap-4">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 h-14">
         <div class="title-auto-resizer">
           <span>{{ name || 'Untitled Writeup' }}</span>
           <input
             [(ngModel)]="name"
             (ngModelChange)="onContentChange()"
+            class="h-full"
             placeholder="Untitled Writeup"
             maxlength="32"
             autocomplete="off"
@@ -17,14 +18,15 @@
     </div>
 
     <!-- Right Section: Actions -->
-    <div class="flex items-center gap-2 mr-0">
-      <div class="bg-muted/40 p-1 rounded-lg flex gap-1 mr-2 border border-border/40 backdrop-blur-sm h-9 items-center">
+    <div class="flex items-center gap-2">
+      <!-- Mode & Export Group -->
+      <div class="flex items-center bg-muted/40 rounded-lg border border-border/40 backdrop-blur-sm h-9 p-1 gap-1">
         <button
           hlmBtn
           size="sm"
           [variant]="mode() === 'edit' ? 'secondary' : 'ghost'"
           (click)="setMode('edit')"
-          class="h-7 text-xs px-3 rounded-md"
+          class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
           hlmTooltipTrigger="Switch to Writing mode"
         >
           <ng-icon name="lucideEdit" class="mr-2" />
@@ -35,7 +37,7 @@
           size="sm"
           [variant]="mode() === 'split' ? 'secondary' : 'ghost'"
           (click)="setMode('split')"
-          class="h-7 text-xs px-3 hidden lg:flex rounded-md"
+          class="h-7 text-xs px-3 hidden lg:flex rounded-md transition-all active:scale-95"
           hlmTooltipTrigger="Parallel Edit & Preview"
         >
           Split
@@ -45,25 +47,28 @@
           size="sm"
           [variant]="mode() === 'preview' ? 'secondary' : 'ghost'"
           (click)="setMode('preview')"
-          class="h-7 text-xs px-3 rounded-md"
+          class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
           hlmTooltipTrigger="Switch to Preview mode"
         >
           <ng-icon name="lucideEye" class="mr-2" />
           Preview
         </button>
-        <div class="w-[1px] h-4 bg-border/40 mx-1"></div>
+        <div class="w-[1px] h-4 bg-border/40 mx-0.5 opacity-50"></div>
         <button
           hlmBtn
           size="sm"
           variant="ghost"
           (click)="exportZip()"
-          class="h-7 text-xs px-3 rounded-md"
+          class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
           hlmTooltipTrigger="Download as .zip (with media)"
         >
           <ng-icon name="lucideDownload" class="mr-2" />
           Export
         </button>
       </div>
+
+      <!-- Spacer -->
+      <div class="w-2"></div>
 
       <button hlmBtn variant="outline" size="sm" (click)="delete()" class="h-9 w-9 p-0 text-destructive border-border/40 hover:bg-destructive/10 hover:border-destructive/30" hlmTooltipTrigger="Delete this WriteUp">
         <ng-icon name="lucideTrash2" />
