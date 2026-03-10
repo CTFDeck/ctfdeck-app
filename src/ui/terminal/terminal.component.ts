@@ -15,7 +15,20 @@ import { WebSocketService } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideServer, lucidePlus, lucideTrash2, lucideFileText } from '@ng-icons/lucide';
+import {
+  lucideServer,
+  lucidePlus,
+  lucideTrash2,
+  lucideFileText,
+  lucideSettings,
+  lucideX,
+  lucideSave,
+  lucideZap,
+  lucideGlobe,
+  lucideTerminal,
+  lucideCopy,
+  lucideMoreHorizontal,
+} from '@ng-icons/lucide';
 import AnsiToHtml from 'ansi-to-html';
 import { TerminalLine, LsEntry, FilePrefix } from './helpers/terminal-types';
 import { TerminalHistoryHelper } from './helpers/terminal-history.helper';
@@ -27,19 +40,44 @@ import { WriteUpService } from '../../app/core/services/writeup.service';
 import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
 import { toast } from 'ngx-sonner';
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
-import { HlmMenuImports } from '@ctfdeck/helm/menu';
+import { HlmMenuImports, HlmSubMenu } from '@ctfdeck/helm/menu';
+import { HlmInputImports } from '@ctfdeck/helm/input';
+import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { HlmDialogImports } from '@ctfdeck/helm/dialog';
+import { BrnDialogTrigger, BrnDialogContent } from '@spartan-ng/brain/dialog';
 
 
 @Component({
   selector: 'app-terminal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, BrnMenuTrigger, ...HlmMenuImports],
+  imports: [
+    CommonModule,
+    FormsModule,
+    NgIcon,
+    HlmButtonImports,
+    BrnMenuTrigger,
+    ...HlmMenuImports,
+    HlmSubMenu,
+    ...HlmInputImports,
+    ...HlmLabelImports,
+    ...HlmDialogImports,
+    BrnDialogTrigger,
+    BrnDialogContent,
+  ],
   providers: [
     provideIcons({
       lucideServer,
       lucidePlus,
       lucideTrash2,
       lucideFileText,
+      lucideSettings,
+      lucideX,
+      lucideSave,
+      lucideZap,
+      lucideGlobe,
+      lucideTerminal,
+      lucideCopy,
+      lucideMoreHorizontal,
     }),
   ],
   templateUrl: './terminal.component.html',
@@ -544,19 +582,93 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.reconnect();
   }
 
+  onMouseDown(event: MouseEvent) {
+    // Only clear if it's a left click (button 0)
+    // We want to keep the selection if user is right-clicking to open the menu
+    if (event.button === 0) {
+      this.dismissSelection();
+    }
+  }
+
   onMouseUp(event: MouseEvent) {
+    if (event.button !== 0) return;
+    
     const selection = window.getSelection();
-    const text = selection?.toString().trim();
-    if (text && text.length > 0) {
+    if (!selection || selection.isCollapsed) {
+      if (this.selectedText) {
+        this.dismissSelection();
+      }
+      return;
+    }
+
+    const text = selection.toString().trim();
+    if (text.length >= 2) {
       this.selectedText = text;
-      this.selectionMenuPosition = { x: event.clientX, y: event.clientY };
-      // Small timeout to ensure the trigger is positioned before opening
+    }
+  }
+
+  onContextMenu(event: MouseEvent) {
+    // Capture latest selection if available, fallback to previously captured text
+    const selection = window.getSelection();
+    const currentText = selection?.toString().trim();
+    if (currentText && currentText.length >= 2) {
+      this.selectedText = currentText;
+    }
+
+    if (this.selectedText && this.selectedText.length >= 2) {
+      // Prevent browser context menu
+      event.preventDefault();
+
+      // Position logic: at the cursor
+      this.selectionMenuPosition = {
+        x: event.clientX,
+        y: event.clientY,
+      };
+
+      // Ensure the UI has time to update the trigger position
+      this.cdr.detectChanges();
+
+      // Open the menu quickly
       setTimeout(() => {
         if (this.selectionTrigger) {
-          // Triggering the internal CDK menu trigger
-          (this.selectionTrigger as any)._cdkTrigger?.open();
+          try {
+            // Trigger can be accessed differently depending on BrnMenuTrigger implementation
+            const trigger = (this.selectionTrigger as any)._cdkTrigger || 
+                           (this.selectionTrigger as any).menuTrigger ||
+                           (this.selectionTrigger as any)._menuTrigger;
+            
+            if (trigger) {
+              trigger.open();
+            } else {
+              // Fallback: try to find it on selectionTrigger itself
+              if (typeof (this.selectionTrigger as any).open === 'function') {
+                (this.selectionTrigger as any).open();
+              }
+            }
+          } catch (e) {
+            console.error('Failed to open selection menu', e);
+          }
         }
-      }, 50);
+      }, 5);
+    }
+  }
+
+  dismissSelection() {
+    this.selectedText = '';
+    // Close the menu using the internal CDK trigger if available
+    (this.selectionTrigger as any)?._cdkTrigger?.close();
+    
+    // Clear actual browser selection to avoid ghosting
+    try {
+      window.getSelection()?.removeAllRanges();
+    } catch (e) {}
+  }
+
+  copySelection() {
+    if (this.selectedText) {
+      navigator.clipboard.writeText(this.selectedText);
+      toast.success('Copied to clipboard');
+      this.dismissSelection();
     }
   }
 
@@ -579,6 +691,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         toast.success('Added to write-up!', {
           description: `Content appended to "${writeUp.name}"`,
         });
+        this.dismissSelection();
       }
     } catch (err: any) {
       toast.error('Failed to append to write-up', {
