@@ -1,20 +1,22 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
-import { deserializeToolCatalogSnapshot, MessageType, ToolCatalogItem } from './websocket.protocol';
-import { ToolsService } from './tools.service';
+import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
+import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
+import { deserializeToolCatalogSnapshot } from '../infrastructure/tools.websocket.protocol';
+import type { ToolCatalogItem } from '../models/tool-catalog-item.model';
+import { ToolsStore } from './tools.store';
 
 @Injectable({ providedIn: 'root' })
-export class ToolCatalogService implements OnDestroy {
+export class ToolCatalogStore implements OnDestroy {
   private unregisterHandler: (() => void) | null = null;
-  private subscriptions = new Subscription();
+  private readonly subscriptions = new Subscription();
 
   private readonly toolsSubject = new BehaviorSubject<ToolCatalogItem[]>([]);
   readonly tools$ = this.toolsSubject.asObservable();
 
   constructor(
     private readonly webSocketService: WebSocketService,
-    private readonly toolsService: ToolsService,
+    private readonly toolsStore: ToolsStore,
   ) {
     this.unregisterHandler = this.webSocketService.registerHandler((data: Uint8Array) => {
       const type = data[0] as MessageType;
@@ -29,16 +31,20 @@ export class ToolCatalogService implements OnDestroy {
     });
 
     this.subscriptions.add(
-      this.toolsService.tools$.subscribe((inventory) => {
+      this.toolsStore.tools$.subscribe((inventory) => {
         const current = this.toolsSubject.value;
+
         if (current.length === 0) {
           return;
         }
 
-        const inventoryById = new Map(inventory.map((tool) => [tool.id.toLowerCase(), tool]));
+        const inventoryById = new Map(
+          inventory.map((tool) => [tool.id.toLowerCase(), tool]),
+        );
 
         const merged = current.map((tool) => {
           const status = inventoryById.get(tool.id.toLowerCase());
+
           if (!status) {
             return tool;
           }

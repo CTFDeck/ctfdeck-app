@@ -1,23 +1,23 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
+import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
+import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
+import { generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import {
   deserializeToolInstallAccepted,
   deserializeToolInstallProgress,
   deserializeToolInventoryResult,
   deserializeToolOperationError,
-  generateUUID,
-  MessageType,
   serializeToolInstallRequest,
   serializeToolInventoryRequest,
-  ToolInstallAccepted,
-  ToolInstallProgress,
-  ToolStatus,
-  ToolInstallState,
-} from './websocket.protocol';
+  type ToolInstallAccepted,
+  type ToolInstallProgress,
+} from '../infrastructure/tools.websocket.protocol';
+import type { ToolStatus } from '../models/tool-status.model';
+import { ToolInstallState } from '../models/tool-install-state.enum';
 
 @Injectable({ providedIn: 'root' })
-export class ToolsService implements OnDestroy {
+export class ToolsStore implements OnDestroy {
   private unregisterHandler: (() => void) | null = null;
 
   private readonly toolsSubject = new BehaviorSubject<ToolStatus[]>([]);
@@ -48,7 +48,6 @@ export class ToolsService implements OnDestroy {
 
   requestInventory(): string {
     const messageId = generateUUID();
-    console.log('[ToolsService] Sending ToolInventoryRequest', messageId);
     this.loadingInventorySubject.next(true);
 
     this.webSocketService.sendBinary(serializeToolInventoryRequest(messageId));
@@ -56,7 +55,9 @@ export class ToolsService implements OnDestroy {
   }
 
   installTools(toolIds: string[]): string {
-    const sanitized = toolIds.map((id) => id.trim()).filter((id) => id.length > 0);
+    const sanitized = toolIds
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
 
     if (sanitized.length === 0) {
       throw new Error('No tool selected for installation');
@@ -65,7 +66,10 @@ export class ToolsService implements OnDestroy {
     const messageId = generateUUID();
     this.installingSubject.next(true);
 
-    this.webSocketService.sendBinary(serializeToolInstallRequest(sanitized, messageId));
+    this.webSocketService.sendBinary(
+      serializeToolInstallRequest(sanitized, messageId),
+    );
+
     return messageId;
   }
 
@@ -84,7 +88,6 @@ export class ToolsService implements OnDestroy {
       switch (type) {
         case MessageType.ToolInventoryResult: {
           const result = deserializeToolInventoryResult(data);
-          console.log('[ToolsService] Inventory received:', result.tools);
           this.toolsSubject.next(result.tools);
           this.loadingInventorySubject.next(false);
           this.installingSubject.next(false);
@@ -110,7 +113,6 @@ export class ToolsService implements OnDestroy {
             result.state === ToolInstallState.Failed ||
             result.state === ToolInstallState.Success
           ) {
-            // on attend le ToolInventoryResult final du backend pour clore proprement l’UI
           }
 
           return true;
