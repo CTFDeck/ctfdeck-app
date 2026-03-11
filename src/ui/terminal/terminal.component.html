@@ -1,5 +1,5 @@
 <div
-  class="terminal-container flex flex-col h-full w-full bg-card text-card-foreground overflow-hidden rounded-md font-mono"
+  class="terminal-container flex flex-col h-full w-full bg-card text-card-foreground overflow-hidden font-mono"
   (click)="focusInput()"
 >
   <div
@@ -9,8 +9,12 @@
     <div class="relative inline-block">
       <button
         hlmBtn
-        variant="ghost"
-        class="h-6 p-1 gap-2 text-xs font-normal hover:bg-zinc-800"
+        [variant]="'outline'"
+        [class.border-red-400]="!isConnected"
+        [class.text-red-500]="!isConnected"
+        [class.bg-red-50]="!isConnected"
+        size="sm"
+        class="h-7 px-3 gap-2 text-xs font-medium"
         (click)="toggleServerSelection($event)"
       >
         <div

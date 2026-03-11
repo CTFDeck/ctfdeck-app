@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 
@@ -19,6 +19,8 @@ function createWindow() {
   // Check if we are in development mode (e.g. via environment variable or argument)
   // For simplicity in this plan, we will try to load from dist first.
 
+  Menu.setApplicationMenu(null);
+  
   const appPath = path.join(__dirname, '../dist/CTFDeck-app/browser/index.html');
 
   win.loadURL(

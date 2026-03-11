@@ -7,7 +7,6 @@
     <hlm-menu-bar class="w-fit border-none">
       <button hlmMenuBarItem [brnMenuTriggerFor]="target">Target</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">Scripts</button>
-      <button hlmMenuBarItem [brnMenuTriggerFor]="utils">Tools</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">Documentation</button>
     </hlm-menu-bar>
 
@@ -232,8 +231,8 @@
     </hlm-sub-menu>
   </ng-template>
 
-  <ng-template #utils>
-    <hlm-menu variant="menubar" class="w-64">
+  <ng-template #documentation>
+    <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
         @if (hasToolsInCategory('UTILS')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="utilsSub">
