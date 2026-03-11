@@ -1,21 +1,19 @@
 import {
-  Component,
-  EventEmitter,
-  Output,
-  Input,
-  OnInit,
-  OnDestroy,
-  inject,
-  signal,
   ChangeDetectorRef,
-  ViewChild,
+  Component,
   ElementRef,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  ViewChild,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SessionStoreService } from '../../app/core/services/session-store.service';
-import { SessionTarget, TargetType } from '../../app/core/services/session.protocol';
 import { Subscription } from 'rxjs';
+import { toast } from 'ngx-sonner';
 
 import { BrnTabsImports } from '@spartan-ng/brain/tabs';
 import { HlmTabsImports } from '@ctfdeck/helm/tabs';
@@ -23,35 +21,46 @@ import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { BrnSelectImports } from '@spartan-ng/brain/select';
-import { HlmSelectImports } from '../../../libs/ui/select/src';
+import { HlmSelectImports } from '@ctfdeck/helm/select/src';
 import { HlmButtonGroupImports } from '@ctfdeck/helm/button-group';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
-import { HlmScrollAreaImports } from '../../../libs/ui/scroll-area/src';
+import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { BrnAlertDialogImports } from '@spartan-ng/brain/alert-dialog';
-import { HlmAlertDialogImports } from '../../../libs/ui/alert-dialog/src';
+import { HlmAlertDialogImports } from '@ctfdeck/helm/alert-dialog/src';
 
-import { HlmIcon } from '../../../libs/ui/icon/src/lib/hlm-icon';
+import { HlmIcon } from '@ctfdeck/helm/icon';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideTarget,
-  lucideChevronUp,
   lucideChevronDown,
+  lucideChevronUp,
+  lucideCpu,
+  lucideFileSearch,
   lucideGlobe,
   lucideHash,
   lucideInfo,
-  lucidePencil,
-  lucideTrash2,
-  lucideShield,
-  lucideCpu,
   lucideLock,
-  lucideSearch,
-  lucideFileSearch,
-  lucideTerminal,
+  lucidePencil,
   lucidePlus,
+  lucideSearch,
+  lucideShield,
+  lucideTarget,
+  lucideTerminal,
+  lucideTrash2,
 } from '@ng-icons/lucide';
 
-import { toast } from 'ngx-sonner';
+import { SessionStoreService } from '../../../core/services/session-store.service';
+import { type SessionTarget } from '../../../core/services/session.protocol';
+import type { AddTargetForm, EditTargetForm } from '../models/target-form.model';
+import type { TargetTypeOption } from '../models/target-type-option.model';
+import {
+  createEditTargetForm,
+  createEmptyAddTargetForm,
+  createTargetTypeOptions,
+  getTargetIcon,
+  getTargetKey,
+  getTargetTypeLabel,
+} from '../utils/target-manager.utils';
 
 @Component({
   selector: 'app-target-manager',
@@ -98,8 +107,8 @@ import { toast } from 'ngx-sonner';
   styleUrl: './target-manager.component.css',
 })
 export class TargetManagerComponent implements OnInit, OnDestroy {
-  private sessionStore = inject(SessionStoreService);
-  private cdr = inject(ChangeDetectorRef);
+  private readonly sessionStore = inject(SessionStoreService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('editTrigger') editTrigger!: ElementRef;
   @ViewChild('deleteSingleTrigger') deleteSingleTrigger!: ElementRef;
@@ -111,69 +120,51 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   targets: SessionTarget[] = [];
   sessions$ = this.sessionStore.sessions$;
   activeSession$ = this.sessionStore.activeSession$;
-  activeSessionId: string = '';
+  activeSessionId = '';
   selectedIds = new Set<string>();
   targetToDelete: SessionTarget | null = null;
-  targetsToDelete: string[] = [];
-  addForm = {
-    name: '',
-    address: '',
-    port: undefined as number | undefined,
-    description: '',
-    type: TargetType.Unknown,
-    sessionIds: [] as string[],
-  };
-  editForm = {
+
+  addForm: AddTargetForm = createEmptyAddTargetForm();
+  editForm: EditTargetForm = {
     id: '',
     name: '',
     address: '',
-    port: undefined as number | undefined,
+    port: undefined,
     description: '',
-    type: TargetType.Unknown,
+    type: 0,
     sessionId: '',
   };
 
-  targetTypes = [
-    { label: 'Unknown', value: TargetType.Unknown },
-    { label: 'Web', value: TargetType.Web },
-    { label: 'Pwn', value: TargetType.Pwn },
-    { label: 'Crypto', value: TargetType.Crypto },
-    { label: 'Forensics', value: TargetType.Forensics },
-    { label: 'Reverse', value: TargetType.Reverse },
-    { label: 'Misc', value: TargetType.Misc },
-  ];
-
-  // Mapping of "address:port" -> list of session names
+  readonly targetTypes: TargetTypeOption[] = createTargetTypeOptions();
   targetToSessions = new Map<string, string[]>();
 
-  private subscriptions = new Subscription();
+  private readonly subscriptions = new Subscription();
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.sessionStore.refreshSessions();
+
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
         this.targets = session?.targets || [];
 
-        // Keep only IDs that still exist in the updated targets list
-        const currentTargetIds = new Set(this.targets.map((t) => t.id));
+        const currentTargetIds = new Set(this.targets.map((target) => target.id));
         this.selectedIds.forEach((id) => {
           if (!currentTargetIds.has(id)) {
             this.selectedIds.delete(id);
           }
         });
 
-        // Pre-select current session in add form if available
         if (session && this.addForm.sessionIds.length === 0) {
           this.addForm.sessionIds = [session.id];
         }
 
-        this.updateTargetSessionMapping();
+        void this.updateTargetSessionMapping();
       }),
     );
 
     this.subscriptions.add(
       this.sessionStore.sessions$.subscribe(() => {
-        this.updateTargetSessionMapping();
+        void this.updateTargetSessionMapping();
       }),
     );
 
@@ -184,75 +175,28 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
     );
   }
 
-  private getTargetKey(target: { address: string; port?: number | null }): string {
-    return `${target.address}${target.port ? ':' + target.port : ''}`;
-  }
-
-  private async updateTargetSessionMapping() {
-    const sessions = this.sessionStore.getActiveSessionId()
-      ? [this.sessionStore.getActiveSessionId()!]
-      : [];
-
-    // Using a micro-task to avoid blocking
-    setTimeout(async () => {
-      // Get current list of session metas
-      const metas: any[] = [];
-      const sub = this.sessionStore.sessions$.subscribe((m) => metas.push(...m));
-      sub.unsubscribe();
-
-      const newMap = new Map<string, string[]>();
-
-      // Load details for each session to find targets
-      for (const meta of metas) {
-        const data = await this.sessionStore.getSessionData(meta.id);
-        if (data) {
-          for (const target of data.targets) {
-            const key = this.getTargetKey(target);
-            const list = newMap.get(key) || [];
-            if (!list.includes(meta.name)) {
-              list.push(meta.name);
-              newMap.set(key, list);
-            }
-          }
-        }
-      }
-
-      this.targetToSessions = newMap;
-      this.cdr.detectChanges();
-    }, 0);
-  }
-
-  getSessionsForTarget(target: SessionTarget): string[] {
-    return this.targetToSessions.get(this.getTargetKey(target)) || [];
-  }
-
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
 
-  public open(mode: 'view' | 'add' | 'delete') {
+  open(mode: 'view' | 'add' | 'delete'): void {
     this.mode = mode;
     void this.sessionStore.refreshActiveSession();
   }
 
-  async addTarget() {
+  async addTarget(): Promise<void> {
     if (!this.addForm.name || !this.addForm.address) {
       toast.error('Error', { description: 'Target name and address are required.' });
       return;
     }
 
     try {
-      // If no sessions selected, default to current one (handled by service if undefined passed, but we enforce specific ID now)
-      // Actually service handles undefined by ensuring active session.
-      // But if we have multiple selected, we loop.
-
       const sessionIds =
         this.addForm.sessionIds.length > 0
           ? this.addForm.sessionIds
-          : [this.sessionStore.getActiveSessionId()!]; // Fallback to current if none selected, though UI should probably enforce selection or default.
+          : [this.sessionStore.getActiveSessionId()!];
 
       if (!sessionIds.length || sessionIds.includes(null!)) {
-        // Fallback if really nothing is there
         await this.saveTargetToSession(undefined);
       } else {
         for (const sessionId of sessionIds) {
@@ -260,30 +204,172 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
         }
       }
 
-      this.addForm = {
-        name: '',
-        address: '',
-        port: undefined,
-        description: '',
-        type: TargetType.Unknown,
-        sessionIds: [],
-      };
-      // Reset session selection to active one
-      const activeId = this.sessionStore.getActiveSessionId();
-      if (activeId) {
-        this.addForm.sessionIds = [activeId];
-      }
-
+      this.addForm = createEmptyAddTargetForm(this.sessionStore.getActiveSessionId() || undefined);
       this.setMode('view');
+
       toast.success('Target added!', {
         description: 'Target successfully saved to selected session(s).',
       });
-    } catch (err: any) {
-      toast.error('Error', { description: err?.message || 'Failed to add target.' });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to add target.';
+      toast.error('Error', { description: message });
     }
   }
 
-  private async saveTargetToSession(sessionId: string | undefined) {
+  getSessionsForTarget(target: SessionTarget): string[] {
+    return this.targetToSessions.get(getTargetKey(target)) || [];
+  }
+
+  getTargetTypeLabel(type: number): string {
+    return getTargetTypeLabel(type, this.targetTypes);
+  }
+
+  getTargetIcon(type: number): string {
+    return getTargetIcon(type);
+  }
+
+  startEditing(target: SessionTarget): void {
+    this.editForm = createEditTargetForm(
+      target,
+      this.sessionStore.getActiveSessionId() || '',
+    );
+
+    setTimeout(() => {
+      this.editTrigger.nativeElement.click();
+    });
+  }
+
+  async saveEdit(ctx: { close: () => void }): Promise<void> {
+    if (!this.editForm.id) {
+      return;
+    }
+
+    try {
+      const currentSessionId = this.sessionStore.getActiveSessionId();
+      const targetSessionId = this.editForm.sessionId;
+
+      if (currentSessionId && targetSessionId && currentSessionId !== targetSessionId) {
+        await this.sessionStore.addTarget(
+          {
+            name: this.editForm.name,
+            address: this.editForm.address,
+            port: this.editForm.port ?? null,
+            description: this.editForm.description || '',
+            type: this.editForm.type,
+          },
+          targetSessionId,
+        );
+
+        await this.sessionStore.deleteTarget(this.editForm.id);
+
+        toast.success('Target moved', {
+          description: 'Target transferred to another session.',
+        });
+      } else {
+        await this.sessionStore.editTarget(this.editForm.id, {
+          name: this.editForm.name,
+          address: this.editForm.address,
+          port: this.editForm.port ?? null,
+          description: this.editForm.description || '',
+          type: this.editForm.type,
+        });
+
+        toast.success('Changes saved', { description: 'Target updated.' });
+      }
+
+      ctx.close();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Target update failed.';
+      toast.error('Update failed', { description: message });
+    }
+  }
+
+  toggleSelection(id: string): void {
+    if (this.selectedIds.has(id)) {
+      this.selectedIds.delete(id);
+      return;
+    }
+
+    this.selectedIds.add(id);
+  }
+
+  deleteOneTarget(target: SessionTarget): void {
+    this.targetToDelete = target;
+
+    setTimeout(() => {
+      this.deleteSingleTrigger.nativeElement.click();
+    });
+  }
+
+  async confirmDeleteOne(ctx: { close: () => void }): Promise<void> {
+    if (!this.targetToDelete) {
+      return;
+    }
+
+    try {
+      await this.sessionStore.deleteTarget(this.targetToDelete.id);
+
+      toast.success('Target deleted', {
+        description: `"${this.targetToDelete.name}" removed from configuration.`,
+      });
+
+      ctx.close();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Target delete failed.';
+      toast.error('Delete failed', { description: message });
+    } finally {
+      this.targetToDelete = null;
+    }
+  }
+
+  deleteSelected(): void {
+    const idsToDelete = Array.from(this.selectedIds);
+
+    if (idsToDelete.length === 0) {
+      return;
+    }
+
+    setTimeout(() => {
+      this.deleteBulkTrigger.nativeElement.click();
+    });
+  }
+
+  async confirmDeleteSelected(ctx: { close: () => void }): Promise<void> {
+    const idsToDelete = Array.from(this.selectedIds);
+    const count = idsToDelete.length;
+
+    try {
+      for (const id of idsToDelete) {
+        await this.sessionStore.deleteTarget(id);
+      }
+
+      this.selectedIds.clear();
+
+      toast.success('Deletion successful', {
+        description: `${count} targets removed.`,
+        closeButton: true,
+      });
+
+      ctx.close();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Bulk delete failed.';
+      toast.error('Delete failed', { description: message });
+    }
+  }
+
+  setMode(mode: 'view' | 'add' | 'delete'): void {
+    this.mode = mode;
+  }
+
+  async switchSession(sessionId: string): Promise<void> {
+    if (!sessionId) {
+      return;
+    }
+
+    await this.sessionStore.selectSession(sessionId);
+  }
+
+  private async saveTargetToSession(sessionId: string | undefined): Promise<void> {
     await this.sessionStore.addTarget(
       {
         name: this.addForm.name,
@@ -296,144 +382,34 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
     );
   }
 
-  getTargetTypeLabel(type: number): string {
-    return this.targetTypes.find((t) => t.value === type)?.label || 'Unknown';
-  }
+  private async updateTargetSessionMapping(): Promise<void> {
+    setTimeout(async () => {
+      const metas: any[] = [];
+      const sub = this.sessionStore.sessions$.subscribe((items) => metas.push(...items));
+      sub.unsubscribe();
 
-  getTargetIcon(type: number): string {
-    switch (type) {
-      case TargetType.Web:
-        return 'lucideGlobe';
-      case TargetType.Pwn:
-        return 'lucideTerminal';
-      case TargetType.Crypto:
-        return 'lucideLock';
-      case TargetType.Forensics:
-        return 'lucideSearch';
-      case TargetType.Reverse:
-        return 'lucideCpu';
-      case TargetType.Misc:
-        return 'lucideHash';
-      default:
-        return 'lucideTarget';
-    }
-  }
+      const newMap = new Map<string, string[]>();
 
-  startEditing(target: SessionTarget) {
-    this.editForm = {
-      id: target.id,
-      name: target.name,
-      address: target.address,
-      port: target.port ?? undefined,
-      description: target.description || '',
-      type: target.type,
-      sessionId: this.sessionStore.getActiveSessionId() || '',
-    };
-    setTimeout(() => {
-      this.editTrigger.nativeElement.click();
-    });
-  }
+      for (const meta of metas) {
+        const data = await this.sessionStore.getSessionData(meta.id);
 
-  async saveEdit(ctx: any) {
-    if (!this.editForm.id) return;
-    try {
-      const currentSessionId = this.sessionStore.getActiveSessionId();
-      const targetSessionId = this.editForm.sessionId;
+        if (!data) {
+          continue;
+        }
 
-      if (currentSessionId && targetSessionId && currentSessionId !== targetSessionId) {
-        // Mode move: add to new, then delete from old
-        await this.sessionStore.addTarget(
-          {
-            name: this.editForm.name,
-            address: this.editForm.address,
-            port: this.editForm.port ?? null,
-            description: this.editForm.description || '',
-            type: this.editForm.type,
-          },
-          targetSessionId,
-        );
-        await this.sessionStore.deleteTarget(this.editForm.id);
-        toast.success('Target moved', { description: 'Target transferred to another session.' });
-      } else {
-        // Regular update
-        await this.sessionStore.editTarget(this.editForm.id, {
-          name: this.editForm.name,
-          address: this.editForm.address,
-          port: this.editForm.port ?? null,
-          description: this.editForm.description || '',
-          type: this.editForm.type,
-        });
-        toast.success('Changes saved', { description: 'Target updated.' });
+        for (const target of data.targets) {
+          const key = getTargetKey(target);
+          const list = newMap.get(key) || [];
+
+          if (!list.includes(meta.name)) {
+            list.push(meta.name);
+            newMap.set(key, list);
+          }
+        }
       }
 
-      ctx.close();
-    } catch (err: any) {
-      toast.error('Update failed', { description: err?.message || 'Target update failed.' });
-    }
-  }
-
-  toggleSelection(id: string) {
-    if (this.selectedIds.has(id)) {
-      this.selectedIds.delete(id);
-    } else {
-      this.selectedIds.add(id);
-    }
-  }
-
-  async deleteOneTarget(target: SessionTarget) {
-    this.targetToDelete = target;
-    setTimeout(() => {
-      this.deleteSingleTrigger.nativeElement.click();
-    });
-  }
-
-  async confirmDeleteOne(ctx: any) {
-    if (!this.targetToDelete) return;
-    try {
-      await this.sessionStore.deleteTarget(this.targetToDelete.id);
-      toast.success('Target deleted', {
-        description: `"${this.targetToDelete.name}" removed from configuration.`,
-      });
-      ctx.close();
-    } catch (err: any) {
-      toast.error('Delete failed', { description: err?.message || 'Target delete failed.' });
-    } finally {
-      this.targetToDelete = null;
-    }
-  }
-
-  async deleteSelected() {
-    const idsToDelete = Array.from(this.selectedIds);
-    if (idsToDelete.length === 0) return;
-    setTimeout(() => {
-      this.deleteBulkTrigger.nativeElement.click();
-    });
-  }
-
-  async confirmDeleteSelected(ctx: any) {
-    const idsToDelete = Array.from(this.selectedIds);
-    const count = idsToDelete.length;
-    try {
-      for (const id of idsToDelete) {
-        await this.sessionStore.deleteTarget(id);
-      }
-      this.selectedIds.clear();
-      toast.success('Deletion successful', {
-        description: `${count} targets removed.`,
-        closeButton: true,
-      });
-      ctx.close();
-    } catch (err: any) {
-      toast.error('Delete failed', { description: err?.message || 'Bulk delete failed.' });
-    }
-  }
-
-  setMode(mode: 'view' | 'add' | 'delete') {
-    this.mode = mode;
-  }
-
-  async switchSession(sessionId: string) {
-    if (!sessionId) return;
-    await this.sessionStore.selectSession(sessionId);
+      this.targetToSessions = newMap;
+      this.cdr.detectChanges();
+    }, 0);
   }
 }

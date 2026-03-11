@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MenubarComponent } from './shell/menubar/menubar.component';
 import { ChatSidebar } from '../ui/sidebar/chat-sidebar';
-import { TargetManagerComponent } from '../ui/target-manager/target-manager.component';
+import { TargetManagerComponent } from './domains/targets/ui/target-manager.component';
 import { CommandRunnerComponent } from './domains/command-runner/ui/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
 import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-modal.component';

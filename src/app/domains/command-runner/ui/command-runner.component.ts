@@ -36,7 +36,7 @@ import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 
-import { TargetService } from '../../../core/services/target.service';
+import { TargetCommandStoreService } from '../../targets/infrastructure/target-command-store.service';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { SessionStoreService } from '../../../core/services/session-store.service';
 import { ScriptService } from '../../../core/services/script.service';
@@ -102,7 +102,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
   @ViewChild('outputContainer') private outputContainer!: ElementRef;
 
-  private readonly targetService = inject(TargetService);
+  private readonly targetCommandStoreService = inject(TargetCommandStoreService);
   private readonly wsService = inject(WebSocketService);
   private readonly sessionStore = inject(SessionStoreService);
   private readonly scriptService = inject(ScriptService);
@@ -262,7 +262,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     const selectedId = getSelectedCommandId(this.selectedToolId, this.selectedScriptId);
-    const savedCommand = this.targetService.getSavedCommand(target.id, selectedId);
+    const savedCommand = this.targetCommandStoreService.getSavedCommand(target.id, selectedId);
 
     if (savedCommand) {
       this.currentCommand = savedCommand;
@@ -285,7 +285,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     const selectedId = getSelectedCommandId(this.selectedToolId, this.selectedScriptId);
 
     if (this.selectedTargetId && selectedId && this.currentCommand) {
-      this.targetService.saveTargetCommand(
+      this.targetCommandStoreService.saveCommand(
         this.selectedTargetId,
         selectedId,
         this.currentCommand,

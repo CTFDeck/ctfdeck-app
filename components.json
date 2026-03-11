@@ -1,4 +1,4 @@
 {
   "componentsPath": "libs/ui",
-  "importAlias": "@ctfdeck/helm"
+  "importAlias": "@ctfdeck/helm",
 }

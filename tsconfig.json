@@ -12,7 +12,11 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
+    "baseUrl": ".",
     "paths": {
+      "@ctfdeck/helm/*": [
+        "libs/ui/*"
+      ],
       "@ctfdeck/helm/sidebar": [
         "./libs/ui/sidebar/src/index.ts"
       ],
