@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { TerminalComponent } from '../ui/terminal/terminal.component';
+import { TerminalComponent } from './domains/terminal/ui/terminal-panel/terminal.component';
 import { WriteUpEditorComponent } from '../ui/writeup-editor/writeup-editor.component';
 
 export const routes: Routes = [
