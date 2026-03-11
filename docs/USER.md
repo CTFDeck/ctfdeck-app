@@ -247,4 +247,5 @@ The **Tools** menu provides quick access to:
 
 - [CVE.org](https://cve.org) - Vulnerability database
 - [ExploitDB](https://exploit-db.com) - Exploit database
+- [GTFOBins](https://gtfobins.org) - Unix binaries exploitation reference
 - Tool documentation: NMAP, Gobuster, Nikto, Burp Suite

@@ -7,6 +7,7 @@ import { TargetManagerComponent } from '../ui/target-manager/target-manager.comp
 import { CommandRunnerComponent } from '../ui/command-runner/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
 import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-modal.component';
+import { ToolInstallModalComponent } from '../ui/tool-install-modal/tool-install-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,7 @@ import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-m
     CommandRunnerComponent,
     HlmToaster,
     SudoPasswordModalComponent,
+    ToolInstallModalComponent,
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.css'],

@@ -12,16 +12,18 @@ import {
   HlmSubMenu,
 } from '@ctfdeck/helm/menu';
 import { ThemeToggle } from './theme-toggle';
-import { TOOLS, ToolCategory } from '../../app/core/constants/tools';
 import { CommonModule } from '@angular/common';
 import { ScriptService } from '../../app/core/services/script.service';
 import { Subscription } from 'rxjs';
+import { ToolCatalogService } from '../../app/core/services/tool-catalog.service';
+import { ToolCatalogItem } from '../../app/core/services/websocket.protocol';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideTriangleAlert } from '@ng-icons/lucide';
 
 @Component({
   selector: 'spartan-menubar',
   standalone: true,
   imports: [
-    CommonModule,
     CommonModule,
     BrnMenuTrigger,
     HlmMenu,
@@ -33,6 +35,12 @@ import { Subscription } from 'rxjs';
     HlmMenuBarItem,
     HlmMenuGroup,
     ThemeToggle,
+    NgIcon,
+  ],
+  providers: [
+    provideIcons({
+      lucideTriangleAlert,
+    }),
   ],
   templateUrl: './menubar.html',
   styleUrls: ['./menubar.css'],
@@ -41,26 +49,18 @@ export class Menubar implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private scriptService: ScriptService,
+    private toolCatalogService: ToolCatalogService,
   ) {}
 
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
   @Output() openCommandRunnerEvent = new EventEmitter<string | undefined>();
+  @Output() openMissingToolsEvent = new EventEmitter<void>();
+
   customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
   customScriptsLoading = false;
+  tools: ToolCatalogItem[] = [];
+
   private subscriptions = new Subscription();
-
-  // si tu l'utilises ailleurs, garde-le cohérent avec les nouvelles catégories
-  categories = [
-    ToolCategory.PORT_SCANNING,
-    ToolCategory.WEB_DISCOVERY,
-    ToolCategory.WEB_VULN_SCAN,
-    ToolCategory.REVERSE_SHELL,
-    ToolCategory.EXPLOIT,
-    ToolCategory.OTHER,
-  ];
-
-  tools = TOOLS;
-  protected readonly ToolCategory = ToolCategory;
 
   ngOnInit(): void {
     this.subscriptions.add(
@@ -68,15 +68,28 @@ export class Menubar implements OnInit, OnDestroy {
         this.customScripts = scripts;
       }),
     );
+
     this.subscriptions.add(
       this.scriptService.isLoading$.subscribe((loading) => {
         this.customScriptsLoading = loading;
       }),
     );
+
+    this.subscriptions.add(
+      this.toolCatalogService.tools$.subscribe((tools) => {
+        this.tools = tools;
+      }),
+    );
+
+    void this.scriptService.list();
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  get hasMissingTools(): boolean {
+    return this.tools.some((t) => t.kind === 'binary' && !t.isInstalled);
   }
 
   navigate(path: string) {
@@ -95,8 +108,25 @@ export class Menubar implements OnInit, OnDestroy {
     this.openCommandRunnerEvent.emit(toolId);
   }
 
-  getToolsByCategory(category: ToolCategory) {
+  openMissingTools(): void {
+    this.openMissingToolsEvent.emit();
+  }
+
+  openTool(tool: ToolCatalogItem) {
+    if (tool.kind === 'externalWebApp' && tool.externalUrl) {
+      this.openExternal(tool.externalUrl);
+      return;
+    }
+
+    this.openCommandRunner(tool.id);
+  }
+
+  getToolsByCategory(category: string) {
     return this.tools.filter((t) => t.category === category);
+  }
+
+  hasToolsInCategory(category: string): boolean {
+    return this.tools.some((t) => t.category === category);
   }
 
   get recentCustomScripts() {
