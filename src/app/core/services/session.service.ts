@@ -29,13 +29,17 @@ import {
   deserializeSessionOperationError,
 } from './session.protocol';
 
+export interface SessionListResponse {
+  sessions: SessionMetadata[];
+  totalCount: number;
+}
+
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private pending = new Map<string, (result: any) => void>();
   private activeSessionId: string | null = null;
-  private activeProjectId: string | null = null;
   private activeProjectId: string | null = null;
 
   constructor(
@@ -50,45 +54,6 @@ export class SessionService {
     if (!isSessionResponse(type)) return false;
 
     let result: any;
-    try {
-      switch (type) {
-        case MessageType.SessionCreateResult:
-          result = deserializeSessionCreateResult(data);
-          break;
-        case MessageType.SessionSetActiveResult:
-          result = deserializeSessionSetActiveResult(data);
-          break;
-        case MessageType.SessionLoadResult:
-          result = deserializeSessionLoadResult(data);
-          break;
-        case MessageType.SessionListResult:
-          result = deserializeSessionListResult(data);
-          break;
-        case MessageType.SessionDeleteResult:
-          result = deserializeSessionDeleteResult(data);
-          break;
-        case MessageType.SessionUpdateResult:
-          result = deserializeSessionUpdateResult(data);
-          break;
-        case MessageType.SessionAddTargetResult:
-          result = deserializeSessionAddTargetResult(data);
-          break;
-        case MessageType.SessionDeleteTargetResult:
-          result = deserializeSessionDeleteTargetResult(data);
-          break;
-        case MessageType.SessionEditTargetResult:
-          result = deserializeSessionEditTargetResult(data);
-          break;
-        case MessageType.SessionOperationError:
-          result = deserializeSessionOperationError(data);
-          break;
-        default:
-          return false;
-      }
-    } catch (e) {
-      console.error(`[SessionService] Failed to deserialize message type ${type}:`, e);
-      // Return true to indicate we claimed this message type; avoids spam logging from WebSocketService.
-      return true;
     try {
       switch (type) {
         case MessageType.SessionCreateResult:
@@ -154,10 +119,6 @@ export class SessionService {
             success: result.success,
             sessionId: result.sessionId,
           });
-          resolve({
-            success: result.success,
-            sessionId: result.sessionId,
-          });
         }
       });
 
@@ -195,9 +156,6 @@ export class SessionService {
           if (result.success && result.session) {
             this.activeProjectId = result.session.projectId;
           }
-          if (result.success && result.session) {
-            this.activeProjectId = result.session.projectId;
-          }
           resolve({ success: result.success, session: result.session });
         }
       });
@@ -206,7 +164,7 @@ export class SessionService {
     });
   }
 
-  list(offset: number = 0, limit: number = 50, unassignedOnly: boolean = false): Promise<{ sessions: SessionMetadata[], totalCount: number }> {
+  list(offset: number = 0, limit: number = 50, unassignedOnly: boolean = false): Promise<SessionListResponse> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
       const buffer = serializeSessionList(offset, limit, messageId, unassignedOnly);
@@ -362,10 +320,6 @@ export class SessionService {
 
   getActiveSessionId(): string | null {
     return this.activeSessionId;
-  }
-
-  getActiveProjectId(): string | null {
-    return this.activeProjectId;
   }
 
   getActiveProjectId(): string | null {
