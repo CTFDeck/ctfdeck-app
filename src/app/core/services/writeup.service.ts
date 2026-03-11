@@ -17,6 +17,7 @@ import {
   deserializeWriteUpDeleteResult,
   deserializeWriteUpListResult,
   deserializeWriteUpLoadResult,
+  deserializeWriteUpMoveResult,
   deserializeWriteUpOperationError,
 } from './writeup.protocol';
 
@@ -71,7 +72,7 @@ export class WriteUpService {
           result = deserializeWriteUpLoadResult(data);
           break;
         case MessageType.WriteUpMoveResult:
-          result = { messageId: '', success: data[17] === 1 };
+          result = deserializeWriteUpMoveResult(data);
           break;
         case MessageType.WriteUpOperationError:
           result = deserializeWriteUpOperationError(data);
@@ -140,10 +141,10 @@ export class WriteUpService {
     });
   }
 
-  list(sessionId: string, offset: number = 0, limit: number = 50): Promise<{ writeUps: WriteUpMetadata[], totalCount: number }> {
+  list(sessionId: string, offset: number = 0, limit: number = 50, unassignedOnly: boolean = false): Promise<{ writeUps: WriteUpMetadata[], totalCount: number }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
-      const buffer = serializeWriteUpList(sessionId, offset, limit, messageId);
+      const buffer = serializeWriteUpList(sessionId, offset, limit, messageId, unassignedOnly);
       this.pending.set(messageId, (result) => {
         if (result.error) reject(new Error(result.error));
         else resolve({ writeUps: result.writeUps, totalCount: result.totalCount });
@@ -170,10 +171,10 @@ export class WriteUpService {
     });
   }
 
-  move(writeUpId: string, folderId: string | null): Promise<boolean> {
+  move(writeUpId: string, projectId: string | null, folderId: string | null): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
-      const buffer = serializeWriteUpMove(writeUpId, folderId, messageId);
+      const buffer = serializeWriteUpMove(writeUpId, projectId, folderId, messageId);
       this.pending.set(messageId, (result) => {
         if (result.error) reject(new Error(result.error));
         else resolve(result.success);

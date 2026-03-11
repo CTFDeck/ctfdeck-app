@@ -159,10 +159,10 @@ export class SessionService {
     });
   }
 
-  list(offset: number = 0, limit: number = 50): Promise<{ sessions: SessionMetadata[], totalCount: number }> {
+  list(offset: number = 0, limit: number = 50, unassignedOnly: boolean = false): Promise<{ sessions: SessionMetadata[], totalCount: number }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
-      const buffer = serializeSessionList(offset, limit, messageId);
+      const buffer = serializeSessionList(offset, limit, messageId, unassignedOnly);
 
       this.pending.set(messageId, (result) => {
         if (result.error) {

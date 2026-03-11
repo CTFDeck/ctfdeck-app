@@ -21,6 +21,12 @@ export class SessionStoreService implements OnDestroy {
   private activeSessionIdSubject = new BehaviorSubject<string | null>(null);
   activeSessionId$ = this.activeSessionIdSubject.asObservable();
 
+  private unassignedSessionsSubject = new BehaviorSubject<SessionMetadata[]>([]);
+  unassignedSessions$ = this.unassignedSessionsSubject.asObservable();
+
+  private unassignedTotalSubject = new BehaviorSubject<number>(0);
+  unassignedTotal$ = this.unassignedTotalSubject.asObservable();
+
   private activeSessionSubject = new BehaviorSubject<SessionData | null>(null);
   activeSession$ = this.activeSessionSubject.asObservable();
 
@@ -32,7 +38,7 @@ export class SessionStoreService implements OnDestroy {
 
   private subscriptions = new Subscription();
   private creatingSessionPromise: Promise<string> | null = null;
-  private sessionsListPromise: Promise<void> | null = null;
+  private sessionsListPromises = new Map<boolean, Promise<void>>();
 
   constructor(
     private sessions: SessionService,
@@ -54,20 +60,30 @@ export class SessionStoreService implements OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  async refreshSessions(force = false, offset: number = 0, limit: number = 6): Promise<void> {
-    if (!force && this.sessionsListPromise && offset === 0) {
-      return this.sessionsListPromise;
+  async refreshSessions(force = false, offset: number = 0, limit: number = 6, unassignedOnly: boolean = false): Promise<void> {
+    const currentPromise = this.sessionsListPromises.get(unassignedOnly);
+    if (!force && currentPromise && offset === 0) {
+      return currentPromise;
     }
 
     this.sessionsLoadingSubject.next(true);
     const fetchPromise = (async () => {
       try {
-        const res = await this.sessions.list(offset, limit);
-        this.sessionsTotalSubject.next(res.totalCount);
-        if (offset === 0) {
-          this.sessionsSubject.next(res.sessions);
+        const res = await this.sessions.list(offset, limit, unassignedOnly);
+        if (unassignedOnly) {
+          this.unassignedTotalSubject.next(res.totalCount);
+          if (offset === 0) {
+            this.unassignedSessionsSubject.next(res.sessions);
+          } else {
+            this.unassignedSessionsSubject.next([...this.unassignedSessionsSubject.value, ...res.sessions]);
+          }
         } else {
-          this.sessionsSubject.next([...this.sessionsSubject.value, ...res.sessions]);
+          this.sessionsTotalSubject.next(res.totalCount);
+          if (offset === 0) {
+            this.sessionsSubject.next(res.sessions);
+          } else {
+            this.sessionsSubject.next([...this.sessionsSubject.value, ...res.sessions]);
+          }
         }
       } catch (err: any) {
         toast.error('Session list failed', { description: err?.message || 'Unknown error' });
@@ -77,13 +93,13 @@ export class SessionStoreService implements OnDestroy {
     })();
 
     if (offset === 0) {
-      this.sessionsListPromise = fetchPromise;
+      this.sessionsListPromises.set(unassignedOnly, fetchPromise);
       fetchPromise.finally(() => {
-        if (this.sessionsListPromise === fetchPromise) {
-          this.sessionsListPromise = null;
+        if (this.sessionsListPromises.get(unassignedOnly) === fetchPromise) {
+          this.sessionsListPromises.delete(unassignedOnly);
         }
       });
-      return this.sessionsListPromise;
+      return fetchPromise;
     }
 
     return fetchPromise;
@@ -124,7 +140,10 @@ export class SessionStoreService implements OnDestroy {
         throw new Error('Failed to create session');
       }
       await this.selectSession(result.sessionId);
-      await this.refreshSessions(true);
+      await Promise.all([
+        this.refreshSessions(true, 0, 50, false),
+        this.refreshSessions(true, 0, 6, true)
+      ]);
       return result.sessionId;
     } catch (err: any) {
       toast.error('Session create failed', { description: err?.message || 'Unknown error' });
@@ -159,7 +178,10 @@ export class SessionStoreService implements OnDestroy {
         this.activeSessionIdSubject.next(null);
         localStorage.removeItem(ACTIVE_SESSION_KEY);
       }
-      await this.refreshSessions(true);
+      await Promise.all([
+        this.refreshSessions(true, 0, 50, false),
+        this.refreshSessions(true, 0, 6, true)
+      ]);
     } catch (err: any) {
       toast.error('Session delete failed', { description: err?.message || 'Unknown error' });
     }
@@ -171,7 +193,10 @@ export class SessionStoreService implements OnDestroy {
       if (!ok) {
         throw new Error('Failed to rename session');
       }
-      await this.refreshSessions(true);
+      await Promise.all([
+        this.refreshSessions(true, 0, 50, false),
+        this.refreshSessions(true, 0, 6, true)
+      ]);
       if (this.activeSessionIdSubject.value === sessionId && this.activeSessionSubject.value) {
         this.activeSessionSubject.next({
           ...this.activeSessionSubject.value,
@@ -257,9 +282,10 @@ export class SessionStoreService implements OnDestroy {
 
   private async initializeOnConnect(): Promise<void> {
     const lastSession = localStorage.getItem(ACTIVE_SESSION_KEY);
-    const loadSessions = this.refreshSessions();
+    const loadUnassigned = this.refreshSessions(false, 0, 6, true);
+    const loadAll = this.refreshSessions(false, 0, 50, false);
     const restoreLastSession = lastSession ? this.selectSession(lastSession) : Promise.resolve();
-    await Promise.all([loadSessions, restoreLastSession]);
+    await Promise.all([loadUnassigned, loadAll, restoreLastSession]);
 
     // If no active session was restored (fresh window or invalid last session), try to fallback to the most recent one
     if (!this.activeSessionIdSubject.value) {
@@ -275,6 +301,10 @@ export class SessionStoreService implements OnDestroy {
 
   getActiveSessionId(): string | null {
     return this.activeSessionIdSubject.value;
+  }
+
+  getTotalSessions(unassigned = false): number {
+    return unassigned ? this.unassignedTotalSubject.value : this.sessionsTotalSubject.value;
   }
 
   broadcastTerminalEvent(event: TerminalEvent) {

@@ -110,13 +110,19 @@ export function serializeSessionLoad(sessionId: string, messageId: string): Uint
   return buffer;
 }
 
-export function serializeSessionList(offset: number, limit: number, messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16 + 4 + 4);
+export function serializeSessionList(
+  offset: number,
+  limit: number,
+  messageId: string,
+  unassignedOnly: boolean = false,
+): Uint8Array {
+  const buffer = new Uint8Array(1 + 16 + 4 + 4 + 1);
   const view = new DataView(buffer.buffer);
   buffer[0] = MessageType.SessionList;
   buffer.set(uuidToBytes(messageId), 1);
   view.setInt32(17, offset, true);
   view.setInt32(21, limit, true);
+  buffer[25] = unassignedOnly ? 1 : 0;
   return buffer;
 }
 

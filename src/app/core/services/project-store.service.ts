@@ -106,7 +106,7 @@ export class ProjectStoreService implements OnDestroy {
       this.projects$,
       this.projectDataCache$,
       this.sessionStore.sessions$,
-      this.writeupStore.writeUps$,
+      this.writeupStore.allWriteUps$,
     ]).pipe(
       map(([projects, dataCache, allSessions, allWriteups]): ProjectHierarchy[] => {
         return projects.map((p) => {
@@ -139,15 +139,17 @@ export class ProjectStoreService implements OnDestroy {
             }
           });
 
-          // Handle sessions in project root (no folder)
+          // Handle items in project root (no folder)
           const rootSessions = allSessions.filter(s => s.projectId === p.id && !s.folderId);
-          if (rootSessions.length > 0) {
+          const rootWriteups = allWriteups.filter(w => w.projectId === p.id && !w.folderId);
+          
+          if (rootSessions.length > 0 || rootWriteups.length > 0) {
               roots.unshift({
                   id: `root-${p.id}`,
                   name: 'Root Items',
                   isSystem: true,
                   sessions: rootSessions,
-                  writeups: [],
+                  writeups: rootWriteups,
                   folders: []
               });
           }
@@ -199,7 +201,11 @@ export class ProjectStoreService implements OnDestroy {
     const res = await this.projectService.assignSession(projectId, sessionId, folderId);
     if (res) {
       await this.loadProjectDetails(projectId);
-      await this.sessionStore.refreshSessions(true);
+      // Refresh both unassigned and all sessions to update sidebar and hierarchy
+      await Promise.all([
+        this.sessionStore.refreshSessions(true, 0, 12, true),
+        this.sessionStore.refreshSessions(true, 0, 50, false)
+      ]);
     }
     return res;
   }

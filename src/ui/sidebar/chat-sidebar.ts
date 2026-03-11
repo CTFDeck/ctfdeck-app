@@ -1,4 +1,4 @@
-import { Component, signal, HostBinding, ViewChild, ElementRef } from '@angular/core';
+import { Component, signal, HostBinding, ViewChild, ElementRef, inject } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -129,6 +129,8 @@ export class ChatSidebar {
   }
 
   search = '';
+  sessionsDisplayLimit = signal(5);
+  writeUpsDisplayLimit = signal(5);
 
   sessions$: Observable<SessionMetadata[]>;
   activeSessionId$: Observable<string | null>;
@@ -169,6 +171,9 @@ export class ChatSidebar {
   successfullyDroppedId = signal<string | null>(null);
   isDragging = signal(false);
   isScrolling = signal(false);
+  
+  hoveredFolderId = signal<string | null>(null);
+  private folderExpandTimeout?: any;
   private scrollTimeout: any;
 
   private dragScrollInterval: any;
@@ -176,24 +181,22 @@ export class ChatSidebar {
   hierarchy$: Observable<ProjectHierarchy[]>;
   expandedProjectIds = signal<Set<string>>(new Set());
   expandedFolderIds = signal<Set<string>>(new Set());
-
+  protected readonly projectStore = inject(ProjectStoreService);
   constructor(
     private sessionStore: SessionStoreService,
     private writeUpStore: WriteUpStoreService,
-    private projectStore: ProjectStoreService,
     private router: Router,
   ) {
     this.hierarchy$ = this.projectStore.getHierarchy$();
-    this.sessions$ = this.sessionStore.sessions$;
+    this.sessions$ = this.sessionStore.unassignedSessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
     this.sessionsLoading$ = this.sessionStore.sessionsLoading$;
 
-    this.writeUps$ = this.writeUpStore.allWriteUps$;
+    this.writeUps$ = this.writeUpStore.unassignedWriteUps$;
     this.writeUpsLoading$ = this.writeUpStore.writeUpsLoading$;
-
     this.totalProjectsCount$ = this.projectStore.totalProjectsCount$;
-    this.totalSessions$ = this.sessionStore.sessionsTotal$;
-    this.totalWriteUps$ = this.writeUpStore.allWriteUpsTotal$;
+    this.totalSessions$ = this.sessionStore.unassignedTotal$;
+    this.totalWriteUps$ = this.writeUpStore.unassignedTotal$;
     this.activeWriteUpId$ = new Observable((sub) => {
       this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
     });
@@ -361,25 +364,8 @@ export class ChatSidebar {
     this.deletingWriteUpIds.set(next);
   }
 
-  // ── Filters ──────────────────────────────────────────────────────────────
-  filteredChats(sessions: SessionMetadata[]) {
-    const term = this.search?.toLowerCase().trim();
-    // Only show sessions which are NOT in a folder
-    const unassigned = sessions.filter((s) => s.folderId === null);
-    if (!term) return unassigned;
-    return unassigned.filter((s) => s.name.toLowerCase().includes(term));
-  }
-
   resultsCount(sessions: SessionMetadata[]): number {
     return this.filteredChats(sessions).length;
-  }
-
-  filteredWriteUps(writeUps: WriteUpMetadata[]) {
-    const term = this.search?.toLowerCase().trim();
-    // Only show writeups which are NOT in a folder
-    const unassigned = writeUps.filter((w) => w.folderId === null);
-    if (!term) return unassigned;
-    return unassigned.filter((w) => w.name.toLowerCase().includes(term));
   }
 
   toggleSidebar() {
@@ -465,6 +451,7 @@ export class ChatSidebar {
   onDragEnd() {
     this.isDragging.set(false);
     this.clearDragScroll();
+    this.clearFolderExpandTimer();
   }
 
   onDragOver(event: DragEvent) {
@@ -474,6 +461,57 @@ export class ChatSidebar {
     }
     this.isScrolling.set(true); // Treat drag-scroll as scrolling
     this.handleDragScroll(event);
+  }
+
+  onFolderDragOver(event: DragEvent, id: string, type: 'project' | 'folder' = 'folder') {
+    event.preventDefault();
+    this.handleDragScroll(event);
+
+    const isExpanded = type === 'project' ? this.isProjectExpanded(id) : this.isFolderExpanded(id);
+
+    if (isExpanded) {
+      if (this.hoveredFolderId() === id) {
+        this.clearFolderExpandTimer();
+      }
+      return;
+    }
+
+    if (this.hoveredFolderId() !== id) {
+      this.clearFolderExpandTimer();
+      this.hoveredFolderId.set(id);
+      
+      this.folderExpandTimeout = setTimeout(() => {
+        if (this.hoveredFolderId() === id) {
+          if (type === 'project') {
+            const next = new Set(this.expandedProjectIds());
+            next.add(id);
+            this.expandedProjectIds.set(next);
+            void this.projectStore.loadProjectDetails(id);
+          } else {
+            const next = new Set(this.expandedFolderIds());
+            next.add(id);
+            this.expandedFolderIds.set(next);
+          }
+          this.clearFolderExpandTimer();
+        }
+      }, 450); // Speed up to 450ms
+    }
+  }
+
+  onFolderDragLeave(event: DragEvent) {
+    const target = event.relatedTarget as HTMLElement;
+    if (target && (target.closest('.ctf-folder-node') || target.closest('.ctf-folder-content'))) {
+      return;
+    }
+    this.clearFolderExpandTimer();
+  }
+
+  private clearFolderExpandTimer() {
+    if (this.folderExpandTimeout) {
+      clearTimeout(this.folderExpandTimeout);
+      this.folderExpandTimeout = null;
+    }
+    this.hoveredFolderId.set(null);
   }
 
   onScroll() {
@@ -520,38 +558,87 @@ export class ChatSidebar {
   async onDrop(event: DragEvent, projectId: string, folderId: string | null) {
     event.preventDefault();
     this.clearDragScroll();
-    const type = event.dataTransfer?.getData('application/ctf-type');
+    this.clearFolderExpandTimer();
+
+    const type = event.dataTransfer?.getData('application/ctf-type') as 'session' | 'writeup' | null;
     const id = event.dataTransfer?.getData('application/ctf-id');
 
     if (!type || !id) return;
 
+    // Avoid dropping on self if possible (simple ID check)
+    if (id === folderId) return;
+
     try {
+      let success = false;
       if (type === 'session') {
-        await this.projectStore.assignSession(projectId, id, folderId);
+        const res = await this.projectStore.assignSession(projectId, id, folderId);
+        success = !!res;
       } else if (type === 'writeup') {
-        await this.writeUpStore.moveWriteUp(id, folderId);
+        // Move writeup (this service handles the folderId and projectId)
+        success = await this.writeUpStore.moveWriteUp(id, projectId, folderId);
       }
       
-      // Success animation
-      this.successfullyDroppedId.set(id);
-      setTimeout(() => this.successfullyDroppedId.set(null), 2500);
+      if (success) {
+        // Force refresh project hierarchy to show the moved item
+        await this.projectStore.loadProjectDetails(projectId);
+        
+        // Success animation
+        this.successfullyDroppedId.set(id);
+        setTimeout(() => this.successfullyDroppedId.set(null), 2500);
+      }
     } catch (e) {
-      console.error('[ChatSidebar] Drop failed:', e);
+      console.error(`[ChatSidebar] Drop failed for ${type} ${id}:`, e);
     }
   }
 
   async loadMoreProjects() {
-    const projects = await firstValueFrom(this.projectStore.projects$);
+    const projects = (await firstValueFrom(this.projectStore.projects$)) as any[];
     await this.projectStore.loadProjects(projects.length, 6);
   }
 
   async loadMoreSessions() {
+    this.sessionsDisplayLimit.update(n => n + 6);
     const sessions = await firstValueFrom(this.sessions$);
-    await this.sessionStore.refreshSessions(true, sessions.length, 6);
+    await this.sessionStore.refreshSessions(true, sessions.length, 12, true);
   }
 
   async loadMoreWriteUps() {
+    this.writeUpsDisplayLimit.update(n => n + 6);
     const writeUps = await firstValueFrom(this.writeUps$);
-    await this.writeUpStore.refreshAllWriteUps(writeUps.length, 6);
+    await this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
+  }
+
+  // Robust filtering with backend-supported unassigned filtering
+  filteredChats(sessions: SessionMetadata[]) {
+    const term = this.search?.toLowerCase().trim();
+    
+    const filtered = term 
+      ? sessions.filter((s) => s.name.toLowerCase().includes(term))
+      : sessions;
+
+    const limit = this.sessionsDisplayLimit();
+
+    // If we have fewer items than we want to display, 
+    // and the server has more total unassigned items to check, fetch more.
+    if (filtered.length < limit && sessions.length < (this.sessionStore.getTotalSessions(true) || 0)) {
+       void this.sessionStore.refreshSessions(true, sessions.length, 12, true);
+    }
+    
+    return filtered.slice(0, limit);
+  }
+
+  filteredWriteUps(writeUps: WriteUpMetadata[]) {
+    const term = this.search?.toLowerCase().trim();
+    
+    const filtered = term 
+      ? writeUps.filter((w) => w.name.toLowerCase().includes(term))
+      : writeUps;
+
+    const limit = this.writeUpsDisplayLimit();
+
+    if (filtered.length < limit && writeUps.length < (this.writeUpStore.getTotalWriteUps(true) || 0)) {
+       void this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
+    }
+    return filtered.slice(0, limit);
   }
 }

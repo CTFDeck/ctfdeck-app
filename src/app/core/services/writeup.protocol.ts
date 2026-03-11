@@ -6,6 +6,7 @@ const decoder = new TextDecoder();
 export interface WriteUpMetadata {
   id: string;
   sessionId: string;
+  projectId: string | null;
   folderId: string | null;
   name: string;
   createdAt: Date;
@@ -100,8 +101,14 @@ export function serializeWriteUpDelete(writeUpId: string, messageId: string): Ui
   return buffer;
 }
 
-export function serializeWriteUpList(sessionId: string, offset: number, limit: number, messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16 + 16 + 4 + 4);
+export function serializeWriteUpList(
+  sessionId: string,
+  offset: number,
+  limit: number,
+  messageId: string,
+  unassignedOnly: boolean = false,
+): Uint8Array {
+  const buffer = new Uint8Array(1 + 16 + 16 + 4 + 4 + 1);
   const view = new DataView(buffer.buffer);
   let idx = 0;
   buffer[idx++] = MessageType.WriteUpList;
@@ -112,6 +119,8 @@ export function serializeWriteUpList(sessionId: string, offset: number, limit: n
   view.setInt32(idx, offset, true);
   idx += 4;
   view.setInt32(idx, limit, true);
+  idx += 4;
+  buffer[idx] = unassignedOnly ? 1 : 0;
   return buffer;
 }
 
@@ -127,15 +136,18 @@ export function serializeWriteUpLoad(writeUpId: string, messageId: string): Uint
 
 export function serializeWriteUpMove(
   writeUpId: string,
+  projectId: string | null,
   folderId: string | null,
   messageId: string,
 ): Uint8Array {
-  const buffer = new Uint8Array(1 + 16 + 16 + 16);
+  const buffer = new Uint8Array(1 + 16 + 16 + 16 + 16);
   let offset = 0;
   buffer[offset++] = MessageType.WriteUpMove;
   buffer.set(uuidToBytes(messageId), offset);
   offset += 16;
   buffer.set(uuidToBytes(writeUpId), offset);
+  offset += 16;
+  buffer.set(uuidToBytes(projectId || '00000000-0000-0000-0000-000000000000'), offset);
   offset += 16;
   buffer.set(uuidToBytes(folderId || '00000000-0000-0000-0000-000000000000'), offset);
   return buffer;
@@ -236,6 +248,16 @@ export function deserializeWriteUpDeleteResult(data: Uint8Array): {
   };
 }
 
+export function deserializeWriteUpMoveResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+} {
+  return {
+    messageId: bytesToUuid(data.subarray(1, 17)),
+    success: data[17] === 1,
+  };
+}
+
 export function deserializeWriteUpListResult(data: Uint8Array): {
   messageId: string;
   totalCount: number;
@@ -257,6 +279,9 @@ export function deserializeWriteUpListResult(data: Uint8Array): {
     offset += 16;
     const sessionId = bytesToUuid(data.subarray(offset, offset + 16));
     offset += 16;
+    const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+    const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+    offset += 16;
     const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
     const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
     offset += 16;
@@ -266,6 +291,9 @@ export function deserializeWriteUpListResult(data: Uint8Array): {
     const name = decoder.decode(data.subarray(offset, offset + nameLen));
     offset += nameLen;
 
+    if (offset + 16 > data.byteLength) {
+      throw new Error(`WriteUpListResult too short for timestamps at item ${i}, offset=${offset}, length=${data.byteLength}`);
+    }
     const createdAtTicks = view.getBigInt64(offset, true);
     offset += 8;
     const updatedAtTicks = view.getBigInt64(offset, true);
@@ -274,6 +302,7 @@ export function deserializeWriteUpListResult(data: Uint8Array): {
     writeUps.push({
       id,
       sessionId,
+      projectId,
       folderId,
       name,
       createdAt: ticksToDate(createdAtTicks),
@@ -300,6 +329,9 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
   offset += 16;
   const sessionId = bytesToUuid(data.subarray(offset, offset + 16));
   offset += 16;
+  const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+  const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+  offset += 16;
   const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
   const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
   offset += 16;
@@ -314,6 +346,9 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
   const content = decoder.decode(data.subarray(offset, offset + contentLen));
   offset += contentLen;
 
+  if (offset + 16 > data.byteLength) {
+    throw new Error(`WriteUpLoadResult too short for timestamps, offset=${offset}, length=${data.byteLength}`);
+  }
   const createdAtTicks = view.getBigInt64(offset, true);
   offset += 8;
   const updatedAtTicks = view.getBigInt64(offset, true);
@@ -325,6 +360,7 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
     writeUp: {
       id,
       sessionId,
+      projectId,
       folderId,
       name,
       content,

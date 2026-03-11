@@ -19,6 +19,12 @@ export class WriteUpStoreService implements OnDestroy {
   private allWriteUpsTotalSubject = new BehaviorSubject<number>(0);
   allWriteUpsTotal$ = this.allWriteUpsTotalSubject.asObservable();
 
+  private unassignedWriteUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
+  unassignedWriteUps$ = this.unassignedWriteUpsSubject.asObservable();
+
+  private unassignedTotalSubject = new BehaviorSubject<number>(0);
+  unassignedTotal$ = this.unassignedTotalSubject.asObservable();
+
   private writeUpsLoadingSubject = new BehaviorSubject<boolean>(false);
   writeUpsLoading$ = this.writeUpsLoadingSubject.asObservable();
 
@@ -55,9 +61,12 @@ export class WriteUpStoreService implements OnDestroy {
   async refreshWriteUps(sessionId?: string, offset: number = 0, limit: number = 6): Promise<void> {
     const sid = sessionId || this.sessionStore.getActiveSessionId();
     
-    // Refresh ALL writeups using the old unpaginated-like call or first page
+    // Refresh ALL writeups (unassigned for sidebar, all for hierarchy)
     if (offset === 0) {
-      await this.refreshAllWriteUps();
+      await Promise.all([
+         this.refreshAllWriteUps(0, 6, true),
+         this.refreshAllWriteUps(0, 50, false)
+      ]);
     }
 
     if (!sid) {
@@ -81,15 +90,24 @@ export class WriteUpStoreService implements OnDestroy {
     }
   }
 
-  async refreshAllWriteUps(offset: number = 0, limit: number = 6): Promise<void> {
+  async refreshAllWriteUps(offset: number = 0, limit: number = 6, unassignedOnly: boolean = false): Promise<void> {
      try {
        // Send zero UUID for "All"
-       const res = await this.writeUpService.list('00000000-0000-0000-0000-000000000000', offset, limit);
-       this.allWriteUpsTotalSubject.next(res.totalCount);
-       if (offset === 0) {
-         this.allWriteUpsSubject.next(res.writeUps);
+       const res = await this.writeUpService.list('00000000-0000-0000-0000-000000000000', offset, limit, unassignedOnly);
+       if (unassignedOnly) {
+         this.unassignedTotalSubject.next(res.totalCount);
+         if (offset === 0) {
+           this.unassignedWriteUpsSubject.next(res.writeUps);
+         } else {
+           this.unassignedWriteUpsSubject.next([...this.unassignedWriteUpsSubject.value, ...res.writeUps]);
+         }
        } else {
-         this.allWriteUpsSubject.next([...this.allWriteUpsSubject.value, ...res.writeUps]);
+         this.allWriteUpsTotalSubject.next(res.totalCount);
+         if (offset === 0) {
+           this.allWriteUpsSubject.next(res.writeUps);
+         } else {
+           this.allWriteUpsSubject.next([...this.allWriteUpsSubject.value, ...res.writeUps]);
+         }
        }
      } catch (e) {
        console.error('Failed to refresh all writeups:', e);
@@ -197,14 +215,19 @@ export class WriteUpStoreService implements OnDestroy {
     this.activeWriteUpSubject.next(null);
   }
 
-  async moveWriteUp(writeUpId: string, folderId: string | null): Promise<boolean> {
+  async moveWriteUp(writeUpId: string, projectId: string | null, folderId: string | null): Promise<boolean> {
     try {
-      const success = await this.writeUpService.move(writeUpId, folderId);
+      const success = await this.writeUpService.move(writeUpId, projectId, folderId);
       if (success) {
         if (this.activeWriteUpSubject.value?.id === writeUpId) {
-          this.activeWriteUpSubject.next({ ...this.activeWriteUpSubject.value, folderId });
+          const current = this.activeWriteUpSubject.value;
+          this.activeWriteUpSubject.next({ ...current, projectId, folderId });
         }
-        await this.refreshWriteUps();
+        // Refresh both lists to update sidebar and hierarchy
+        await Promise.all([
+          this.refreshAllWriteUps(0, 12, true),
+          this.refreshAllWriteUps(0, 50, false)
+        ]);
         return true;
       }
       return false;
@@ -212,5 +235,9 @@ export class WriteUpStoreService implements OnDestroy {
       toast.error('Move failed', { description: err?.message || 'Unknown error' });
       return false;
     }
+  }
+
+  getTotalWriteUps(unassigned = false): number {
+    return unassigned ? this.unassignedTotalSubject.value : this.allWriteUpsTotalSubject.value;
   }
 }

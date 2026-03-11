@@ -83,12 +83,20 @@
            <div *ngIf="hierarchy$ | async as projects" class="flex flex-col gap-0.5">
              <div *ngFor="let p of projects" class="flex flex-col">
                 <!-- Project Node -->
-                <div class="group flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent cursor-pointer transition-colors"
-                     (click)="toggleProject(p.id)">
+                <div class="ctf-folder-node group flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+                     [class.ctf-folder-hovering]="hoveredFolderId() === p.id"
+                     (click)="toggleProject(p.id)"
+                     (dragover)="onFolderDragOver($event, p.id, 'project')"
+                     (dragleave)="onFolderDragLeave($event)"
+                     (drop)="onDrop($event, p.id, null)">
+                    <!-- Progress indicator -->
+                    <div *ngIf="hoveredFolderId() === p.id && !isProjectExpanded(p.id)" 
+                         class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"></div>
+                    
                     <ng-icon [name]="isProjectExpanded(p.id) ? 'lucideChevronDown' : 'lucideChevronRight'" 
-                             class="text-foreground w-3.5 h-3.5" />
-                    <ng-icon name="lucideLayoutGrid" class="text-primary w-4 h-4" />
-                    <span class="text-sm font-medium truncate flex-1">{{ p.name }}</span>
+                             class="text-foreground w-3.5 h-3.5 pointer-events-none" />
+                    <ng-icon name="lucideLayoutGrid" class="text-primary w-4 h-4 pointer-events-none" />
+                    <span class="text-sm font-medium truncate flex-1 pointer-events-none">{{ p.name }}</span>
                     
                      <button class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
                              (click)="$event.stopPropagation(); openCreateFolderDialog(p.id)"
@@ -98,7 +106,7 @@
                 </div>
 
                 <!-- Folders Tree -->
-                <div *ngIf="isProjectExpanded(p.id)" class="ml-4 pl-2 border-l border-border flex flex-col gap-1 mt-1">
+                <div *ngIf="isProjectExpanded(p.id)" class="ml-4 pl-2 border-l border-border flex flex-col gap-1 mt-1 ctf-folder-content">
                     <ng-container *ngTemplateOutlet="folderTree; context: { $implicit: p.folders, projectId: p.id, depth: 0 }">
                     </ng-container>
                 </div>
@@ -120,7 +128,7 @@
               </button>
            </div>
            
-           <div class="flex flex-col gap-0.5 px-1">
+           <div class="flex flex-col gap-0.5 px-1" (dragover)="onDragOver($event)" (drop)="onDrop($event, '', null)">
               <div *ngFor="let s of filteredChats((sessions$ | async) || [])"
                    class="ctf-item-group relative group/item"
                    [class.bg-accent]="s.id === (activeSessionId$ | async)"
@@ -155,7 +163,7 @@
               </button>
            </div>
            
-           <div class="flex flex-col gap-0.5 px-1">
+           <div class="flex flex-col gap-0.5 px-1" (dragover)="onDragOver($event)" (drop)="onDrop($event, '', null)">
               <div *ngFor="let w of filteredWriteUps((writeUps$ | async) || [])"
                    class="ctf-item-group relative group/item"
                    [class.bg-accent]="w.id === (activeWriteUpId$ | async)"
@@ -189,14 +197,20 @@
   <ng-template #folderTree let-folders let-projectId="projectId" let-depth="depth">
     <div *ngFor="let f of folders" class="flex flex-col">
         <!-- Folder Node -->
-        <div class="group flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+        <div class="ctf-folder-node group flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+             [class.ctf-folder-hovering]="hoveredFolderId() === f.id"
              (click)="toggleFolder(f.id)"
-             (dragover)="onDragOver($event)"
+             (dragover)="onFolderDragOver($event, f.id, 'folder')"
+             (dragleave)="onFolderDragLeave($event)"
              (drop)="onDrop($event, projectId, f.id)">
+             <!-- Progress indicator -->
+             <div *ngIf="hoveredFolderId() === f.id && !isFolderExpanded(f.id)" 
+                  class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"></div>
+                  
              <ng-icon [name]="isFolderExpanded(f.id) ? 'lucideChevronDown' : 'lucideChevronRight'" 
-                      class="text-foreground w-3 h-3" />
-             <ng-icon [name]="isFolderExpanded(f.id) ? 'lucideFolderOpen' : 'lucideFolder'" class="text-foreground w-3.5 h-3.5" />
-             <span class="text-xs truncate flex-1 font-medium">{{ f.name }}</span>
+                      class="text-foreground w-3 h-3 pointer-events-none" />
+             <ng-icon [name]="isFolderExpanded(f.id) ? 'lucideFolderOpen' : 'lucideFolder'" class="text-foreground w-3.5 h-3.5 pointer-events-none" />
+             <span class="text-xs truncate flex-1 font-medium pointer-events-none">{{ f.name }}</span>
 
              <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-auto">
                 <button *ngIf="depth < 1" class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform" (click)="$event.stopPropagation(); openCreateFolderDialog(projectId, f.id)" hlmTooltipTrigger="Add subfolder">
@@ -212,7 +226,7 @@
         </div>
 
         <!-- Folder Expanded Content -->
-        <div *ngIf="isFolderExpanded(f.id)" class="ml-4 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5">
+        <div *ngIf="isFolderExpanded(f.id)" class="ml-4 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5 ctf-folder-content">
             <!-- Subfolders -->
             <ng-container *ngTemplateOutlet="folderTree; context: { $implicit: f.folders, projectId: projectId, depth: depth + 1 }"></ng-container>
             
