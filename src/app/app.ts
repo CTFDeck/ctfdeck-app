@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { MenubarComponent } from './shell/menubar/menubar.component';
 import { ChatSidebar } from '../ui/sidebar/chat-sidebar';
 import { TargetManagerComponent } from '../ui/target-manager/target-manager.component';
-import { CommandRunnerComponent } from '../ui/command-runner/command-runner.component';
+import { CommandRunnerComponent } from './domains/command-runner/ui/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
 import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-modal.component';
 import { ToolInstallModalComponent } from './domains/tools/ui/tool-install-modal/tool-install-modal.component';

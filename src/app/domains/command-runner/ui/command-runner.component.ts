@@ -36,20 +36,20 @@ import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 
-import { TargetService } from '../../../../core/services/target.service';
-import { WebSocketService } from '../../../../infrastructure/transport/websocket/websocket.service';
-import { SessionStoreService } from '../../../../core/services/session-store.service';
-import { ScriptService } from '../../../../core/services/script.service';
-import { ToolCatalogStore } from '../../../tools/state/tool-catalog.store';
+import { TargetService } from '../../../core/services/target.service';
+import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
+import { SessionStoreService } from '../../../core/services/session-store.service';
+import { ScriptService } from '../../../core/services/script.service';
+import { ToolCatalogStore } from '../../tools/state/tool-catalog.store';
 import {
   ScriptCategory,
   scriptCategoryName,
   type SessionTarget,
-} from '../../../../core/services/session.protocol';
-import type { ToolCatalogItem } from '../../../tools/models/tool-catalog-item.model';
-import type { CommandOption } from '../../models/command-option.model';
-import type { CustomScript } from '../../models/custom-script.model';
-import type { ScriptForm } from '../../models/script-form.model';
+} from '../../../core/services/session.protocol';
+import type { ToolCatalogItem } from '../../tools/models/tool-catalog-item.model';
+import type { CommandOption } from '../models/command-option.model';
+import type { CustomScript } from '../models/custom-script.model';
+import type { ScriptForm } from '../models/script-form.model';
 import {
   applyPendingSelection,
   buildCommandFromTemplate,
@@ -58,14 +58,14 @@ import {
   findToolTemplate,
   getSelectedCommandId,
   hasSelectedCommand,
-} from '../../utils/command-runner-template.utils';
+} from '../utils/command-runner-template.utils';
 import {
   ansiToSafeHtml,
   appendErrorToLastOutput,
   createAnsiConverter,
   errorMessageOf,
   toSafeHtml,
-} from '../../utils/command-runner-render.utils';
+} from '../utils/command-runner-render.utils';
 
 @Component({
   selector: 'app-command-runner',

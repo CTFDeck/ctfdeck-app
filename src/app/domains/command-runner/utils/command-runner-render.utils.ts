@@ -1,4 +1,5 @@
-import { DomSanitizer, SafeHtml, SecurityContext } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { SecurityContext } from '@angular/core';
 import AnsiToHtml from 'ansi-to-html';
 
 export function createAnsiConverter(): AnsiToHtml {
