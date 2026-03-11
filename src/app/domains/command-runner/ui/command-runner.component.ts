@@ -1,53 +1,71 @@
 import {
-  Component,
-  EventEmitter,
-  Output,
-  inject,
   ChangeDetectorRef,
-  ViewChild,
+  Component,
   ElementRef,
-  OnInit,
-  OnDestroy,
+  EventEmitter,
   Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  Output,
   SimpleChanges,
+  ViewChild,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { TargetService } from '../../app/core/services/target.service';
-import { WebSocketService } from '../../app/infrastructure/transport/websocket/websocket.service';
-import { SessionStoreService } from '../../app/core/services/session-store.service';
-import { ScriptService } from '../../app/core/services/script.service';
-import { ToolCatalogStore } from '../../app/domains/tools/state/tool-catalog.store';
-import {
-  ScriptCategory,
-  scriptCategoryName,
-  SessionTarget,
-} from '../../app/core/services/session.protocol';
-import { ToolCatalogItem } from '../../app/domains/tools/models/tool-catalog-item.model';
-import AnsiToHtml from 'ansi-to-html';
 import { Subscription } from 'rxjs';
+import { toast } from 'ngx-sonner';
 import { provideIcons } from '@ng-icons/core';
 import {
+  lucideCircleHelp,
+  lucideLoader,
+  lucidePlay,
+  lucidePlus,
+  lucideSave,
+  lucideSquare,
   lucideTerminal,
   lucideX,
-  lucideSave,
-  lucidePlay,
-  lucideSquare,
-  lucideLoader,
-  lucideCircleHelp,
-  lucidePlus,
 } from '@ng-icons/lucide';
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
-import { HlmInputImports } from '@ctfdeck/helm/input';
-import { HlmIconImports } from '@ctfdeck/helm/icon';
-import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
-import { toast } from 'ngx-sonner';
+import { HlmIconImports } from '@ctfdeck/helm/icon';
+import { HlmInputImports } from '@ctfdeck/helm/input';
+import { HlmLabelImports } from '@ctfdeck/helm/label';
 
-type CommandOption = { id: string; name: string; kind: 'tool' | 'script' };
+import { TargetService } from '../../../../core/services/target.service';
+import { WebSocketService } from '../../../../infrastructure/transport/websocket/websocket.service';
+import { SessionStoreService } from '../../../../core/services/session-store.service';
+import { ScriptService } from '../../../../core/services/script.service';
+import { ToolCatalogStore } from '../../../tools/state/tool-catalog.store';
+import {
+  ScriptCategory,
+  scriptCategoryName,
+  type SessionTarget,
+} from '../../../../core/services/session.protocol';
+import type { ToolCatalogItem } from '../../../tools/models/tool-catalog-item.model';
+import type { CommandOption } from '../../models/command-option.model';
+import type { CustomScript } from '../../models/custom-script.model';
+import type { ScriptForm } from '../../models/script-form.model';
+import {
+  applyPendingSelection,
+  buildCommandFromTemplate,
+  buildCommandOptions,
+  findScriptTemplate,
+  findToolTemplate,
+  getSelectedCommandId,
+  hasSelectedCommand,
+} from '../../utils/command-runner-template.utils';
+import {
+  ansiToSafeHtml,
+  appendErrorToLastOutput,
+  createAnsiConverter,
+  errorMessageOf,
+  toSafeHtml,
+} from '../../utils/command-runner-render.utils';
 
 @Component({
   selector: 'app-command-runner',
@@ -78,43 +96,48 @@ type CommandOption = { id: string; name: string; kind: 'tool' | 'script' };
   templateUrl: './command-runner.component.html',
   styleUrl: './command-runner.component.css',
 })
-export class CommandRunnerComponent implements OnInit, OnDestroy {
+export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   @Output() closeEvent = new EventEmitter<void>();
-
-  private targetService = inject(TargetService);
-  private wsService = inject(WebSocketService);
-  private sessionStore = inject(SessionStoreService);
-  private scriptService = inject(ScriptService);
-  private toolCatalogStore = inject(ToolCatalogStore);
-  private cdr = inject(ChangeDetectorRef);
-  private sanitizer = inject(DomSanitizer);
+  @Input() initialToolId = '';
 
   @ViewChild('outputContainer') private outputContainer!: ElementRef;
 
+  private readonly targetService = inject(TargetService);
+  private readonly wsService = inject(WebSocketService);
+  private readonly sessionStore = inject(SessionStoreService);
+  private readonly scriptService = inject(ScriptService);
+  private readonly toolCatalogStore = inject(ToolCatalogStore);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly sanitizer = inject(DomSanitizer);
+
   targets: SessionTarget[] = [];
-  selectedTargetId: string = '';
-  selectedToolId: string = '';
-  selectedScriptId: string = '';
-  currentCommand: string = '';
+  selectedTargetId = '';
+  selectedToolId = '';
+  selectedScriptId = '';
+  currentCommand = '';
   isRunning = false;
   isSessionEnsuring = false;
 
   outputLines: SafeHtml[] = [];
-  private subscriptions: Subscription = new Subscription();
 
   isHelpRunning = false;
   helpOutput: SafeHtml | null = null;
 
-  @Input() initialToolId: string = '';
-
   tools: ToolCatalogItem[] = [];
   commandOptions: CommandOption[] = [];
-  customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
+  customScripts: CustomScript[] = [];
   customScriptsLoading = false;
   showManageScripts = false;
   editingScriptId: string | null = null;
-  scriptForm = { name: '', category: ScriptCategory.Other, template: '' };
+  scriptForm: ScriptForm = {
+    name: '',
+    category: ScriptCategory.Other,
+    template: '',
+  };
+
   private pendingInitialSelection: string | null = null;
+  private readonly subscriptions = new Subscription();
+  private readonly ansiConverter = createAnsiConverter();
 
   readonly scriptCategoryOptions = [
     { value: ScriptCategory.Discovery, label: scriptCategoryName(ScriptCategory.Discovery) },
@@ -124,24 +147,15 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     { value: ScriptCategory.Other, label: scriptCategoryName(ScriptCategory.Other) },
   ];
 
-  private ansiConverter = new AnsiToHtml({
-    fg: '#d4d4d4',
-    bg: '#1e1e1e',
-    newline: true,
-    colors: {
-      4: '#61afef',
-      34: '#61afef',
-    },
-  });
-
-  ngOnInit() {
+  ngOnInit(): void {
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
         this.targets = session?.targets || [];
-        if (this.selectedTargetId && !this.targets.find((t) => t.id === this.selectedTargetId)) {
+
+        if (this.selectedTargetId && !this.targets.find((target) => target.id === this.selectedTargetId)) {
           this.selectedTargetId = '';
         }
-        this.updateCommandOptions();
+
         this.updateCommandPreview();
       }),
     );
@@ -149,7 +163,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.toolCatalogStore.tools$.subscribe((tools) => {
         this.tools = tools.filter((tool) => tool.kind === 'binary');
-        this.updateCommandOptions();
+        this.rebuildCommandOptions();
         this.applyPendingSelection();
         this.updateCommandPreview();
         this.cdr.detectChanges();
@@ -159,7 +173,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.scriptService.scripts$.subscribe((scripts) => {
         this.customScripts = scripts;
-        this.updateCommandOptions();
+        this.rebuildCommandOptions();
         this.applyPendingSelection();
         this.updateCommandPreview();
         this.cdr.detectChanges();
@@ -172,7 +186,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       }),
     );
 
-    this.updateCommandOptions();
+    this.rebuildCommandOptions();
     void this.scriptService.list();
 
     if (this.initialToolId) {
@@ -181,51 +195,38 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['initialToolId'] && changes['initialToolId'].currentValue) {
-      const value = changes['initialToolId'].currentValue;
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialToolId']?.currentValue) {
+      const value = changes['initialToolId'].currentValue as string;
+
       if (value === '__manage_scripts__') {
         this.showManageScripts = true;
         return;
       }
+
       this.pendingInitialSelection = value;
       this.applyPendingSelection();
     }
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
 
-  close() {
+  close(): void {
     this.closeEvent.emit();
   }
 
-  onTargetChange() {
+  onTargetChange(): void {
     this.updateCommandPreview();
   }
 
-  private updateCommandOptions() {
-    const toolOptions: CommandOption[] = this.tools.map((tool) => ({
-      id: tool.id,
-      name: tool.displayName,
-      kind: 'tool',
-    }));
-
-    const scriptOptions: CommandOption[] = this.customScripts.map((script) => ({
-      id: script.id,
-      name: script.name,
-      kind: 'script',
-    }));
-
-    this.commandOptions = [...toolOptions, ...scriptOptions];
-  }
-
-  selectCommandOption(option: CommandOption) {
+  selectCommandOption(option: CommandOption): void {
     if (option.kind === 'tool') {
       this.selectTool(option.id);
       return;
     }
+
     this.selectScript(option.id);
   }
 
@@ -235,62 +236,67 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
       : this.selectedScriptId === option.id;
   }
 
-  selectTool(toolId: string) {
+  selectTool(toolId: string): void {
     this.selectedToolId = toolId;
     this.selectedScriptId = '';
     this.updateCommandPreview();
   }
 
-  selectScript(scriptId: string) {
+  selectScript(scriptId: string): void {
     this.selectedScriptId = scriptId;
     this.selectedToolId = '';
     this.updateCommandPreview();
   }
 
-  updateCommandPreview() {
-    if (!this.selectedTargetId || (!this.selectedToolId && !this.selectedScriptId)) {
+  updateCommandPreview(): void {
+    if (!this.selectedTargetId || !hasSelectedCommand(this.selectedToolId, this.selectedScriptId)) {
       this.currentCommand = '';
       return;
     }
 
-    const target = this.targets.find((t) => t.id === this.selectedTargetId);
+    const target = this.targets.find((item) => item.id === this.selectedTargetId);
+
     if (!target) {
       this.currentCommand = '';
       return;
     }
 
-    const selectedId = this.selectedToolId || this.selectedScriptId;
+    const selectedId = getSelectedCommandId(this.selectedToolId, this.selectedScriptId);
     const savedCommand = this.targetService.getSavedCommand(target.id, selectedId);
+
     if (savedCommand) {
       this.currentCommand = savedCommand;
       return;
     }
 
     const template = this.selectedToolId
-      ? this.toolCatalogStore.getCommandTemplate(this.selectedToolId)
-      : (this.customScripts.find((s) => s.id === this.selectedScriptId)?.template ?? null);
+      ? findToolTemplate(this.tools, this.selectedToolId)
+      : findScriptTemplate(this.customScripts, this.selectedScriptId);
 
     if (!template) {
       this.currentCommand = '';
       return;
     }
 
-    let cmd = template;
-    cmd = cmd.replace(/{host}/g, target.address);
-    const port = target.port ?? (cmd.includes('http') ? 80 : '');
-    cmd = cmd.replace(/{port}/g, port.toString());
-    this.currentCommand = cmd;
+    this.currentCommand = buildCommandFromTemplate(target, template);
   }
 
-  saveCommand() {
-    const selectedId = this.selectedToolId || this.selectedScriptId;
+  saveCommand(): void {
+    const selectedId = getSelectedCommandId(this.selectedToolId, this.selectedScriptId);
+
     if (this.selectedTargetId && selectedId && this.currentCommand) {
-      this.targetService.saveTargetCommand(this.selectedTargetId, selectedId, this.currentCommand);
+      this.targetService.saveTargetCommand(
+        this.selectedTargetId,
+        selectedId,
+        this.currentCommand,
+      );
     }
   }
 
-  async runCommand() {
-    if (!this.currentCommand) return;
+  async runCommand(): Promise<void> {
+    if (!this.currentCommand) {
+      return;
+    }
 
     this.isRunning = true;
     this.outputLines = [];
@@ -306,22 +312,29 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     let errorBuffer = '';
     let pendingRender = false;
     let lastRenderTime = 0;
-    const MIN_RENDER_INTERVAL = 16;
+    const minRenderInterval = 16;
 
     const scheduleRender = () => {
-      if (pendingRender) return;
+      if (pendingRender) {
+        return;
+      }
+
       const now = performance.now();
-      if (now - lastRenderTime < MIN_RENDER_INTERVAL) {
+
+      if (now - lastRenderTime < minRenderInterval) {
         pendingRender = true;
+
         requestAnimationFrame(() => {
           pendingRender = false;
           lastRenderTime = performance.now();
           this.renderOutputBuffer(outputLineIndex, outputBuffer);
         });
-      } else {
-        lastRenderTime = now;
-        this.renderOutputBuffer(outputLineIndex, outputBuffer);
+
+        return;
       }
+
+      lastRenderTime = now;
+      this.renderOutputBuffer(outputLineIndex, outputBuffer);
     };
 
     this.sessionStore.broadcastTerminalEvent({
@@ -334,10 +347,12 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.currentCommand,
         (data: string) => {
           outputBuffer += data;
+
           if (outputLineIndex === -1) {
             outputLineIndex = this.outputLines.length;
-            this.outputLines.push(this.createSafeHtml(''));
+            this.outputLines.push(toSafeHtml(this.sanitizer, ''));
           }
+
           this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
           scheduleRender();
         },
@@ -357,38 +372,26 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
         void this.sessionStore.refreshActiveSession();
       })
-      .catch((err: any) => {
+      .catch((error: unknown) => {
         this.isRunning = false;
-        this.addLine(`<span class="text-red-500">Error: ${err.message}</span>`);
+        this.addLine(`<span class="text-red-500">Error: ${errorMessageOf(error)}</span>`);
         this.cdr.detectChanges();
       });
   }
 
-  private async ensureActiveSession(): Promise<boolean> {
-    this.isSessionEnsuring = true;
-    try {
-      await this.sessionStore.ensureActiveSession();
-      return true;
-    } catch (err: any) {
-      this.addLine(`<span class="text-red-500">Session error: ${err?.message || err}</span>`);
-      return false;
-    } finally {
-      this.isSessionEnsuring = false;
-      this.cdr.detectChanges();
-    }
-  }
-
-  stopCommand() {
+  stopCommand(): void {
     this.isRunning = false;
     this.addLine(`<span class="text-yellow-500">Stop requested (UI only)</span>`);
   }
 
-  clearOutput() {
+  clearOutput(): void {
     this.outputLines = [];
   }
 
-  runHelp() {
-    if (!this.selectedToolId) return;
+  runHelp(): void {
+    if (!this.selectedToolId) {
+      return;
+    }
 
     this.isHelpRunning = true;
     this.helpOutput = null;
@@ -397,22 +400,29 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     let errorBuffer = '';
     let pendingRender = false;
     let lastRenderTime = 0;
-    const MIN_RENDER_INTERVAL = 16;
+    const minRenderInterval = 16;
 
     const scheduleRender = () => {
-      if (pendingRender) return;
+      if (pendingRender) {
+        return;
+      }
+
       const now = performance.now();
-      if (now - lastRenderTime < MIN_RENDER_INTERVAL) {
+
+      if (now - lastRenderTime < minRenderInterval) {
         pendingRender = true;
+
         requestAnimationFrame(() => {
           pendingRender = false;
           lastRenderTime = performance.now();
           this.renderHelpOutput(outputBuffer);
         });
-      } else {
-        lastRenderTime = now;
-        this.renderHelpOutput(outputBuffer);
+
+        return;
       }
+
+      lastRenderTime = now;
+      this.renderHelpOutput(outputBuffer);
     };
 
     this.wsService
@@ -426,15 +436,16 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
           errorBuffer += error;
         },
       )
-      .then((result) => {
+      .then(() => {
         this.isHelpRunning = false;
-        this.renderHelpOutput(outputBuffer);
+        this.renderHelpOutput(outputBuffer || errorBuffer);
         this.cdr.detectChanges();
       })
-      .catch((err: any) => {
+      .catch((error: unknown) => {
         this.isHelpRunning = false;
-        this.helpOutput = this.sanitizer.bypassSecurityTrustHtml(
-          `<span class="text-red-500">Error running help: ${err.message}</span>`,
+        this.helpOutput = toSafeHtml(
+          this.sanitizer,
+          `<span class="text-red-500">Error running help: ${errorMessageOf(error)}</span>`,
         );
         this.cdr.detectChanges();
       });
@@ -444,17 +455,17 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     return !!this.selectedToolId;
   }
 
-  openManageScripts() {
+  openManageScripts(): void {
     this.showManageScripts = true;
     this.resetScriptForm();
   }
 
-  closeManageScripts() {
+  closeManageScripts(): void {
     this.showManageScripts = false;
     this.resetScriptForm();
   }
 
-  editScript(script: { id: string; name: string; category: number; template: string }) {
+  editScript(script: CustomScript): void {
     this.editingScriptId = script.id;
     this.scriptForm = {
       name: script.name,
@@ -464,9 +475,10 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     this.showManageScripts = true;
   }
 
-  async saveScript() {
+  async saveScript(): Promise<void> {
     const name = this.scriptForm.name.trim();
     const template = this.scriptForm.template.trim();
+
     if (!name || !template) {
       toast.error('Missing fields', { description: 'Name and template are required.' });
       return;
@@ -482,102 +494,139 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
         );
         toast.success('Script updated');
       } else {
-        await this.scriptService.create(name, this.scriptForm.category, template);
+        await this.scriptService.create(
+          name,
+          this.scriptForm.category,
+          template,
+        );
         toast.success('Script created');
       }
+
       this.resetScriptForm();
-    } catch (err: any) {
-      toast.error('Script operation failed', { description: err?.message || 'Unknown error' });
+    } catch (error: unknown) {
+      toast.error('Script operation failed', {
+        description: errorMessageOf(error) || 'Unknown error',
+      });
     }
   }
 
-  async deleteScript(scriptId: string) {
+  async deleteScript(scriptId: string): Promise<void> {
     try {
       await this.scriptService.delete(scriptId);
       toast.success('Script deleted');
+
       if (this.selectedScriptId === scriptId) {
         this.selectedScriptId = '';
         this.currentCommand = '';
       }
-    } catch (err: any) {
-      toast.error('Delete failed', { description: err?.message || 'Unknown error' });
+    } catch (error: unknown) {
+      toast.error('Delete failed', {
+        description: errorMessageOf(error) || 'Unknown error',
+      });
     }
   }
 
   getScriptCategoryLabel(category: number): string {
-    return (
-      this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown'
-    );
+    return this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown';
   }
 
-  resetScriptForm() {
+  resetScriptForm(): void {
     this.editingScriptId = null;
-    this.scriptForm = { name: '', category: ScriptCategory.Other, template: '' };
+    this.scriptForm = {
+      name: '',
+      category: ScriptCategory.Other,
+      template: '',
+    };
   }
 
-  private applyPendingSelection() {
-    if (!this.pendingInitialSelection) return;
-    const value = this.pendingInitialSelection;
+  private rebuildCommandOptions(): void {
+    this.commandOptions = buildCommandOptions(this.tools, this.customScripts);
+  }
 
-    if (value === '__manage_scripts__') {
-      this.showManageScripts = true;
-      this.pendingInitialSelection = null;
-      return;
+  private applyPendingSelection(): void {
+    const selection = applyPendingSelection(
+      this.pendingInitialSelection,
+      this.tools,
+      this.customScripts,
+    );
+
+    switch (selection.type) {
+      case 'manage-scripts':
+        this.showManageScripts = true;
+        this.pendingInitialSelection = null;
+        return;
+      case 'tool':
+        this.selectTool(selection.value!);
+        this.pendingInitialSelection = null;
+        return;
+      case 'script':
+        this.selectScript(selection.value!);
+        this.pendingInitialSelection = null;
+        return;
+      default:
+        return;
     }
+  }
 
-    if (this.tools.find((t) => t.id === value)) {
-      this.selectTool(value);
-      this.pendingInitialSelection = null;
-      return;
-    }
+  private async ensureActiveSession(): Promise<boolean> {
+    this.isSessionEnsuring = true;
 
-    const script = this.customScripts.find((s) => s.id === value);
-    if (script) {
-      this.selectScript(script.id);
-      this.pendingInitialSelection = null;
+    try {
+      await this.sessionStore.ensureActiveSession();
+      return true;
+    } catch (error: unknown) {
+      this.addLine(
+        `<span class="text-red-500">Session error: ${errorMessageOf(error)}</span>`,
+      );
+      return false;
+    } finally {
+      this.isSessionEnsuring = false;
+      this.cdr.detectChanges();
     }
   }
 
   private renderOutputBuffer(lineIndex: number, buffer: string): void {
-    if (lineIndex < 0 || lineIndex >= this.outputLines.length) return;
-    const html = this.ansiConverter.toHtml(buffer);
-    this.outputLines[lineIndex] = this.sanitizer.bypassSecurityTrustHtml(html);
+    if (lineIndex < 0 || lineIndex >= this.outputLines.length) {
+      return;
+    }
+
+    this.outputLines[lineIndex] = ansiToSafeHtml(
+      this.ansiConverter,
+      this.sanitizer,
+      buffer,
+    );
+
     this.cdr.detectChanges();
     this.scrollToBottom();
   }
 
   private renderHelpOutput(buffer: string): void {
-    const html = this.ansiConverter.toHtml(buffer);
-    this.helpOutput = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.helpOutput = ansiToSafeHtml(
+      this.ansiConverter,
+      this.sanitizer,
+      buffer,
+    );
+
     this.cdr.detectChanges();
   }
 
-  private appendToLastError(data: string) {
-    if (this.outputLines.length > 0) {
-      const lastLine = this.outputLines[this.outputLines.length - 1];
-      const currentContent = this.sanitizer.sanitize(0, lastLine) || '';
-      const newContent = currentContent + data;
-      this.outputLines[this.outputLines.length - 1] = this.sanitizer.bypassSecurityTrustHtml(
-        `<span class="text-red-500">${newContent}</span>`,
-      );
-      this.cdr.detectChanges();
-    } else {
-      this.addLine(`<span class="text-red-500">${data}</span>`);
-    }
+  private appendToLastError(data: string): void {
+    this.outputLines = appendErrorToLastOutput(
+      this.outputLines,
+      this.sanitizer,
+      data,
+    );
+
+    this.cdr.detectChanges();
   }
 
-  private createSafeHtml(content: string) {
-    return this.sanitizer.bypassSecurityTrustHtml(content);
-  }
-
-  private addLine(htmlContent: string) {
-    const safeHtml = this.sanitizer.bypassSecurityTrustHtml(htmlContent);
-    this.outputLines.push(safeHtml);
+  private addLine(htmlContent: string): void {
+    this.outputLines.push(toSafeHtml(this.sanitizer, htmlContent));
     this.cdr.detectChanges();
     this.scrollToBottom();
   }
 
-  private scrollToBottom() {
+  private scrollToBottom(): void {
     setTimeout(() => {
       if (this.outputContainer) {
         this.outputContainer.nativeElement.scrollTop =
