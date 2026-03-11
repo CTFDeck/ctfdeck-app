@@ -36,20 +36,22 @@ export interface SessionMetadata {
   id: string;
   name: string;
   description: string;
-  projectId: string;
+  projectId: string | null;
   createdAt: Date;
   updatedAt: Date;
   historyCount: number;
   targetCount: number;
+  folderId: string | null;
 }
 
 export interface SessionData {
   id: string;
   name: string;
   description: string;
-  projectId: string;
+  projectId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  folderId: string | null;
   history: SessionHistoryEntry[];
   targets: SessionTarget[];
 }
@@ -454,7 +456,12 @@ export function deserializeSessionListResult(data: Uint8Array): {
     const targetCount = view.getInt32(offset, true);
     offset += 4;
 
-    const projectId = bytesToUuid(data.subarray(offset, offset + 16));
+    const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+    const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+    offset += 16;
+
+    const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+    const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
     offset += 16;
 
     sessions.push({
@@ -462,6 +469,7 @@ export function deserializeSessionListResult(data: Uint8Array): {
       name,
       description,
       projectId,
+      folderId,
       createdAt: ticksToDate(createdAtTicks),
       updatedAt: ticksToDate(updatedAtTicks),
       historyCount,
@@ -505,7 +513,12 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
   const updatedAtTicks = view.getBigInt64(offset, true);
   offset += 8;
 
-  const projectId = bytesToUuid(data.subarray(offset, offset + 16));
+  const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+  const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+  offset += 16;
+
+  const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+  const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
   offset += 16;
 
   const historyCount = view.getInt32(offset, true);
@@ -594,6 +607,7 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
       name,
       description,
       projectId,
+      folderId,
       createdAt: ticksToDate(createdAtTicks),
       updatedAt: ticksToDate(updatedAtTicks),
       history,

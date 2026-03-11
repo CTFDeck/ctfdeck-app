@@ -21,6 +21,11 @@ import {
   lucidePencil,
   lucideTrash2,
   lucideFileText,
+  lucideFolderPlus,
+  lucideMoreVertical,
+  lucideChevronRight,
+  lucideChevronDown,
+  lucideLayoutGrid,
   lucideFolderOpen,
 } from '@ng-icons/lucide';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
@@ -29,6 +34,9 @@ import { WriteUpStoreService } from '../../app/core/services/writeup-store.servi
 import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
+import { ProjectStoreService, ProjectHierarchy, FolderHierarchy } from '../../app/core/services/project-store.service';
+import { HlmIconImports } from '@ctfdeck/helm/icon';
+import { HlmMenuImports } from '@ctfdeck/helm/menu';
 
 export enum SidebarMode {
   Chats = 'chats',
@@ -62,6 +70,11 @@ export enum SidebarMode {
       lucidePencil,
       lucideTrash2,
       lucideFileText,
+      lucideFolderPlus,
+      lucideMoreVertical,
+      lucideChevronRight,
+      lucideChevronDown,
+      lucideLayoutGrid,
       lucideFolderOpen,
     }),
   ],
@@ -116,16 +129,22 @@ export class ChatSidebar {
   writeUpToRename: WriteUpMetadata | null = null;
   writeUpToDelete: WriteUpMetadata | null = null;
 
+  hierarchy$: Observable<ProjectHierarchy[]>;
+  expandedProjectIds = signal<Set<string>>(new Set());
+  expandedFolderIds = signal<Set<string>>(new Set());
+
   constructor(
     private sessionStore: SessionStoreService,
     private writeUpStore: WriteUpStoreService,
+    private projectStore: ProjectStoreService,
     private router: Router,
   ) {
+    this.hierarchy$ = this.projectStore.getHierarchy$();
     this.sessions$ = this.sessionStore.sessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
     this.sessionsLoading$ = this.sessionStore.sessionsLoading$;
 
-    this.writeUps$ = this.writeUpStore.writeUps$;
+    this.writeUps$ = this.writeUpStore.allWriteUps$;
     this.writeUpsLoading$ = this.writeUpStore.writeUpsLoading$;
     this.activeWriteUpId$ = new Observable((sub) => {
       this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
@@ -143,6 +162,13 @@ export class ChatSidebar {
     localStorage.setItem(this.STORAGE_KEY, mode);
   }
 
+  newProject() {
+     const name = prompt('Project Name:', 'New Project');
+     if (name) {
+       void this.projectStore.createProject(name);
+     }
+  }
+
   newAction() {
     if (this.currentMode() === SidebarMode.Chats) {
       void this.sessionStore.createSession('New chat').then(() => {
@@ -157,6 +183,10 @@ export class ChatSidebar {
 
   newChat() {
     void this.sessionStore.createSession('New chat');
+  }
+
+  newWriteUp() {
+    void this.writeUpStore.createWriteUp('New writeup');
   }
 
   openChat(session: SessionMetadata) {
@@ -284,5 +314,86 @@ export class ChatSidebar {
 
   toggleSidebar() {
     this.isCollapsed.set(!this.isCollapsed());
+  }
+
+  toggleProject(projectId: string) {
+    const next = new Set(this.expandedProjectIds());
+    if (next.has(projectId)) next.delete(projectId); else next.add(projectId);
+    this.expandedProjectIds.set(next);
+    if (next.has(projectId)) {
+      void this.projectStore.loadProjectDetails(projectId);
+    }
+  }
+
+  toggleFolder(folderId: string) {
+    const next = new Set(this.expandedFolderIds());
+    if (next.has(folderId)) next.delete(folderId); else next.add(folderId);
+    this.expandedFolderIds.set(next);
+  }
+
+  isProjectExpanded(projectId: string): boolean {
+    return this.expandedProjectIds().has(projectId);
+  }
+
+  isFolderExpanded(folderId: string): boolean {
+    return this.expandedFolderIds().has(folderId);
+  }
+
+  // ── Folder CRUD ──────────────────────────────────────────────────────────
+  async addFolder(projectId: string, parentId: string | null = null) {
+    const name = prompt('Folder name:', 'New folder');
+    if (name) {
+      await this.projectStore.addFolder(projectId, name, parentId);
+      if (parentId) {
+         this.expandedFolderIds.update(s => new Set(s).add(parentId));
+      }
+    }
+  }
+
+  async renameFolder(projectId: string, folderId: string, currentName: string) {
+    const name = prompt('New folder name:', currentName);
+    if (name && name !== currentName) {
+      await this.projectStore.renameFolder(projectId, folderId, name);
+    }
+  }
+
+  async deleteFolder(projectId: string, folderId: string, name: string) {
+    if (confirm(`Delete folder "${name}"? This will move items to the root.`)) {
+      await this.projectStore.deleteFolder(projectId, folderId);
+    }
+  }
+
+  // ── Drag & Drop ────────────────────────────────────────────────────────
+  onDragStart(event: DragEvent, type: 'session' | 'writeup', id: string) {
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('application/ctf-type', type);
+      event.dataTransfer.setData('application/ctf-id', id);
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  async onDrop(event: DragEvent, projectId: string, folderId: string | null) {
+    event.preventDefault();
+    const type = event.dataTransfer?.getData('application/ctf-type');
+    const id = event.dataTransfer?.getData('application/ctf-id');
+
+    if (!type || !id) return;
+
+    try {
+      if (type === 'session') {
+        await this.projectStore.assignSession(projectId, id, folderId);
+      } else if (type === 'writeup') {
+        await this.writeUpStore.moveWriteUp(id, folderId);
+      }
+    } catch (e) {
+      console.error('[ChatSidebar] Drop failed:', e);
+    }
   }
 }
