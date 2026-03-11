@@ -1,5 +1,5 @@
-import { bytesToUuid, uuidToBytes, MessageType } from './websocket.protocol';
-export { MessageType } from './websocket.protocol';
+import { uuidToBytes, bytesToUuid } from '../../infrastructure/transport/websocket/websocket-uuid.utils'
+import { MessageType } from '../../infrastructure/transport/websocket/websocket-message-type.enum'
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

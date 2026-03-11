@@ -1,6 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
-import { generateUUID, MessageType } from './websocket.protocol';
+import { MessageType } from '../../infrastructure/transport/websocket/websocket-message-type.enum';
+import { generateUUID } from '../../infrastructure/transport/websocket/websocket-uuid.utils';
 import {
   MediaMetadata,
   MediaData,

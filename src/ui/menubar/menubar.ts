@@ -15,7 +15,7 @@ import { ThemeToggle } from './theme-toggle';
 import { CommonModule } from '@angular/common';
 import { ScriptService } from '../../app/core/services/script.service';
 import { Subscription } from 'rxjs';
-import { ToolCatalogService } from '../../app/core/services/tool-catalog.service';
+import { ToolCatalogStore } from '../../app/domains/tools/state/tool-catalog.store';
 import { ToolCatalogItem } from '../../app/domains/tools/models/tool-catalog-item.model';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideTriangleAlert } from '@ng-icons/lucide';
@@ -49,7 +49,7 @@ export class Menubar implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private scriptService: ScriptService,
-    private toolCatalogService: ToolCatalogService,
+    private ToolCatalogStore: ToolCatalogStore,
   ) {}
 
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
@@ -76,7 +76,7 @@ export class Menubar implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
-      this.toolCatalogService.tools$.subscribe((tools) => {
+      this.ToolCatalogStore.tools$.subscribe((tools) => {
         this.tools = tools;
       }),
     );

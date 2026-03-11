@@ -18,7 +18,7 @@ import { TargetService } from '../../app/core/services/target.service';
 import { WebSocketService } from '../../app/infrastructure/transport/websocket/websocket.service';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { ScriptService } from '../../app/core/services/script.service';
-import { ToolCatalogService } from '../../app/core/services/tool-catalog.service';
+import { ToolCatalogStore } from '../../app/domains/tools/state/tool-catalog.store';
 import {
   ScriptCategory,
   scriptCategoryName,
@@ -85,7 +85,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   private wsService = inject(WebSocketService);
   private sessionStore = inject(SessionStoreService);
   private scriptService = inject(ScriptService);
-  private toolCatalogService = inject(ToolCatalogService);
+  private toolCatalogStore = inject(ToolCatalogStore);
   private cdr = inject(ChangeDetectorRef);
   private sanitizer = inject(DomSanitizer);
 
@@ -147,7 +147,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
-      this.toolCatalogService.tools$.subscribe((tools) => {
+      this.toolCatalogStore.tools$.subscribe((tools) => {
         this.tools = tools.filter((tool) => tool.kind === 'binary');
         this.updateCommandOptions();
         this.applyPendingSelection();
@@ -267,7 +267,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     }
 
     const template = this.selectedToolId
-      ? this.toolCatalogService.getCommandTemplate(this.selectedToolId)
+      ? this.toolCatalogStore.getCommandTemplate(this.selectedToolId)
       : (this.customScripts.find((s) => s.id === this.selectedScriptId)?.template ?? null);
 
     if (!template) {

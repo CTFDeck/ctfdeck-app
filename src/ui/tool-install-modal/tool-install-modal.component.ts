@@ -22,13 +22,11 @@ import {
 } from '@ng-icons/lucide';
 import { HlmSpinner } from '@ctfdeck/helm/spinner';
 
-import { ToolsService } from '../../app/core/services/tools.service';
+import { ToolsStore } from '../../app/domains/tools/state/tools.store';
 import { WebSocketService } from '../../app/infrastructure/transport/websocket/websocket.service';
-import {
-  ToolInstallProgress,
-  ToolInstallState,
-  ToolStatus,
-} from '../../app/core/services/websocket.protocol';
+import { ToolStatus } from '../../app/domains/tools/models/tool-status.model';
+import { ToolInstallState } from '../../app/domains/tools/models/tool-install-state.enum';
+import { ToolInstallProgress } from '../../app/domains/tools/infrastructure/tools.websocket.protocol';
 
 @Component({
   selector: 'app-tool-install-modal',
@@ -68,7 +66,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   private visibleToolIds = new Set<string>();
 
   constructor(
-    private readonly toolsService: ToolsService,
+    private readonly ToolsStore: ToolsStore,
     private readonly webSocketService: WebSocketService,
     private readonly cdr: ChangeDetectorRef,
   ) {}
@@ -87,13 +85,13 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
         .subscribe(() => {
           if (!this.inventoryRequestedOnce) {
             this.inventoryRequestedOnce = true;
-            this.toolsService.requestInventory();
+            this.ToolsStore.requestInventory();
           }
         }),
     );
 
     this.subscriptions.add(
-      this.toolsService.tools$.subscribe((tools) => {
+      this.ToolsStore.tools$.subscribe((tools) => {
         this.tools = tools;
 
         for (const tool of tools) {
@@ -118,21 +116,21 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
-      this.toolsService.loadingInventory$.subscribe((loading) => {
+      this.ToolsStore.loadingInventory$.subscribe((loading) => {
         this.loadingInventory = loading;
         this.cdr.markForCheck();
       }),
     );
 
     this.subscriptions.add(
-      this.toolsService.installing$.subscribe((installing) => {
+      this.ToolsStore.installing$.subscribe((installing) => {
         this.installing = installing;
         this.cdr.markForCheck();
       }),
     );
 
     this.subscriptions.add(
-      this.toolsService.progress$.subscribe((progress) => {
+      this.ToolsStore.progress$.subscribe((progress) => {
         this.progressByToolId[progress.toolId] = progress;
 
         if (progress.state === ToolInstallState.Success && progress.installedPath) {
@@ -149,7 +147,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
-      this.toolsService.error$.subscribe((error) => {
+      this.ToolsStore.error$.subscribe((error) => {
         this.errorMessage = error;
         this.installing = false;
         this.cdr.markForCheck();
@@ -185,7 +183,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   refresh(): void {
     this.errorMessage = null;
-    this.toolsService.refresh();
+    this.ToolsStore.refresh();
   }
 
   installSelected(): void {
@@ -201,7 +199,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.toolsService.installTools(selectedToolIds);
+    this.ToolsStore.installTools(selectedToolIds);
   }
 
   toggleAll(select: boolean): void {

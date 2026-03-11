@@ -1,9 +1,9 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
-import { generateUUID } from './websocket.protocol';
+import { generateUUID } from '../../infrastructure/transport/websocket/websocket-uuid.utils';
+import { MessageType } from '../../infrastructure/transport/websocket/websocket-message-type.enum';
 import {
-  MessageType,
   isCustomScriptResponse,
   serializeCustomScriptCreate,
   serializeCustomScriptUpdate,
