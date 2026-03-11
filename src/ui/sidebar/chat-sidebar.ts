@@ -27,6 +27,8 @@ import {
   lucideChevronDown,
   lucideLayoutGrid,
   lucideFolderOpen,
+  lucideMessageSquarePlus,
+  lucideFilePlus,
 } from '@ng-icons/lucide';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { SessionMetadata } from '../../app/core/services/session.protocol';
@@ -34,9 +36,7 @@ import { WriteUpStoreService } from '../../app/core/services/writeup-store.servi
 import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
-import { ProjectStoreService, ProjectHierarchy, FolderHierarchy } from '../../app/core/services/project-store.service';
-import { HlmIconImports } from '@ctfdeck/helm/icon';
-import { HlmMenuImports } from '@ctfdeck/helm/menu';
+import { ProjectStoreService, ProjectHierarchy } from '../../app/core/services/project-store.service';
 
 export enum SidebarMode {
   Chats = 'chats',
@@ -76,6 +76,8 @@ export enum SidebarMode {
       lucideChevronDown,
       lucideLayoutGrid,
       lucideFolderOpen,
+      lucideMessageSquarePlus,
+      lucideFilePlus,
     }),
   ],
 
