@@ -9,6 +9,7 @@
         hlmSidebarMenuButton
         (click)="toggleSidebar()"
         class="ml-auto p-1 h-8 w-8 flex items-center justify-center shrink-0"
+        tooltip="Toggle Sidebar"
       >
         <ng-icon name="lucidePanelLeft" />
       </button>
@@ -24,7 +25,7 @@
             hlmSidebarMenuButton
             (click)="newProject()"
             class="text-xs flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
-            title="New Project"
+            tooltip="New Project"
           >
             <ng-icon name="lucideLayoutGrid" />
             <span *ngIf="!isCollapsed()" class="truncate font-medium">New Project</span>
@@ -35,7 +36,7 @@
               hlmSidebarMenuButton
               (click)="newChat()"
               class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
-              title="New Chat"
+              tooltip="New Chat"
             >
               <ng-icon name="lucideMessageSquarePlus" />
               <span *ngIf="!isCollapsed()" class="truncate font-medium">Chat</span>
@@ -45,7 +46,7 @@
               hlmSidebarMenuButton
               (click)="newWriteUp()"
               class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
-              title="New Writeup"
+              tooltip="New Writeup"
             >
               <ng-icon name="lucideFilePlus" />
               <span *ngIf="!isCollapsed()" class="truncate font-medium">WriteUp</span>
@@ -86,9 +87,9 @@
                     <ng-icon name="lucideLayoutGrid" class="text-primary w-4 h-4" />
                     <span class="text-sm font-medium truncate flex-1">{{ p.name }}</span>
                     
-                     <button class="opacity-0 group-hover:opacity-100 p-1 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+                     <button class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
                              (click)="$event.stopPropagation(); openCreateFolderDialog(p.id)"
-                             title="Add folder">
+                             hlmTooltipTrigger="Add folder">
                          <ng-icon name="lucideFolderPlus" class="w-3.5 h-3.5" />
                      </button>
                 </div>
@@ -111,7 +112,7 @@
         <div class="mt-6 px-2">
            <div class="flex items-center justify-between px-2 py-1 mb-1" *ngIf="!isCollapsed()">
               <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Recent Chats</span>
-              <button class="p-1 hover:bg-accent rounded" (click)="newChat()" title="New Chat">
+              <button class="p-1 hover:bg-accent rounded" (click)="newChat()" hlmTooltipTrigger="New Chat">
                  <ng-icon name="lucideMessageSquarePlus" class="w-3.5 h-3.5 text-white" />
               </button>
            </div>
@@ -128,8 +129,8 @@
                   <span class="truncate">{{ s.name }}</span>
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
-                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameDialog(s)"><ng-icon name="lucidePencil"/></button>
-                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteDialog(s)"><ng-icon name="lucideTrash2"/></button>
+                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameDialog(s)" hlmTooltipTrigger="Rename"><ng-icon name="lucidePencil"/></button>
+                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteDialog(s)" hlmTooltipTrigger="Delete"><ng-icon name="lucideTrash2"/></button>
                 </div>
               </div>
            </div>
@@ -144,7 +145,7 @@
         <div class="mt-6 px-2 pb-10">
            <div class="flex items-center justify-between px-2 py-1 mb-1" *ngIf="!isCollapsed()">
               <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Recent WriteUps</span>
-              <button class="p-1 hover:bg-accent rounded" (click)="newWriteUp()" title="New WriteUp">
+              <button class="p-1 hover:bg-accent rounded" (click)="newWriteUp()" hlmTooltipTrigger="New WriteUp">
                  <ng-icon name="lucideFilePlus" class="w-3.5 h-3.5 text-white" />
               </button>
            </div>
@@ -161,8 +162,8 @@
                   <span class="truncate">{{ w.name }}</span>
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
-                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)"><ng-icon name="lucidePencil"/></button>
-                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)"><ng-icon name="lucideTrash2"/></button>
+                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)" hlmTooltipTrigger="Rename"><ng-icon name="lucidePencil"/></button>
+                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)" hlmTooltipTrigger="Delete"><ng-icon name="lucideTrash2"/></button>
                 </div>
               </div>
            </div>
@@ -191,13 +192,13 @@
              <span class="text-xs truncate flex-1 font-medium">{{ f.name }}</span>
 
              <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-auto">
-                <button *ngIf="depth < 1" class="p-1 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform" (click)="$event.stopPropagation(); openCreateFolderDialog(projectId, f.id)" title="Add subfolder">
+                <button *ngIf="depth < 1" class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform" (click)="$event.stopPropagation(); openCreateFolderDialog(projectId, f.id)" hlmTooltipTrigger="Add subfolder">
                     <ng-icon name="lucideFolderPlus" class="w-3 h-3"/>
                 </button>
-                <button *ngIf="!f.isSystem" class="p-1 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform" (click)="$event.stopPropagation(); openRenameFolderDialog(projectId, f.id, f.name)" title="Rename">
+                <button *ngIf="!f.isSystem" class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform" (click)="$event.stopPropagation(); openRenameFolderDialog(projectId, f.id, f.name)" hlmTooltipTrigger="Rename">
                     <ng-icon name="lucidePencil" class="w-3 h-3"/>
                 </button>
-                <button *ngIf="!f.isSystem" class="p-1 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform" (click)="$event.stopPropagation(); openDeleteFolderDialog(projectId, f.id, f.name)" title="Delete">
+                <button *ngIf="!f.isSystem" class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform" (click)="$event.stopPropagation(); openDeleteFolderDialog(projectId, f.id, f.name)" hlmTooltipTrigger="Delete">
                     <ng-icon name="lucideTrash2" class="w-3 h-3"/>
                 </button>
              </div>
@@ -217,8 +218,8 @@
                     <span class="truncate">{{ s.name }}</span>
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
-                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameDialog(s)"><ng-icon name="lucidePencil"/></button>
-                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteDialog(s)"><ng-icon name="lucideTrash2"/></button>
+                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameDialog(s)" hlmTooltipTrigger="Rename"><ng-icon name="lucidePencil"/></button>
+                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteDialog(s)" hlmTooltipTrigger="Delete"><ng-icon name="lucideTrash2"/></button>
                 </div>
             </div>
             <div *ngFor="let w of f.writeups" class="ctf-item-group relative group/item"
@@ -229,8 +230,8 @@
                     <span class="truncate">{{ w.name }}</span>
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
-                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)"><ng-icon name="lucidePencil"/></button>
-                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)"><ng-icon name="lucideTrash2"/></button>
+                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)" hlmTooltipTrigger="Rename"><ng-icon name="lucidePencil"/></button>
+                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)" hlmTooltipTrigger="Delete"><ng-icon name="lucideTrash2"/></button>
                 </div>
             </div>
         </div>

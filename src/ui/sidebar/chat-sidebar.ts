@@ -8,6 +8,7 @@ import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -60,6 +61,7 @@ export enum SidebarMode {
     ...HlmLabelImports,
     ...BrnDialogImports,
     ...HlmDialogImports,
+    ...HlmTooltipImports,
   ],
   providers: [
     provideIcons({
