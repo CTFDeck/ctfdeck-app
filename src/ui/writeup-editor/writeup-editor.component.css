@@ -20,7 +20,7 @@
   justify-items: start;
   position: relative;
   min-width: 120px;
-  max-width: 450px;
+  max-width: 1000px;
 }
 
 .title-auto-resizer span {
@@ -29,7 +29,7 @@
   white-space: pre;
   font-size: 1.125rem; /* text-lg */
   font-weight: 700;    /* font-bold */
-  padding: 0 4px;      /* small buffer */
+  padding: 4px 6px;    /* Match input padding */
 }
 
 .title-auto-resizer input {

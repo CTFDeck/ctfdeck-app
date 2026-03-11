@@ -34,6 +34,8 @@ import {
   lucideFolder,
   lucideBox,
   lucideMessageSquarePlus,
+  lucideColumns2,
+  lucideChevronUp,
   lucideFilePlus,
 } from '@ng-icons/lucide';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
@@ -92,9 +94,11 @@ export enum SidebarMode {
       lucideFolder,
       lucideBox,
       lucideMessageSquarePlus,
+      lucideColumns2,
+      lucideChevronUp,
       lucideFilePlus,
     }),
-  ],
+],
 
   templateUrl: './chat-sidebar.html',
   styleUrls: ['./chat-sidebar.css'],
@@ -155,12 +159,20 @@ export class ChatSidebar {
   @ViewChild('createFolderTrigger') createFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('renameFolderTrigger') renameFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteFolderTrigger') deleteFolderTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('newItemTrigger') newItemTrigger!: ElementRef<HTMLButtonElement>;
 
   createProjectDraft = { name: '', description: '' };
   createFolderDraft = { projectId: '', parentId: null as string | null, name: '' };
   folderToRenameDraft = { projectId: '', folderId: '', name: '' };
   folderToDeleteDraft = { projectId: '', folderId: '', name: '' };
+  newItemDraft = { name: '', type: 'session' as 'session' | 'writeup' };
+  successfullyDroppedId = signal<string | null>(null);
+  isDragging = signal(false);
+  isScrolling = signal(false);
+  private scrollTimeout: any;
 
+  private dragScrollInterval: any;
+  @ViewChild('scrollContainer', { read: ElementRef }) scrollContainer!: ElementRef;
   hierarchy$: Observable<ProjectHierarchy[]>;
   expandedProjectIds = signal<Set<string>>(new Set());
   expandedFolderIds = signal<Set<string>>(new Set());
@@ -212,22 +224,35 @@ export class ChatSidebar {
 
   newAction() {
     if (this.currentMode() === SidebarMode.Chats) {
-      void this.sessionStore.createSession('New chat').then(() => {
-        void this.router.navigate(['/terminal']);
-      });
+      this.newChat();
     } else {
-      void this.writeUpStore.createWriteUp('New writeup').then((id) => {
-        if (id) void this.router.navigate(['/writeup', id]);
-      });
+      this.newWriteUp();
     }
   }
 
   newChat() {
-    void this.sessionStore.createSession('New chat');
+    this.newItemDraft = { name: '', type: 'session' };
+    setTimeout(() => this.newItemTrigger.nativeElement.click());
   }
 
   newWriteUp() {
-    void this.writeUpStore.createWriteUp('New writeup');
+    this.newItemDraft = { name: '', type: 'writeup' };
+    setTimeout(() => this.newItemTrigger.nativeElement.click());
+  }
+
+  async confirmCreateItem(ctx: { close: () => void }) {
+    const defaultName = this.newItemDraft.type === 'session' ? 'New chat' : 'New writeup';
+    const name = this.newItemDraft.name.trim() || defaultName;
+    
+    ctx.close();
+    
+    if (this.newItemDraft.type === 'session') {
+      await this.sessionStore.createSession(name);
+      void this.router.navigate(['/terminal']);
+    } else {
+      const id = await this.writeUpStore.createWriteUp(name);
+      if (id) void this.router.navigate(['/writeup', id]);
+    }
   }
 
   openChat(session: SessionMetadata) {
@@ -339,8 +364,10 @@ export class ChatSidebar {
   // ── Filters ──────────────────────────────────────────────────────────────
   filteredChats(sessions: SessionMetadata[]) {
     const term = this.search?.toLowerCase().trim();
-    if (!term) return sessions;
-    return sessions.filter((s) => s.name.toLowerCase().includes(term));
+    // Only show sessions which are NOT in a folder
+    const unassigned = sessions.filter((s) => s.folderId === null);
+    if (!term) return unassigned;
+    return unassigned.filter((s) => s.name.toLowerCase().includes(term));
   }
 
   resultsCount(sessions: SessionMetadata[]): number {
@@ -349,8 +376,10 @@ export class ChatSidebar {
 
   filteredWriteUps(writeUps: WriteUpMetadata[]) {
     const term = this.search?.toLowerCase().trim();
-    if (!term) return writeUps;
-    return writeUps.filter((w) => w.name.toLowerCase().includes(term));
+    // Only show writeups which are NOT in a folder
+    const unassigned = writeUps.filter((w) => w.folderId === null);
+    if (!term) return unassigned;
+    return unassigned.filter((w) => w.name.toLowerCase().includes(term));
   }
 
   toggleSidebar() {
@@ -430,6 +459,12 @@ export class ChatSidebar {
       event.dataTransfer.setData('application/ctf-id', id);
       event.dataTransfer.effectAllowed = 'move';
     }
+    this.isDragging.set(true);
+  }
+
+  onDragEnd() {
+    this.isDragging.set(false);
+    this.clearDragScroll();
   }
 
   onDragOver(event: DragEvent) {
@@ -437,10 +472,54 @@ export class ChatSidebar {
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
+    this.isScrolling.set(true); // Treat drag-scroll as scrolling
+    this.handleDragScroll(event);
+  }
+
+  onScroll() {
+    this.isScrolling.set(true);
+    clearTimeout(this.scrollTimeout);
+    this.scrollTimeout = setTimeout(() => {
+      this.isScrolling.set(false);
+    }, 150);
+  }
+
+  private handleDragScroll(event: DragEvent) {
+    if (!this.scrollContainer?.nativeElement) return;
+    const container = this.scrollContainer.nativeElement;
+    const rect = container.getBoundingClientRect();
+    const threshold = 60; // Distance from top/bottom to start scrolling
+    const speed = 8;
+
+    const mouseY = event.clientY;
+    const fromTop = mouseY - rect.top;
+    const fromBottom = rect.bottom - mouseY;
+
+    this.clearDragScroll();
+
+    if (fromTop < threshold && container.scrollTop > 0) {
+      this.dragScrollInterval = setInterval(() => {
+        container.scrollTop -= speed;
+        if (container.scrollTop <= 0) this.clearDragScroll();
+      }, 16);
+    } else if (fromBottom < threshold && container.scrollTop + container.clientHeight < container.scrollHeight) {
+      this.dragScrollInterval = setInterval(() => {
+        container.scrollTop += speed;
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight) this.clearDragScroll();
+      }, 16);
+    }
+  }
+
+  private clearDragScroll() {
+    if (this.dragScrollInterval) {
+      clearInterval(this.dragScrollInterval);
+      this.dragScrollInterval = null;
+    }
   }
 
   async onDrop(event: DragEvent, projectId: string, folderId: string | null) {
     event.preventDefault();
+    this.clearDragScroll();
     const type = event.dataTransfer?.getData('application/ctf-type');
     const id = event.dataTransfer?.getData('application/ctf-id');
 
@@ -452,6 +531,10 @@ export class ChatSidebar {
       } else if (type === 'writeup') {
         await this.writeUpStore.moveWriteUp(id, folderId);
       }
+      
+      // Success animation
+      this.successfullyDroppedId.set(id);
+      setTimeout(() => this.successfullyDroppedId.set(null), 2500);
     } catch (e) {
       console.error('[ChatSidebar] Drop failed:', e);
     }

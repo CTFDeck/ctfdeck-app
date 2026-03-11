@@ -364,3 +364,98 @@
 .ctf-chat-sidebar button[hlmBtn] {
   transition: all 0.2s ease;
 }
+
+/* Animation for successful drop */
+@keyframes drop-success-pulse {
+  0% { 
+    background-color: transparent; 
+  }
+  15% { 
+    background-color: color-mix(in srgb, #22c55e 25%, transparent); 
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+  }
+  100% { 
+    background-color: transparent; 
+  }
+}
+
+.ctf-drop-success {
+  animation: drop-success-pulse 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+}
+
+.ctf-drop-success span, 
+.ctf-drop-success ng-icon {
+  color: #22c55e !important;
+  transition: color 0.3s ease;
+}
+
+.ctf-drop-success::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  border-radius: 4px;
+  pointer-events: none;
+  animation: fadeOut 2.5s forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Drag scroll indicators */
+.ctf-scroll-indicator {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  border-radius: 0.75rem;
+  backdrop-filter: blur(4px);
+  color: var(--primary);
+  border: 1px dashed color-mix(in srgb, var(--primary) 30%, transparent);
+  transition: all 0.2s ease;
+}
+
+.ctf-scroll-up {
+  top: 0.5rem;
+  background: linear-gradient(to bottom, 
+    color-mix(in srgb, var(--background) 90%, transparent), 
+    transparent);
+}
+
+.ctf-scroll-down {
+  bottom: 0.5rem;
+  background: linear-gradient(to top, 
+    color-mix(in srgb, var(--background) 90%, transparent), 
+    transparent);
+}
+
+.ctf-scroll-indicator ng-icon {
+  filter: drop-shadow(0 0 8px var(--primary));
+}
+
+/* Fix for "ghost hover" during scroll or drag */
+.ctf-is-scrolling .group:hover,
+.ctf-is-scrolling .ctf-item-group:hover,
+.ctf-is-dragging .group:hover,
+.ctf-is-dragging .ctf-item-group:hover {
+  background-color: transparent !important;
+}
+
+.ctf-is-scrolling .ctf-item-actions,
+.ctf-is-dragging .ctf-item-actions {
+  display: none !important;
+}
+
+/* Hide action buttons during drag to keep UI clean */
+.ctf-is-dragging .ctf-item-actions {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
