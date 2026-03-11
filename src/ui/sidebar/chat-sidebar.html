@@ -197,18 +197,26 @@
             <div *ngFor="let s of f.sessions" class="ctf-item-group relative group/item"
                  [class.bg-accent]="s.id === (activeSessionId$ | async)"
                  draggable="true" (dragstart)="onDragStart($event, 'session', s.id)">
-                <button (click)="openChat(s)" class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-10">
+                <button (click)="openChat(s)" class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14">
                     <ng-icon name="lucideMessageCircleDashed" class="w-3 h-3 text-foreground" />
                     <span class="truncate">{{ s.name }}</span>
                 </button>
+                <div class="ctf-item-actions group-hover/item:opacity-100">
+                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameDialog(s)"><ng-icon name="lucidePencil"/></button>
+                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteDialog(s)"><ng-icon name="lucideTrash2"/></button>
+                </div>
             </div>
             <div *ngFor="let w of f.writeups" class="ctf-item-group relative group/item"
                  [class.bg-accent]="w.id === (activeWriteUpId$ | async)"
                  draggable="true" (dragstart)="onDragStart($event, 'writeup', w.id)">
-                <button (click)="openWriteUp(w)" class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-10">
+                <button (click)="openWriteUp(w)" class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14">
                     <ng-icon name="lucideFileText" class="w-3 h-3 text-foreground" />
                     <span class="truncate">{{ w.name }}</span>
                 </button>
+                <div class="ctf-item-actions group-hover/item:opacity-100">
+                    <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)"><ng-icon name="lucidePencil"/></button>
+                    <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)"><ng-icon name="lucideTrash2"/></button>
+                </div>
             </div>
         </div>
     </div>

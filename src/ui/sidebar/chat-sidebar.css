@@ -199,13 +199,8 @@
   align-items: center;
   gap: 1px;
   padding-right: 6px;
-  /* Le dégradé transparent → couleur du fond : crée l'effet de fondu sur le texte */
-  padding-left: 2.5rem;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--sidebar) 45%
-  );
+  /* Retrait du dégradé car l'ellipsis gère déjà l'espacement */
+  background: transparent;
   /* Invisible par défaut */
   opacity: 0;
   pointer-events: none;
@@ -216,11 +211,7 @@
 .ctf-chat-sidebar .ctf-item-group:hover .ctf-item-actions {
   opacity: 1;
   pointer-events: auto;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--sidebar-accent) 45%
-  );
+  background: transparent;
 }
 
 /* Boutons icon-only premium */
