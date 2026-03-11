@@ -9,7 +9,9 @@
     </div>
 
     <div class="flex flex-col gap-1 items-end min-w-[200px]">
-      <label hlmLabel class="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Active Session</label>
+      <label hlmLabel class="text-[10px] uppercase tracking-wider text-muted-foreground font-bold"
+        >Active Session</label
+      >
       <brn-select
         class="inline-block w-full"
         [(ngModel)]="activeSessionId"
@@ -19,7 +21,11 @@
           <hlm-select-value />
         </hlm-select-trigger>
         <hlm-select-content>
-          <hlm-option *ngFor="let session of sessions$ | async" [value]="session.id" class="text-xs">
+          <hlm-option
+            *ngFor="let session of sessions$ | async"
+            [value]="session.id"
+            class="text-xs"
+          >
             {{ session.name }}
           </hlm-option>
         </hlm-select-content>
@@ -85,7 +91,9 @@
             <h4 class="font-bold text-sm truncate uppercase tracking-tight text-foreground">
               {{ target.name }}
             </h4>
-            <code class="px-1.5 py-px rounded bg-muted/50 text-[10px] font-mono border border-border/50 text-muted-foreground">
+            <code
+              class="px-1.5 py-px rounded bg-muted/50 text-[10px] font-mono border border-border/50 text-muted-foreground"
+            >
               {{ target.address }}{{ target.port ? ':' + target.port : '' }}
             </code>
           </div>
@@ -139,7 +147,12 @@
         <div class="grid grid-cols-2 gap-4">
           <div class="grid gap-2">
             <label hlmLabel for="add-name">Resource Name</label>
-            <input hlmInput id="add-name" [(ngModel)]="addForm.name" placeholder="e.g., PROD-DB-01" />
+            <input
+              hlmInput
+              id="add-name"
+              [(ngModel)]="addForm.name"
+              placeholder="e.g., PROD-DB-01"
+            />
           </div>
           <div class="grid gap-2">
             <label hlmLabel>Target Type</label>
@@ -284,7 +297,11 @@
 
       <div class="grid gap-2">
         <label hlmLabel>Active Session</label>
-        <brn-select class="inline-block" placeholder="Select session" [(ngModel)]="editForm.sessionId">
+        <brn-select
+          class="inline-block"
+          placeholder="Select session"
+          [(ngModel)]="editForm.sessionId"
+        >
           <hlm-select-trigger class="w-full">
             <hlm-select-value />
           </hlm-select-trigger>
@@ -340,14 +357,13 @@
 <!-- Single Target Delete Confirmation -->
 <hlm-alert-dialog>
   <button #deleteSingleTrigger brnAlertDialogTrigger class="hidden"></button>
-  <hlm-alert-dialog-content
-    *brnAlertDialogContent="let ctx"
-    class="max-w-[400px]"
-  >
+  <hlm-alert-dialog-content *brnAlertDialogContent="let ctx" class="max-w-[400px]">
     <hlm-alert-dialog-header>
       <h3 hlmAlertDialogTitle>Confirm Deletion</h3>
       <p hlmAlertDialogDescription>
-        Are you sure you want to delete <span class="font-bold text-foreground">"{{ targetToDelete?.name }}"</span> from session <span class="font-bold text-foreground">"{{ (activeSession$ | async)?.name }}"</span>?
+        Are you sure you want to delete
+        <span class="font-bold text-foreground">"{{ targetToDelete?.name }}"</span> from session
+        <span class="font-bold text-foreground">"{{ (activeSession$ | async)?.name }}"</span>?
       </p>
     </hlm-alert-dialog-header>
     <hlm-alert-dialog-footer>
@@ -360,19 +376,20 @@
 <!-- Bulk Delete Confirmation -->
 <hlm-alert-dialog>
   <button #deleteBulkTrigger brnAlertDialogTrigger class="hidden"></button>
-  <hlm-alert-dialog-content
-    *brnAlertDialogContent="let ctx"
-    class="max-w-[400px]"
-  >
+  <hlm-alert-dialog-content *brnAlertDialogContent="let ctx" class="max-w-[400px]">
     <hlm-alert-dialog-header>
       <h3 hlmAlertDialogTitle>Confirm Bulk Deletion</h3>
       <p hlmAlertDialogDescription>
-        Are you sure you want to delete <span class="font-bold text-foreground">{{ selectedIds.size }} targets</span> from session <span class="font-bold text-foreground">"{{ (activeSession$ | async)?.name }}"</span>?
+        Are you sure you want to delete
+        <span class="font-bold text-foreground">{{ selectedIds.size }} targets</span> from session
+        <span class="font-bold text-foreground">"{{ (activeSession$ | async)?.name }}"</span>?
       </p>
     </hlm-alert-dialog-header>
     <hlm-alert-dialog-footer>
       <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn variant="destructive" (click)="confirmDeleteSelected(ctx)">Confirm Deletion</button>
+      <button hlmBtn variant="destructive" (click)="confirmDeleteSelected(ctx)">
+        Confirm Deletion
+      </button>
     </hlm-alert-dialog-footer>
   </hlm-alert-dialog-content>
 </hlm-alert-dialog>
