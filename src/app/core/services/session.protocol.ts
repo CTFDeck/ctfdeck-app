@@ -438,29 +438,38 @@ export function deserializeSessionListResult(data: Uint8Array): {
     if (offset + 16 > data.byteLength) {
       throw new Error(`SessionListResult truncated at session ${i} (id), offset=${offset}, length=${data.byteLength}`);
     }
+    if (offset + 16 > data.byteLength) {
+      throw new Error(`SessionListResult truncated at session ${i} (id), offset=${offset}, length=${data.byteLength}`);
+    }
     const id = bytesToUuid(data.subarray(offset, offset + 16));
     offset += 16;
 
     if (offset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (nameLen)`);
+    if (offset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (nameLen)`);
     const nameLen = view.getInt32(offset, true);
+    if (nameLen < 0 || offset + 4 + nameLen > data.byteLength) throw new Error(`SessionListResult invalid nameLen=${nameLen} at session ${i}`);
     if (nameLen < 0 || offset + 4 + nameLen > data.byteLength) throw new Error(`SessionListResult invalid nameLen=${nameLen} at session ${i}`);
     offset += 4;
     const name = decoder.decode(data.subarray(offset, offset + nameLen));
     offset += nameLen;
 
     if (offset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (descLen)`);
+    if (offset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (descLen)`);
     const descLen = view.getInt32(offset, true);
+    if (descLen < 0 || offset + 4 + descLen > data.byteLength) throw new Error(`SessionListResult invalid descLen=${descLen} at session ${i}`);
     if (descLen < 0 || offset + 4 + descLen > data.byteLength) throw new Error(`SessionListResult invalid descLen=${descLen} at session ${i}`);
     offset += 4;
     const description = decoder.decode(data.subarray(offset, offset + descLen));
     offset += descLen;
 
     if (offset + 16 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (timestamps)`);
+    if (offset + 16 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (timestamps)`);
     const createdAtTicks = view.getBigInt64(offset, true);
     offset += 8;
     const updatedAtTicks = view.getBigInt64(offset, true);
     offset += 8;
 
+    if (offset + 8 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (counts)`);
     if (offset + 8 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (counts)`);
     const historyCount = view.getInt32(offset, true);
     offset += 4;

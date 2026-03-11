@@ -37,6 +37,65 @@ export enum MessageType {
   CustomScriptDeleteResult = 42,
   CustomScriptListResult = 43,
   CustomScriptOperationError = 49,
+
+  // WriteUp requests (client -> server)
+  WriteUpCreate = 50,
+  WriteUpUpdate = 51,
+  WriteUpDelete = 52,
+  WriteUpList = 53,
+  WriteUpLoad = 54,
+  WriteUpMove = 55,
+
+  // WriteUp responses (server -> client)
+  WriteUpCreateResult = 60,
+  WriteUpUpdateResult = 61,
+  WriteUpDeleteResult = 62,
+  WriteUpListResult = 63,
+  WriteUpLoadResult = 64,
+  WriteUpMoveResult = 65,
+  WriteUpOperationError = 69,
+
+  // Media requests (client -> server)
+  MediaUpload = 70,
+  MediaLoad = 71,
+  MediaDelete = 72,
+  MediaList = 73,
+
+  // Media responses (server -> client)
+  MediaUploadResult = 80,
+  MediaLoadResult = 81,
+  MediaDeleteResult = 82,
+  MediaListResult = 83,
+  MediaOperationError = 89,
+
+  // Project requests (client -> server)
+  ProjectCreate = 90,
+  ProjectLoad = 91,
+  ProjectList = 92,
+  ProjectUpdate = 93,
+  ProjectDelete = 94,
+  ProjectAddFolder = 95,
+  ProjectDeleteFolder = 96,
+  ProjectRenameFolder = 97,
+  ProjectAssignSession = 98,
+
+  // Project responses (server -> client)
+  ProjectCreateResult = 100,
+  ProjectLoadResult = 101,
+  ProjectListResult = 102,
+  ProjectUpdateResult = 103,
+  ProjectDeleteResult = 104,
+  ProjectAddFolderResult = 105,
+  ProjectDeleteFolderResult = 106,
+  ProjectRenameFolderResult = 107,
+  ProjectAssignSessionResult = 108,
+  ProjectOperationError = 109,
+
+  // Project content queries (client -> server)
+  ProjectListSessions = 110,
+  ProjectListSessionsResult = 111,
+  ProjectListWriteUps = 112,
+  ProjectListWriteUpsResult = 113,
   ToolInventoryRequest = 120,
   ToolInventoryResult = 121,
   ToolInstallRequest = 122,

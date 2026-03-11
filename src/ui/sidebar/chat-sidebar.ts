@@ -109,10 +109,20 @@ export class ChatSidebar {
 
   private readonly STORAGE_KEY = 'ctf_sidebar_mode';
 
+  SidebarMode = SidebarMode;
+  currentMode = signal<SidebarMode>(SidebarMode.Chats);
+
+  private readonly STORAGE_KEY = 'ctf_sidebar_mode';
+
   isCollapsed = signal(false);
 
   // Session delete animation tracking
+
+  // Session delete animation tracking
   deletingSessionIds = signal<Set<string>>(new Set());
+  // WriteUp delete animation tracking
+  deletingWriteUpIds = signal<Set<string>>(new Set());
+
   // WriteUp delete animation tracking
   deletingWriteUpIds = signal<Set<string>>(new Set());
 
@@ -123,6 +133,7 @@ export class ChatSidebar {
     return !this.isCollapsed();
   }
 
+  @HostBinding('class.w-20')
   @HostBinding('class.w-20')
   get collapsed() {
     return this.isCollapsed();
@@ -266,8 +277,15 @@ export class ChatSidebar {
   async openWriteUp(writeUp: WriteUpMetadata) {
     await this.writeUpStore.selectWriteUp(writeUp.id);
     void this.router.navigate(['/writeup', writeUp.id]);
+    void this.router.navigate(['/terminal']);
   }
 
+  async openWriteUp(writeUp: WriteUpMetadata) {
+    await this.writeUpStore.selectWriteUp(writeUp.id);
+    void this.router.navigate(['/writeup', writeUp.id]);
+  }
+
+  // ── Session: Rename ─────────────────────────────────────────────────────
   // ── Session: Rename ─────────────────────────────────────────────────────
   openRenameDialog(session: SessionMetadata) {
     this.sessionToRename = session;
@@ -285,6 +303,7 @@ export class ChatSidebar {
     this.sessionToRename = null;
   }
 
+  // ── Session: Delete ──────────────────────────────────────────────────────
   // ── Session: Delete ──────────────────────────────────────────────────────
   openDeleteDialog(session: SessionMetadata) {
     this.sessionToDelete = session;
@@ -312,6 +331,7 @@ export class ChatSidebar {
 
   private setSessionDeleting(sessionId: string, deleting: boolean) {
     const next = new Set(this.deletingSessionIds());
+    if (deleting) next.add(sessionId); else next.delete(sessionId);
     if (deleting) next.add(sessionId); else next.delete(sessionId);
     this.deletingSessionIds.set(next);
   }
@@ -366,6 +386,12 @@ export class ChatSidebar {
 
   resultsCount(sessions: SessionMetadata[]): number {
     return this.filteredChats(sessions).length;
+  }
+
+  filteredWriteUps(writeUps: WriteUpMetadata[]) {
+    const term = this.search?.toLowerCase().trim();
+    if (!term) return writeUps;
+    return writeUps.filter((w) => w.name.toLowerCase().includes(term));
   }
 
   toggleSidebar() {
