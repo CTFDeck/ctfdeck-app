@@ -7,7 +7,6 @@
     <hlm-menu-bar class="w-fit border-none">
       <button hlmMenuBarItem [brnMenuTriggerFor]="target">Target</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">Scripts</button>
-      <button hlmMenuBarItem [brnMenuTriggerFor]="utils">Tools</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">Documentation</button>
     </hlm-menu-bar>
   </div>
@@ -26,8 +25,6 @@
     </hlm-menu>
   </ng-template>
 
-  <!-- ✅ Scripts : tri corrigé -->
-  <!-- ✅ Scripts : tri corrigé -->
   <ng-template #scripts>
     <hlm-menu variant="menubar" class="w-48">
       <hlm-menu-group>
@@ -55,6 +52,8 @@
           Exploit
           <hlm-menu-item-sub-indicator />
         </button>
+
+        <button hlmMenuItem (click)="openExternal('https://github.com/peass-ng/PEASS-ng/releases/')">Linpeas releases</button>
       </hlm-menu-group>
 
       <hlm-menu-separator />
@@ -156,41 +155,27 @@
     </hlm-sub-menu>
   </ng-template>
 
-  <ng-template #utils>
-    <hlm-menu variant="menubar" class="w-64">
+  <ng-template #documentation>
+    <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
         <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="tools_sub">
           Tools
           <hlm-menu-item-sub-indicator />
         </button>
-      </hlm-menu-group>
-      <hlm-menu-separator />
-      <hlm-menu-group>
-        <button hlmMenuItem (click)="openExternal('https://cve.org')">CVE.org</button>
-        <button hlmMenuItem (click)="openExternal('https://www.exploit-db.com')">ExploitDB</button>
-        <button hlmMenuItem (click)="navigate('/docs')">Documentation</button>
-        <button hlmMenuItem (click)="navigate('/docs')">Documentation</button>
+        <hlm-menu-separator />
+        
+        <button hlmMenuItem (click)="openExternal('https://github.com/CTFDeck/ctfdeck-app/wiki/FRONTEND_DEVELOPER')">Developer Documentation</button>
+        <button hlmMenuItem (click)="openExternal('https://github.com/CTFDeck/ctfdeck-app/wiki/USER')">User Documentation</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
 
   <ng-template #tools_sub>
     <hlm-sub-menu>
-      <button hlmMenuItem>NMAP</button>
-      <button hlmMenuItem>Gobuster</button>
-      <button hlmMenuItem>Nikto</button>
+      <button hlmMenuItem (click)="openExternal('https://cve.org')">CVE.org</button>
+      <button hlmMenuItem (click)="openExternal('https://www.exploit-db.com')">ExploitDB</button>
+      <button hlmMenuItem (click)="openExternal('https://gtfobins.org')">gtfobins</button>
       <button hlmMenuItem>Burp</button>
     </hlm-sub-menu>
-  </ng-template>
-
-  <ng-template #documentation>
-    <hlm-menu variant="menubar" class="w-56">
-      <hlm-menu-group>
-        <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
-        <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
-        <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
-        <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
-      </hlm-menu-group>
-    </hlm-menu>
   </ng-template>
 </div>
