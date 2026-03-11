@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { WebSocketService } from './websocket.service';
+import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
 import { deserializeToolCatalogSnapshot, MessageType, ToolCatalogItem } from './websocket.protocol';
 import { ToolsService } from './tools.service';
 

@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { WebSocketService } from './websocket.service';
+import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
 import {
   deserializeToolInstallAccepted,
   deserializeToolInstallProgress,

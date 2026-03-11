@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { TargetService } from '../../app/core/services/target.service';
-import { WebSocketService } from '../../app/core/services/websocket.service';
+import { WebSocketService } from '../../app/infrastructure/transport/websocket/websocket.service';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { ScriptService } from '../../app/core/services/script.service';
 import { ToolCatalogService } from '../../app/core/services/tool-catalog.service';
@@ -24,7 +24,7 @@ import {
   scriptCategoryName,
   SessionTarget,
 } from '../../app/core/services/session.protocol';
-import { ToolCatalogItem } from '../../app/core/services/websocket.protocol';
+import { ToolCatalogItem } from '../../app/domains/tools/models/tool-catalog-item.model';
 import AnsiToHtml from 'ansi-to-html';
 import { Subscription } from 'rxjs';
 import { provideIcons } from '@ng-icons/core';

@@ -6,7 +6,7 @@ import { SessionStoreService } from './session-store.service';
 import { SessionMetadata } from './session.protocol';
 import { WriteUpStoreService } from './writeup-store.service';
 import { WriteUpMetadata } from './writeup.protocol';
-import { WebSocketService } from './websocket.service';
+import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
 
 export interface ProjectHierarchy {
   id: string;
@@ -112,7 +112,7 @@ export class ProjectStoreService implements OnDestroy {
         return projects.map((p) => {
           const cached = dataCache.get(p.id);
           const flatFolders = cached?.folders || [];
-          
+
           // Build tree from flat list
           const folderMap = new Map<string, FolderHierarchy>();
           const roots: FolderHierarchy[] = [];
@@ -142,7 +142,7 @@ export class ProjectStoreService implements OnDestroy {
           // Handle items in project root (no folder)
           const rootSessions = allSessions.filter(s => s.projectId === p.id && !s.folderId);
           const rootWriteups = allWriteups.filter(w => w.projectId === p.id && !w.folderId);
-          
+
           if (rootSessions.length > 0 || rootWriteups.length > 0) {
               roots.unshift({
                   id: `root-${p.id}`,

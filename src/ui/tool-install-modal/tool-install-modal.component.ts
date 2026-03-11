@@ -23,7 +23,7 @@ import {
 import { HlmSpinner } from '@ctfdeck/helm/spinner';
 
 import { ToolsService } from '../../app/core/services/tools.service';
-import { WebSocketService } from '../../app/core/services/websocket.service';
+import { WebSocketService } from '../../app/infrastructure/transport/websocket/websocket.service';
 import {
   ToolInstallProgress,
   ToolInstallState,

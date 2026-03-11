@@ -16,7 +16,7 @@ import { CommonModule } from '@angular/common';
 import { ScriptService } from '../../app/core/services/script.service';
 import { Subscription } from 'rxjs';
 import { ToolCatalogService } from '../../app/core/services/tool-catalog.service';
-import { ToolCatalogItem } from '../../app/core/services/websocket.protocol';
+import { ToolCatalogItem } from '../../app/domains/tools/models/tool-catalog-item.model';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideTriangleAlert } from '@ng-icons/lucide';
 

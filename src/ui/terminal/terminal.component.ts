@@ -11,7 +11,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { WebSocketService } from '../../app/core/services/websocket.service';
+import { WebSocketService } from '../../app/infrastructure/transport/websocket/websocket.service';
 import { Subscription } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -592,7 +592,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   onMouseUp(event: MouseEvent) {
     if (event.button !== 0) return;
-    
+
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed) {
       if (this.selectedText) {
@@ -633,10 +633,10 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         if (this.selectionTrigger) {
           try {
             // Trigger can be accessed differently depending on BrnMenuTrigger implementation
-            const trigger = (this.selectionTrigger as any)._cdkTrigger || 
+            const trigger = (this.selectionTrigger as any)._cdkTrigger ||
                            (this.selectionTrigger as any).menuTrigger ||
                            (this.selectionTrigger as any)._menuTrigger;
-            
+
             if (trigger) {
               trigger.open();
             } else {
@@ -657,7 +657,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.selectedText = '';
     // Close the menu using the internal CDK trigger if available
     (this.selectionTrigger as any)?._cdkTrigger?.close();
-    
+
     // Clear actual browser selection to avoid ghosting
     try {
       window.getSelection()?.removeAllRanges();

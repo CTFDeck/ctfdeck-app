@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subscription, Subject } from 'rxjs';
 import { SessionService } from './session.service';
-import { WebSocketService } from './websocket.service';
+import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
 import { SessionData, SessionMetadata, SessionTarget } from './session.protocol';
 import { toast } from 'ngx-sonner';
 
