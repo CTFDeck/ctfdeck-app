@@ -131,6 +131,17 @@ export class ChatSidebar {
   writeUpToRename: WriteUpMetadata | null = null;
   writeUpToDelete: WriteUpMetadata | null = null;
 
+  // Project & Folder dialog state
+  @ViewChild('createProjectTrigger') createProjectTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('createFolderTrigger') createFolderTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('renameFolderTrigger') renameFolderTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('deleteFolderTrigger') deleteFolderTrigger!: ElementRef<HTMLButtonElement>;
+
+  createProjectDraft = { name: '', description: '' };
+  createFolderDraft = { projectId: '', parentId: null as string | null, name: '' };
+  folderToRenameDraft = { projectId: '', folderId: '', name: '' };
+  folderToDeleteDraft = { projectId: '', folderId: '', name: '' };
+
   hierarchy$: Observable<ProjectHierarchy[]>;
   expandedProjectIds = signal<Set<string>>(new Set());
   expandedFolderIds = signal<Set<string>>(new Set());
@@ -165,10 +176,15 @@ export class ChatSidebar {
   }
 
   newProject() {
-     const name = prompt('Project Name:', 'New Project');
-     if (name) {
-       void this.projectStore.createProject(name);
-     }
+    this.createProjectDraft = { name: 'New Project', description: '' };
+    setTimeout(() => this.createProjectTrigger.nativeElement.click());
+  }
+
+  async createProject(ctx: { close: () => void }) {
+    const name = this.createProjectDraft.name.trim();
+    if (!name) return;
+    ctx.close();
+    await this.projectStore.createProject(name, this.createProjectDraft.description);
   }
 
   newAction() {
@@ -342,27 +358,46 @@ export class ChatSidebar {
   }
 
   // ── Folder CRUD ──────────────────────────────────────────────────────────
-  async addFolder(projectId: string, parentId: string | null = null) {
-    const name = prompt('Folder name:', 'New folder');
-    if (name) {
-      await this.projectStore.addFolder(projectId, name, parentId);
-      if (parentId) {
-         this.expandedFolderIds.update(s => new Set(s).add(parentId));
-      }
+  async openCreateFolderDialog(projectId: string, parentId: string | null = null) {
+    this.createFolderDraft = { projectId, parentId, name: 'New folder' };
+    setTimeout(() => this.createFolderTrigger.nativeElement.click());
+  }
+
+  async addFolder(ctx: { close: () => void }) {
+    const { projectId, parentId, name } = this.createFolderDraft;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    
+    ctx.close();
+    await this.projectStore.addFolder(projectId, trimmedName, parentId);
+    if (parentId) {
+      this.expandedFolderIds.update(s => new Set(s).add(parentId));
     }
   }
 
-  async renameFolder(projectId: string, folderId: string, currentName: string) {
-    const name = prompt('New folder name:', currentName);
-    if (name && name !== currentName) {
-      await this.projectStore.renameFolder(projectId, folderId, name);
-    }
+  async openRenameFolderDialog(projectId: string, folderId: string, currentName: string) {
+    this.folderToRenameDraft = { projectId, folderId, name: currentName };
+    setTimeout(() => this.renameFolderTrigger.nativeElement.click());
   }
 
-  async deleteFolder(projectId: string, folderId: string, name: string) {
-    if (confirm(`Delete folder "${name}"? This will move items to the root.`)) {
-      await this.projectStore.deleteFolder(projectId, folderId);
-    }
+  async renameFolder(ctx: { close: () => void }) {
+    const { projectId, folderId, name } = this.folderToRenameDraft;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    
+    ctx.close();
+    await this.projectStore.renameFolder(projectId, folderId, trimmedName);
+  }
+
+  async openDeleteFolderDialog(projectId: string, folderId: string, name: string) {
+    this.folderToDeleteDraft = { projectId, folderId, name };
+    setTimeout(() => this.deleteFolderTrigger.nativeElement.click());
+  }
+
+  async deleteFolder(ctx: { close: () => void }) {
+    const { projectId, folderId } = this.folderToDeleteDraft;
+    ctx.close();
+    await this.projectStore.deleteFolder(projectId, folderId);
   }
 
   // ── Drag & Drop ────────────────────────────────────────────────────────
