@@ -1,4 +1,4 @@
-import type { ToolKind } from './tool-catalog-item.model';
+import type { ToolKind } from './tool-kind.type';
 
 export interface ToolStatus {
   id: string;

@@ -11,10 +11,10 @@ import {
   serializeToolInstallRequest,
   serializeToolInventoryRequest,
   type ToolInstallAccepted,
-  type ToolInstallProgress,
 } from '../infrastructure/tools.websocket.protocol';
-import type { ToolStatus } from '../models/tool-status.model';
+import type { ToolInstallProgress } from '../models/tool-install-progress.model';
 import { ToolInstallState } from '../models/tool-install-state.enum';
+import type { ToolStatus } from '../models/tool-status.model';
 
 @Injectable({ providedIn: 'root' })
 export class ToolsStore implements OnDestroy {
@@ -49,15 +49,12 @@ export class ToolsStore implements OnDestroy {
   requestInventory(): string {
     const messageId = generateUUID();
     this.loadingInventorySubject.next(true);
-
     this.webSocketService.sendBinary(serializeToolInventoryRequest(messageId));
     return messageId;
   }
 
   installTools(toolIds: string[]): string {
-    const sanitized = toolIds
-      .map((id) => id.trim())
-      .filter((id) => id.length > 0);
+    const sanitized = toolIds.map((id) => id.trim()).filter((id) => id.length > 0);
 
     if (sanitized.length === 0) {
       throw new Error('No tool selected for installation');
@@ -65,11 +62,7 @@ export class ToolsStore implements OnDestroy {
 
     const messageId = generateUUID();
     this.installingSubject.next(true);
-
-    this.webSocketService.sendBinary(
-      serializeToolInstallRequest(sanitized, messageId),
-    );
-
+    this.webSocketService.sendBinary(serializeToolInstallRequest(sanitized, messageId));
     return messageId;
   }
 

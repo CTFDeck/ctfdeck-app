@@ -1,24 +1,16 @@
-import { Component, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
-import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
-import {
-  HlmMenu,
-  HlmMenuBar,
-  HlmMenuBarItem,
-  HlmMenuGroup,
-  HlmMenuItem,
-  HlmMenuItemSubIndicator,
-  HlmMenuSeparator,
-  HlmSubMenu,
-} from '@ctfdeck/helm/menu';
-import { ThemeToggle } from './theme-toggle';
 import { CommonModule } from '@angular/common';
-import { ScriptService } from '../../app/core/services/script.service';
-import { Subscription } from 'rxjs';
-import { ToolCatalogStore } from '../../app/domains/tools/state/tool-catalog.store';
-import { ToolCatalogItem } from '../../app/domains/tools/models/tool-catalog-item.model';
+import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import { Router } from '@angular/router';
+import { HlmMenu, HlmMenuBar, HlmMenuBarItem, HlmMenuGroup, HlmMenuItem, HlmMenuItemSubIndicator, HlmMenuSeparator, HlmSubMenu } from '@ctfdeck/helm/menu';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideTriangleAlert } from '@ng-icons/lucide';
+import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
+import { Subscription } from 'rxjs';
+import { ScriptService } from '../../core/services/script.service';
+import type { ToolCatalogItem } from '../../domains/tools/models/tool-catalog-item.model';
+import { ToolCatalogStore } from '../../domains/tools/state/tool-catalog.store';
+import { ThemeToggle } from './theme-toggle';
+import type { MenubarCustomScript } from './menubar.models';
 
 @Component({
   selector: 'spartan-menubar',
@@ -45,22 +37,22 @@ import { lucideTriangleAlert } from '@ng-icons/lucide';
   templateUrl: './menubar.html',
   styleUrls: ['./menubar.css'],
 })
-export class Menubar implements OnInit, OnDestroy {
-  constructor(
-    private router: Router,
-    private scriptService: ScriptService,
-    private ToolCatalogStore: ToolCatalogStore,
-  ) {}
-
+export class MenubarComponent implements OnInit, OnDestroy {
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
   @Output() openCommandRunnerEvent = new EventEmitter<string | undefined>();
   @Output() openMissingToolsEvent = new EventEmitter<void>();
 
-  customScripts: Array<{ id: string; name: string; category: number; template: string }> = [];
+  customScripts: MenubarCustomScript[] = [];
   customScriptsLoading = false;
   tools: ToolCatalogItem[] = [];
 
-  private subscriptions = new Subscription();
+  private readonly subscriptions = new Subscription();
+
+  constructor(
+    private readonly router: Router,
+    private readonly scriptService: ScriptService,
+    private readonly toolCatalogStore: ToolCatalogStore,
+  ) {}
 
   ngOnInit(): void {
     this.subscriptions.add(
@@ -76,7 +68,7 @@ export class Menubar implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
-      this.ToolCatalogStore.tools$.subscribe((tools) => {
+      this.toolCatalogStore.tools$.subscribe((tools) => {
         this.tools = tools;
       }),
     );
@@ -89,22 +81,26 @@ export class Menubar implements OnInit, OnDestroy {
   }
 
   get hasMissingTools(): boolean {
-    return this.tools.some((t) => t.kind === 'binary' && !t.isInstalled);
+    return this.tools.some((tool) => tool.kind === 'binary' && !tool.isInstalled);
   }
 
-  navigate(path: string) {
-    this.router.navigate([path]);
+  get recentCustomScripts(): MenubarCustomScript[] {
+    return this.customScripts.slice(-3).reverse();
   }
 
-  openExternal(url: string) {
+  navigate(path: string): void {
+    void this.router.navigate([path]);
+  }
+
+  openExternal(url: string): void {
     window.open(url, '_blank', 'noopener');
   }
 
-  openTargetManager(mode: 'view' | 'add' | 'delete') {
+  openTargetManager(mode: 'view' | 'add' | 'delete'): void {
     this.openTargetManagerEvent.emit(mode);
   }
 
-  openCommandRunner(toolId?: string) {
+  openCommandRunner(toolId?: string): void {
     this.openCommandRunnerEvent.emit(toolId);
   }
 
@@ -112,7 +108,7 @@ export class Menubar implements OnInit, OnDestroy {
     this.openMissingToolsEvent.emit();
   }
 
-  openTool(tool: ToolCatalogItem) {
+  openTool(tool: ToolCatalogItem): void {
     if (tool.kind === 'externalWebApp' && tool.externalUrl) {
       this.openExternal(tool.externalUrl);
       return;
@@ -121,22 +117,15 @@ export class Menubar implements OnInit, OnDestroy {
     this.openCommandRunner(tool.id);
   }
 
-  getToolsByCategory(category: string) {
-    return this.tools.filter((t) => t.category === category);
+  getToolsByCategory(category: string): ToolCatalogItem[] {
+    return this.tools.filter((tool) => tool.category === category);
   }
 
   hasToolsInCategory(category: string): boolean {
-    return this.tools.some((t) => t.category === category);
-  }
-
-  get recentCustomScripts() {
-    return this.customScripts.slice(-3).reverse();
+    return this.tools.some((tool) => tool.category === category);
   }
 
   manageCustomScripts(): void {
     this.openCommandRunner('__manage_scripts__');
-  }
-
-  saveTargets() {
   }
 }

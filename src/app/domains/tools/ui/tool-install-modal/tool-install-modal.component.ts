@@ -13,20 +13,29 @@ import { Subscription, distinctUntilChanged, filter } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideWrench,
-  lucideX,
-  lucideRefreshCw,
+  lucideDownload,
   lucideLoaderCircle,
   lucidePackageSearch,
-  lucideDownload,
+  lucideRefreshCw,
+  lucideWrench,
+  lucideX,
 } from '@ng-icons/lucide';
 import { HlmSpinner } from '@ctfdeck/helm/spinner';
 
-import { ToolsStore } from '../../app/domains/tools/state/tools.store';
-import { WebSocketService } from '../../app/infrastructure/transport/websocket/websocket.service';
-import { ToolStatus } from '../../app/domains/tools/models/tool-status.model';
-import { ToolInstallState } from '../../app/domains/tools/models/tool-install-state.enum';
-import { ToolInstallProgress } from '../../app/domains/tools/infrastructure/tools.websocket.protocol';
+import { WebSocketService } from '../../../../infrastructure/transport/websocket/websocket.service';
+import type { ToolInstallProgress } from '../../models/tool-install-progress.model';
+import { ToolInstallState } from '../../models/tool-install-state.enum';
+import type { ToolStatus } from '../../models/tool-status.model';
+import { ToolsStore } from '../../state/tools.store';
+import {
+  TOOL_INSTALL_DISMISSED_STORAGE_KEY,
+  buildVisibleToolIds,
+  computeInstallingState,
+  getInstallableVisibleTools,
+  getToolInstallStateLabel,
+  hasMissingInstallableTools,
+  isToolSelectable,
+} from './tool-install-modal.utils';
 
 @Component({
   selector: 'app-tool-install-modal',
@@ -60,19 +69,18 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   readonly toolInstallState = ToolInstallState;
 
-  private readonly STORAGE_KEY_DISMISSED = 'ctfdeck_tool_install_dismissed';
   private readonly subscriptions = new Subscription();
   private inventoryRequestedOnce = false;
   private visibleToolIds = new Set<string>();
 
   constructor(
-    private readonly ToolsStore: ToolsStore,
+    private readonly toolsStore: ToolsStore,
     private readonly webSocketService: WebSocketService,
     private readonly cdr: ChangeDetectorRef,
   ) {}
 
   get installableTools(): ToolStatus[] {
-    return this.tools.filter((tool) => tool.kind === 'binary' && this.visibleToolIds.has(tool.id));
+    return getInstallableVisibleTools(this.tools, this.visibleToolIds);
   }
 
   ngOnInit(): void {
@@ -85,13 +93,13 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
         .subscribe(() => {
           if (!this.inventoryRequestedOnce) {
             this.inventoryRequestedOnce = true;
-            this.ToolsStore.requestInventory();
+            this.toolsStore.requestInventory();
           }
         }),
     );
 
     this.subscriptions.add(
-      this.ToolsStore.tools$.subscribe((tools) => {
+      this.toolsStore.tools$.subscribe((tools) => {
         this.tools = tools;
 
         for (const tool of tools) {
@@ -101,36 +109,36 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
         }
 
         const wasVisible = this.visible;
-        const isDismissed = localStorage.getItem(this.STORAGE_KEY_DISMISSED) === 'true';
-        this.visible = !isDismissed && this.hasMissingInstallableTools(tools);
+        const isDismissed =
+          localStorage.getItem(TOOL_INSTALL_DISMISSED_STORAGE_KEY) === 'true';
+
+        this.visible = !isDismissed && hasMissingInstallableTools(tools);
 
         if (!wasVisible && this.visible) {
-          this.visibleToolIds = new Set(
-            tools.filter((t) => t.kind === 'binary' && !t.isInstalled).map((t) => t.id),
-          );
+          this.visibleToolIds = buildVisibleToolIds(tools);
         }
 
-        this.installing = this.computeInstallingState();
+        this.installing = computeInstallingState(this.progressByToolId);
         this.cdr.markForCheck();
       }),
     );
 
     this.subscriptions.add(
-      this.ToolsStore.loadingInventory$.subscribe((loading) => {
+      this.toolsStore.loadingInventory$.subscribe((loading) => {
         this.loadingInventory = loading;
         this.cdr.markForCheck();
       }),
     );
 
     this.subscriptions.add(
-      this.ToolsStore.installing$.subscribe((installing) => {
+      this.toolsStore.installing$.subscribe((installing) => {
         this.installing = installing;
         this.cdr.markForCheck();
       }),
     );
 
     this.subscriptions.add(
-      this.ToolsStore.progress$.subscribe((progress) => {
+      this.toolsStore.progress$.subscribe((progress) => {
         this.progressByToolId[progress.toolId] = progress;
 
         if (progress.state === ToolInstallState.Success && progress.installedPath) {
@@ -141,13 +149,13 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
           );
         }
 
-        this.installing = this.computeInstallingState();
+        this.installing = computeInstallingState(this.progressByToolId);
         this.cdr.markForCheck();
       }),
     );
 
     this.subscriptions.add(
-      this.ToolsStore.error$.subscribe((error) => {
+      this.toolsStore.error$.subscribe((error) => {
         this.errorMessage = error;
         this.installing = false;
         this.cdr.markForCheck();
@@ -155,16 +163,14 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
     );
   }
 
-  forceOpen(): void {
-    this.visibleToolIds = new Set(
-      this.tools.filter((t) => t.kind === 'binary' && !t.isInstalled).map((t) => t.id),
-    );
-    this.visible = true;
-    this.cdr.markForCheck();
-  }
-
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  forceOpen(): void {
+    this.visibleToolIds = buildVisibleToolIds(this.tools);
+    this.visible = true;
+    this.cdr.markForCheck();
   }
 
   close(): void {
@@ -177,13 +183,13 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   dismiss(): void {
-    localStorage.setItem(this.STORAGE_KEY_DISMISSED, 'true');
+    localStorage.setItem(TOOL_INSTALL_DISMISSED_STORAGE_KEY, 'true');
     this.close();
   }
 
   refresh(): void {
     this.errorMessage = null;
-    this.ToolsStore.refresh();
+    this.toolsStore.refresh();
   }
 
   installSelected(): void {
@@ -199,7 +205,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.ToolsStore.installTools(selectedToolIds);
+    this.toolsStore.installTools(selectedToolIds);
   }
 
   toggleAll(select: boolean): void {
@@ -213,7 +219,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   isSelectable(tool: ToolStatus): boolean {
-    return !tool.isInstalled && tool.isInstallable;
+    return isToolSelectable(tool);
   }
 
   getSelectedCount(): number {
@@ -229,6 +235,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   getProgressLabel(toolId: string): string {
     const progress = this.progressByToolId[toolId];
+
     if (!progress) {
       return '';
     }
@@ -241,38 +248,10 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   getStateLabel(state: ToolInstallState): string {
-    switch (state) {
-      case ToolInstallState.Pending:
-        return 'Pending';
-      case ToolInstallState.Downloading:
-        return 'Downloading';
-      case ToolInstallState.Extracting:
-        return 'Extracting';
-      case ToolInstallState.Installing:
-        return 'Installing';
-      case ToolInstallState.Verifying:
-        return 'Verifying';
-      case ToolInstallState.Success:
-        return 'Success';
-      case ToolInstallState.Failed:
-        return 'Failed';
-      default:
-        return 'Unknown';
-    }
+    return getToolInstallStateLabel(state);
   }
 
   trackByToolId(_: number, tool: ToolStatus): string {
     return tool.id;
-  }
-
-  private hasMissingInstallableTools(tools: ToolStatus[]): boolean {
-    return tools.some((tool) => tool.kind === 'binary' && !tool.isInstalled && tool.isInstallable);
-  }
-
-  private computeInstallingState(): boolean {
-    return Object.values(this.progressByToolId).some(
-      (progress) =>
-        progress.state !== ToolInstallState.Success && progress.state !== ToolInstallState.Failed,
-    );
   }
 }

@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { HlmButton, provideBrnButtonConfig } from '@ctfdeck/helm/button';
-import { ThemeService } from '../../app/theme.service';
+import { ThemeService } from '../../theme.service';
 
 @Component({
-  // make this a host button so we can apply HlmButton via hostDirectives
   selector: 'button[themeToggle]',
   standalone: true,
   providers: [provideBrnButtonConfig({ variant: 'ghost', size: 'icon' })],
@@ -28,7 +27,6 @@ import { ThemeService } from '../../app/theme.service';
   template: `{{ theme.isDark() ? '☀️' : '🌙' }}`,
 })
 export class ThemeToggle {
-  // expose as public so the template can read the signal
   readonly theme = inject(ThemeService);
 
   _onClick(): void {

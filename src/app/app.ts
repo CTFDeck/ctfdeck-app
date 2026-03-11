@@ -1,13 +1,13 @@
 import { Component, signal, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Menubar } from '../ui/menubar/menubar';
+import { MenubarComponent } from './shell/menubar/menubar.component';
 import { ChatSidebar } from '../ui/sidebar/chat-sidebar';
 import { TargetManagerComponent } from '../ui/target-manager/target-manager.component';
 import { CommandRunnerComponent } from '../ui/command-runner/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
 import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-modal.component';
-import { ToolInstallModalComponent } from '../ui/tool-install-modal/tool-install-modal.component';
+import { ToolInstallModalComponent } from './domains/tools/ui/tool-install-modal/tool-install-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -15,7 +15,7 @@ import { ToolInstallModalComponent } from '../ui/tool-install-modal/tool-install
   imports: [
     CommonModule,
     RouterOutlet,
-    Menubar,
+    MenubarComponent,
     ChatSidebar,
     TargetManagerComponent,
     CommandRunnerComponent,

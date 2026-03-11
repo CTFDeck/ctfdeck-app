@@ -1,4 +1,4 @@
-export type ToolKind = 'binary' | 'externalWebApp';
+import type { ToolKind} from './tool-kind.type';
 
 export interface ToolCatalogItem {
   id: string;

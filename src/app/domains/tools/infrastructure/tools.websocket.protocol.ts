@@ -1,8 +1,12 @@
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
-import { bytesToUuid, uuidToBytes } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import {
+  bytesToUuid,
+  uuidToBytes,
+} from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import type { ToolCatalogItem } from '../models/tool-catalog-item.model';
-import type { ToolStatus } from '../models/tool-status.model';
+import type { ToolInstallProgress } from '../models/tool-install-progress.model';
 import { ToolInstallState } from '../models/tool-install-state.enum';
+import type { ToolStatus } from '../models/tool-status.model';
 
 export interface ToolCatalogSnapshot {
   type: MessageType.ToolCatalogSnapshot;
@@ -21,17 +25,6 @@ export interface ToolInventoryResult {
   tools: ToolStatus[];
 }
 
-export interface ToolInstallProgress {
-  type: MessageType.ToolInstallProgress;
-  messageId: string;
-  toolId: string;
-  state: ToolInstallState;
-  message: string | null;
-  progressPercent: number | null;
-  installedPath: string | null;
-  error: string | null;
-}
-
 export interface ToolOperationError {
   type: MessageType.ToolOperationError;
   messageId: string;
@@ -48,7 +41,10 @@ export function serializeToolInventoryRequest(messageId: string): Uint8Array {
   return buffer;
 }
 
-export function serializeToolInstallRequest(toolIds: string[], messageId: string): Uint8Array {
+export function serializeToolInstallRequest(
+  toolIds: string[],
+  messageId: string,
+): Uint8Array {
   const encoder = new TextEncoder();
   const id = uuidToBytes(messageId);
 
