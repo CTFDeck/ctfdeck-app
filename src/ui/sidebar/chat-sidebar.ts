@@ -36,7 +36,7 @@ import { SessionStoreService } from '../../app/core/services/session-store.servi
 import { SessionMetadata } from '../../app/core/services/session.protocol';
 import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
 import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { ProjectStoreService, ProjectHierarchy } from '../../app/core/services/project-store.service';
 
@@ -123,6 +123,10 @@ export class ChatSidebar {
   writeUpsLoading$: Observable<boolean>;
   activeWriteUpId$: Observable<string | null>;
 
+  totalProjectsCount$: Observable<number>;
+  totalSessions$: Observable<number>;
+  totalWriteUps$: Observable<number>;
+
   // Session dialog state
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
@@ -163,6 +167,10 @@ export class ChatSidebar {
 
     this.writeUps$ = this.writeUpStore.allWriteUps$;
     this.writeUpsLoading$ = this.writeUpStore.writeUpsLoading$;
+
+    this.totalProjectsCount$ = this.projectStore.totalProjectsCount$;
+    this.totalSessions$ = this.sessionStore.sessionsTotal$;
+    this.totalWriteUps$ = this.writeUpStore.allWriteUpsTotal$;
     this.activeWriteUpId$ = new Observable((sub) => {
       this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
     });
@@ -436,5 +444,20 @@ export class ChatSidebar {
     } catch (e) {
       console.error('[ChatSidebar] Drop failed:', e);
     }
+  }
+
+  async loadMoreProjects() {
+    const projects = await firstValueFrom(this.projectStore.projects$);
+    await this.projectStore.loadProjects(projects.length, 6);
+  }
+
+  async loadMoreSessions() {
+    const sessions = await firstValueFrom(this.sessions$);
+    await this.sessionStore.refreshSessions(true, sessions.length, 6);
+  }
+
+  async loadMoreWriteUps() {
+    const writeUps = await firstValueFrom(this.writeUps$);
+    await this.writeUpStore.refreshAllWriteUps(writeUps.length, 6);
   }
 }

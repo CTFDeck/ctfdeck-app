@@ -12,6 +12,9 @@ export class SessionStoreService implements OnDestroy {
   private sessionsSubject = new BehaviorSubject<SessionMetadata[]>([]);
   sessions$ = this.sessionsSubject.asObservable();
 
+  private sessionsTotalSubject = new BehaviorSubject<number>(0);
+  sessionsTotal$ = this.sessionsTotalSubject.asObservable();
+
   private sessionsLoadingSubject = new BehaviorSubject<boolean>(false);
   sessionsLoading$ = this.sessionsLoadingSubject.asObservable();
 
@@ -51,25 +54,39 @@ export class SessionStoreService implements OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  async refreshSessions(force = false): Promise<void> {
-    if (!force && this.sessionsListPromise) {
+  async refreshSessions(force = false, offset: number = 0, limit: number = 6): Promise<void> {
+    if (!force && this.sessionsListPromise && offset === 0) {
       return this.sessionsListPromise;
     }
 
     this.sessionsLoadingSubject.next(true);
-    this.sessionsListPromise = (async () => {
+    const fetchPromise = (async () => {
       try {
-        const list = await this.sessions.list();
-        this.sessionsSubject.next(list);
+        const res = await this.sessions.list(offset, limit);
+        this.sessionsTotalSubject.next(res.totalCount);
+        if (offset === 0) {
+          this.sessionsSubject.next(res.sessions);
+        } else {
+          this.sessionsSubject.next([...this.sessionsSubject.value, ...res.sessions]);
+        }
       } catch (err: any) {
         toast.error('Session list failed', { description: err?.message || 'Unknown error' });
       } finally {
         this.sessionsLoadingSubject.next(false);
-        this.sessionsListPromise = null;
       }
     })();
 
-    return this.sessionsListPromise;
+    if (offset === 0) {
+      this.sessionsListPromise = fetchPromise;
+      fetchPromise.finally(() => {
+        if (this.sessionsListPromise === fetchPromise) {
+          this.sessionsListPromise = null;
+        }
+      });
+      return this.sessionsListPromise;
+    }
+
+    return fetchPromise;
   }
 
   async selectSession(sessionId: string): Promise<void> {

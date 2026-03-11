@@ -13,6 +13,12 @@ export class WriteUpStoreService implements OnDestroy {
   private allWriteUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
   allWriteUps$ = this.allWriteUpsSubject.asObservable();
 
+  private writeUpsTotalSubject = new BehaviorSubject<number>(0);
+  writeUpsTotal$ = this.writeUpsTotalSubject.asObservable();
+
+  private allWriteUpsTotalSubject = new BehaviorSubject<number>(0);
+  allWriteUpsTotal$ = this.allWriteUpsTotalSubject.asObservable();
+
   private writeUpsLoadingSubject = new BehaviorSubject<boolean>(false);
   writeUpsLoading$ = this.writeUpsLoadingSubject.asObservable();
 
@@ -46,11 +52,13 @@ export class WriteUpStoreService implements OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  async refreshWriteUps(sessionId?: string): Promise<void> {
+  async refreshWriteUps(sessionId?: string, offset: number = 0, limit: number = 6): Promise<void> {
     const sid = sessionId || this.sessionStore.getActiveSessionId();
     
-    // Always refresh ALL writeups for the global sidebar
-    await this.refreshAllWriteUps();
+    // Refresh ALL writeups using the old unpaginated-like call or first page
+    if (offset === 0) {
+      await this.refreshAllWriteUps();
+    }
 
     if (!sid) {
        this.writeUpsSubject.next([]);
@@ -59,8 +67,13 @@ export class WriteUpStoreService implements OnDestroy {
 
     this.writeUpsLoadingSubject.next(true);
     try {
-      const list = await this.writeUpService.list(sid);
-      this.writeUpsSubject.next(list);
+      const res = await this.writeUpService.list(sid, offset, limit);
+      this.writeUpsTotalSubject.next(res.totalCount);
+      if (offset === 0) {
+        this.writeUpsSubject.next(res.writeUps);
+      } else {
+        this.writeUpsSubject.next([...this.writeUpsSubject.value, ...res.writeUps]);
+      }
     } catch (err: any) {
       toast.error('Failed to load writeups', { description: err?.message || 'Unknown error' });
     } finally {
@@ -68,11 +81,16 @@ export class WriteUpStoreService implements OnDestroy {
     }
   }
 
-  async refreshAllWriteUps(): Promise<void> {
+  async refreshAllWriteUps(offset: number = 0, limit: number = 6): Promise<void> {
      try {
        // Send zero UUID for "All"
-       const list = await this.writeUpService.list('00000000-0000-0000-0000-000000000000');
-       this.allWriteUpsSubject.next(list);
+       const res = await this.writeUpService.list('00000000-0000-0000-0000-000000000000', offset, limit);
+       this.allWriteUpsTotalSubject.next(res.totalCount);
+       if (offset === 0) {
+         this.allWriteUpsSubject.next(res.writeUps);
+       } else {
+         this.allWriteUpsSubject.next([...this.allWriteUpsSubject.value, ...res.writeUps]);
+       }
      } catch (e) {
        console.error('Failed to refresh all writeups:', e);
      }

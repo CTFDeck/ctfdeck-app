@@ -58,10 +58,13 @@ export function serializeProjectLoad(projectId: string, messageId: string): Uint
   return buffer;
 }
 
-export function serializeProjectList(messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16);
+export function serializeProjectList(offset: number, limit: number, messageId: string): Uint8Array {
+  const buffer = new Uint8Array(1 + 16 + 4 + 4);
+  const view = new DataView(buffer.buffer);
   buffer[0] = MessageType.ProjectList;
   buffer.set(uuidToBytes(messageId), 1);
+  view.setInt32(17, offset, true);
+  view.setInt32(21, limit, true);
   return buffer;
 }
 
@@ -150,11 +153,15 @@ export function deserializeProjectCreateResult(data: Uint8Array): { messageId: s
   return { messageId, success, projectId };
 }
 
-export function deserializeProjectListResult(data: Uint8Array): { messageId: string, projects: ProjectMetadata[] } {
+export function deserializeProjectListResult(data: Uint8Array): { messageId: string, totalCount: number, projects: ProjectMetadata[] } {
+  if (data.byteLength < 25) {
+    throw new Error(`ProjectListResult too short: ${data.byteLength} bytes`);
+  }
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const messageId = bytesToUuid(data.subarray(1, 17));
   const count = view.getInt32(17, true);
-  let offset = 21;
+  const totalCount = view.getInt32(21, true);
+  let offset = 25;
   const projects: ProjectMetadata[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -174,7 +181,7 @@ export function deserializeProjectListResult(data: Uint8Array): { messageId: str
       folderCount
     });
   }
-  return { messageId, projects };
+  return { messageId, totalCount, projects };
 }
 
 export function deserializeProjectLoadResult(data: Uint8Array): { messageId: string, success: boolean, project: ProjectData | null } {

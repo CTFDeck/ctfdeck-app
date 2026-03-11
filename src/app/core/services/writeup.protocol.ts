@@ -100,13 +100,18 @@ export function serializeWriteUpDelete(writeUpId: string, messageId: string): Ui
   return buffer;
 }
 
-export function serializeWriteUpList(sessionId: string, messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16 + 16);
-  let offset = 0;
-  buffer[offset++] = MessageType.WriteUpList;
-  buffer.set(uuidToBytes(messageId), offset);
-  offset += 16;
-  buffer.set(uuidToBytes(sessionId), offset);
+export function serializeWriteUpList(sessionId: string, offset: number, limit: number, messageId: string): Uint8Array {
+  const buffer = new Uint8Array(1 + 16 + 16 + 4 + 4);
+  const view = new DataView(buffer.buffer);
+  let idx = 0;
+  buffer[idx++] = MessageType.WriteUpList;
+  buffer.set(uuidToBytes(messageId), idx);
+  idx += 16;
+  buffer.set(uuidToBytes(sessionId), idx);
+  idx += 16;
+  view.setInt32(idx, offset, true);
+  idx += 4;
+  view.setInt32(idx, limit, true);
   return buffer;
 }
 
@@ -233,12 +238,18 @@ export function deserializeWriteUpDeleteResult(data: Uint8Array): {
 
 export function deserializeWriteUpListResult(data: Uint8Array): {
   messageId: string;
+  totalCount: number;
   writeUps: WriteUpMetadata[];
 } {
+  if (data.byteLength < 25) {
+    throw new Error(`WriteUpListResult too short: ${data.byteLength} bytes`);
+  }
+
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const messageId = bytesToUuid(data.subarray(1, 17));
   const count = view.getInt32(17, true);
-  let offset = 21;
+  const totalCount = view.getInt32(21, true);
+  let offset = 25;
   const writeUps: WriteUpMetadata[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -270,7 +281,7 @@ export function deserializeWriteUpListResult(data: Uint8Array): {
     });
   }
 
-  return { messageId, writeUps };
+  return { messageId, totalCount, writeUps };
 }
 
 export function deserializeWriteUpLoadResult(data: Uint8Array): {

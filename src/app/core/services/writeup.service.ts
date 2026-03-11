@@ -53,30 +53,35 @@ export class WriteUpService {
     if (!isWriteUpResponse(type)) return false;
 
     let result: any;
-    switch (type) {
-      case MessageType.WriteUpCreateResult:
-        result = deserializeWriteUpCreateResult(data);
-        break;
-      case MessageType.WriteUpUpdateResult:
-        result = deserializeWriteUpUpdateResult(data);
-        break;
-      case MessageType.WriteUpDeleteResult:
-        result = deserializeWriteUpDeleteResult(data);
-        break;
-      case MessageType.WriteUpListResult:
-        result = deserializeWriteUpListResult(data);
-        break;
-      case MessageType.WriteUpLoadResult:
-        result = deserializeWriteUpLoadResult(data);
-        break;
-      case MessageType.WriteUpMoveResult:
-        result = { messageId: '', success: data[17] === 1 };
-        break;
-      case MessageType.WriteUpOperationError:
-        result = deserializeWriteUpOperationError(data);
-        break;
-      default:
-        return false;
+    try {
+      switch (type) {
+        case MessageType.WriteUpCreateResult:
+          result = deserializeWriteUpCreateResult(data);
+          break;
+        case MessageType.WriteUpUpdateResult:
+          result = deserializeWriteUpUpdateResult(data);
+          break;
+        case MessageType.WriteUpDeleteResult:
+          result = deserializeWriteUpDeleteResult(data);
+          break;
+        case MessageType.WriteUpListResult:
+          result = deserializeWriteUpListResult(data);
+          break;
+        case MessageType.WriteUpLoadResult:
+          result = deserializeWriteUpLoadResult(data);
+          break;
+        case MessageType.WriteUpMoveResult:
+          result = { messageId: '', success: data[17] === 1 };
+          break;
+        case MessageType.WriteUpOperationError:
+          result = deserializeWriteUpOperationError(data);
+          break;
+        default:
+          return false;
+      }
+    } catch (e) {
+      console.error(`[WriteUpService] Failed to deserialize message type ${type}:`, e);
+      return true; // Still "handled" by this service, but it failed
     }
 
     const callback = this.pending.get(result.messageId);
@@ -135,13 +140,13 @@ export class WriteUpService {
     });
   }
 
-  list(sessionId: string): Promise<WriteUpMetadata[]> {
+  list(sessionId: string, offset: number = 0, limit: number = 50): Promise<{ writeUps: WriteUpMetadata[], totalCount: number }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
-      const buffer = serializeWriteUpList(sessionId, messageId);
+      const buffer = serializeWriteUpList(sessionId, offset, limit, messageId);
       this.pending.set(messageId, (result) => {
         if (result.error) reject(new Error(result.error));
-        else resolve(result.writeUps);
+        else resolve({ writeUps: result.writeUps, totalCount: result.totalCount });
       });
       this.sendWhenReady(buffer).catch((err) => {
         this.pending.delete(messageId);

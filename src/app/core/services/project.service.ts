@@ -106,13 +106,13 @@ export class ProjectService {
     });
   }
 
-  list(): Promise<ProjectMetadata[]> {
+  list(offset: number = 0, limit: number = 50): Promise<{ projects: ProjectMetadata[], totalCount: number }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
-      const buffer = serializeProjectList(messageId);
+      const buffer = serializeProjectList(offset, limit, messageId);
       this.pending.set(messageId, (result) => {
         if (result.error) reject(new Error(result.error));
-        else resolve(result.projects);
+        else resolve({ projects: result.projects, totalCount: result.totalCount });
       });
       this.ws.sendBinary(buffer);
     });

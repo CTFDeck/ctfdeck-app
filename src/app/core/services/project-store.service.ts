@@ -32,6 +32,9 @@ export class ProjectStoreService implements OnDestroy {
   private _loading = new BehaviorSubject<boolean>(false);
   public loading$ = this._loading.asObservable();
 
+  private _totalProjectsCount = new BehaviorSubject<number>(0);
+  public totalProjectsCount$ = this._totalProjectsCount.asObservable();
+
   // Cache ProjectData by ID to support multiple expanded projects
   private _projectDataCache = new BehaviorSubject<Map<string, ProjectData>>(new Map());
   public projectDataCache$ = this._projectDataCache.asObservable();
@@ -60,11 +63,17 @@ export class ProjectStoreService implements OnDestroy {
     this._subscriptions.unsubscribe();
   }
 
-  async loadProjects() {
+  async loadProjects(offset: number = 0, limit: number = 6) {
     this._loading.next(true);
     try {
-      const projects = await this.projectService.list();
-      this._projects.next(projects);
+      const res = await this.projectService.list(offset, limit);
+      this._totalProjectsCount.next(res.totalCount);
+      if (offset === 0) {
+        this._projects.next(res.projects);
+      } else {
+        const current = this._projects.value;
+        this._projects.next([...current, ...res.projects]);
+      }
     } catch (e) {
       console.error('[ProjectStore] Failed to load projects list:', e);
     } finally {

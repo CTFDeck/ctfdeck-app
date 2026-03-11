@@ -110,10 +110,13 @@ export function serializeSessionLoad(sessionId: string, messageId: string): Uint
   return buffer;
 }
 
-export function serializeSessionList(messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16);
+export function serializeSessionList(offset: number, limit: number, messageId: string): Uint8Array {
+  const buffer = new Uint8Array(1 + 16 + 4 + 4);
+  const view = new DataView(buffer.buffer);
   buffer[0] = MessageType.SessionList;
   buffer.set(uuidToBytes(messageId), 1);
+  view.setInt32(17, offset, true);
+  view.setInt32(21, limit, true);
   return buffer;
 }
 
@@ -405,22 +408,24 @@ export function deserializeSessionEditTargetResult(data: Uint8Array): {
 
 export function deserializeSessionListResult(data: Uint8Array): {
   messageId: string;
+  totalCount: number;
   sessions: SessionMetadata[];
 } {
-  // Minimum packet size: 1 (type) + 16 (msgId) + 4 (count) = 21 bytes
-  if (data.byteLength < 21) {
+  // Minimum packet size: 1 (type) + 16 (msgId) + 4 (count) + 4 (totalCount) = 25 bytes
+  if (data.byteLength < 25) {
     throw new Error(`SessionListResult too short: ${data.byteLength} bytes`);
   }
 
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const messageId = bytesToUuid(data.subarray(1, 17));
   const count = view.getInt32(17, true);
+  const totalCount = view.getInt32(21, true);
 
   if (count < 0 || count > 10_000) {
     throw new Error(`SessionListResult invalid count: ${count}`);
   }
 
-  let offset = 21;
+  let offset = 25;
   const sessions: SessionMetadata[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -477,7 +482,7 @@ export function deserializeSessionListResult(data: Uint8Array): {
     });
   }
 
-  return { messageId, sessions };
+  return { messageId, totalCount, sessions };
 }
 
 export function deserializeSessionLoadResult(data: Uint8Array): {
