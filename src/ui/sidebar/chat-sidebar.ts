@@ -27,6 +27,8 @@ import {
   lucideChevronDown,
   lucideLayoutGrid,
   lucideFolderOpen,
+  lucideFolder,
+  lucideBox,
   lucideMessageSquarePlus,
   lucideFilePlus,
 } from '@ng-icons/lucide';
@@ -76,6 +78,8 @@ export enum SidebarMode {
       lucideChevronDown,
       lucideLayoutGrid,
       lucideFolderOpen,
+      lucideFolder,
+      lucideBox,
       lucideMessageSquarePlus,
       lucideFilePlus,
     }),
