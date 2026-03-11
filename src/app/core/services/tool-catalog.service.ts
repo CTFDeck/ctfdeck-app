@@ -66,4 +66,12 @@ export class ToolCatalogService implements OnDestroy {
   getCurrentTools(): ToolCatalogItem[] {
     return this.toolsSubject.value;
   }
+
+  getToolById(toolId: string): ToolCatalogItem | undefined {
+    return this.toolsSubject.value.find((tool) => tool.id === toolId);
+  }
+
+  getCommandTemplate(toolId: string): string | null {
+    return this.getToolById(toolId)?.commandTemplate ?? null;
+  }
 }

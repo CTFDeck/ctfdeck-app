@@ -25,7 +25,6 @@ import {
   SessionTarget,
 } from '../../app/core/services/session.protocol';
 import { ToolCatalogItem } from '../../app/core/services/websocket.protocol';
-import { TOOL_TEMPLATES } from '../../app/core/constants/tool-templates';
 import AnsiToHtml from 'ansi-to-html';
 import { Subscription } from 'rxjs';
 import { provideIcons } from '@ng-icons/core';
@@ -249,10 +248,16 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
   }
 
   updateCommandPreview() {
-    if (!this.selectedTargetId || (!this.selectedToolId && !this.selectedScriptId)) return;
+    if (!this.selectedTargetId || (!this.selectedToolId && !this.selectedScriptId)) {
+      this.currentCommand = '';
+      return;
+    }
 
     const target = this.targets.find((t) => t.id === this.selectedTargetId);
-    if (!target) return;
+    if (!target) {
+      this.currentCommand = '';
+      return;
+    }
 
     const selectedId = this.selectedToolId || this.selectedScriptId;
     const savedCommand = this.targetService.getSavedCommand(target.id, selectedId);
@@ -262,16 +267,19 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
     }
 
     const template = this.selectedToolId
-      ? TOOL_TEMPLATES[this.selectedToolId]
-      : this.customScripts.find((s) => s.id === this.selectedScriptId)?.template;
+      ? this.toolCatalogService.getCommandTemplate(this.selectedToolId)
+      : (this.customScripts.find((s) => s.id === this.selectedScriptId)?.template ?? null);
 
-    if (template) {
-      let cmd = template;
-      cmd = cmd.replace(/{host}/g, target.address);
-      const port = target.port ?? (cmd.includes('http') ? 80 : '');
-      cmd = cmd.replace(/{port}/g, port.toString());
-      this.currentCommand = cmd;
+    if (!template) {
+      this.currentCommand = '';
+      return;
     }
+
+    let cmd = template;
+    cmd = cmd.replace(/{host}/g, target.address);
+    const port = target.port ?? (cmd.includes('http') ? 80 : '');
+    cmd = cmd.replace(/{port}/g, port.toString());
+    this.currentCommand = cmd;
   }
 
   saveCommand() {

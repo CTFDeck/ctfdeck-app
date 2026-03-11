@@ -1,9 +1,4 @@
-/**
- * Binary Protocol Utilities for CtfDeck - with Streaming Support
- */
-
 export enum MessageType {
-  // Terminal messages
   CompleteResponse = 0,
   StreamOutput = 1,
   StreamError = 2,
@@ -11,12 +6,8 @@ export enum MessageType {
   CommandKill = 4,
   CommandKillResult = 5,
   CommandExecute = 6,
-
-  // Sudo password flow
-  PasswordRequest = 7, // Server -> Client
-  PasswordProvide = 8, // Client -> Server
-
-  // Session requests (client -> server)
+  PasswordRequest = 7,
+  PasswordProvide = 8,
   SessionCreate = 10,
   SessionSetActive = 11,
   SessionLoad = 12,
@@ -27,8 +18,6 @@ export enum MessageType {
   SessionAddTarget = 17,
   SessionDeleteTarget = 18,
   SessionEditTarget = 19,
-
-  // Session responses (server -> client)
   SessionCreateResult = 20,
   SessionSetActiveResult = 21,
   SessionLoadResult = 22,
@@ -39,20 +28,15 @@ export enum MessageType {
   SessionDeleteTargetResult = 27,
   SessionEditTargetResult = 28,
   SessionOperationError = 29,
-
-  // Custom Script requests (client -> server)
   CustomScriptCreate = 30,
   CustomScriptUpdate = 31,
   CustomScriptDelete = 32,
   CustomScriptList = 33,
-
-  // Custom Script responses (server -> client)
   CustomScriptCreateResult = 40,
   CustomScriptUpdateResult = 41,
   CustomScriptDeleteResult = 42,
   CustomScriptListResult = 43,
   CustomScriptOperationError = 49,
-
   ToolInventoryRequest = 120,
   ToolInventoryResult = 121,
   ToolInstallRequest = 122,
@@ -103,6 +87,7 @@ export interface ToolCatalogItem {
   category: string;
   kind: 'binary' | 'externalWebApp';
   description: string;
+  commandTemplate: string | null;
   externalUrl: string | null;
   isInstalled: boolean;
   isInstallable: boolean;
@@ -137,6 +122,12 @@ export function deserializeToolCatalogSnapshot(
     return str;
   };
 
+  const readNullableString = () => {
+    const hasValue = v.getUint8(offset) === 1;
+    offset += 1;
+    return hasValue ? readString() : null;
+  };
+
   const tools: ToolCatalogItem[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -145,6 +136,7 @@ export function deserializeToolCatalogSnapshot(
     const category = readString();
     const kind = readString() as 'binary' | 'externalWebApp';
     const description = readString();
+    const commandTemplate = readNullableString();
     const externalUrl = readString() || null;
     const isInstalled = v.getUint8(offset) === 1;
     offset += 1;
@@ -160,6 +152,7 @@ export function deserializeToolCatalogSnapshot(
       category,
       kind,
       description,
+      commandTemplate,
       externalUrl,
       isInstalled,
       isInstallable,
@@ -242,7 +235,6 @@ export function serializeCommand(command: string, messageId: string): Uint8Array
   return buf;
 }
 
-// type=8: [1][16 msgId][4 pwdLen][pwdBytes]
 export function serializePasswordProvide(messageId: string, password: string): Uint8Array {
   const enc = new TextEncoder();
   const pwd = enc.encode(password);
@@ -361,7 +353,6 @@ function deserializeStreamEnd(u8: Uint8Array, v: DataView, dec: TextDecoder): St
   };
 }
 
-// type=7: [1][16 msgId][4 promptLen][promptBytes]
 function deserializePasswordRequest(
   u8: Uint8Array,
   v: DataView,
