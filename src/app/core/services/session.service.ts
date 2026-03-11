@@ -29,6 +29,11 @@ import {
   deserializeSessionOperationError,
 } from './session.protocol';
 
+export interface SessionListResponse {
+  sessions: SessionMetadata[];
+  totalCount: number;
+}
+
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
 @Injectable({ providedIn: 'root' })
@@ -159,16 +164,16 @@ export class SessionService {
     });
   }
 
-  list(): Promise<SessionMetadata[]> {
+  list(offset: number = 0, limit: number = 50, unassignedOnly: boolean = false): Promise<SessionListResponse> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
-      const buffer = serializeSessionList(messageId);
+      const buffer = serializeSessionList(offset, limit, messageId, unassignedOnly);
 
       this.pending.set(messageId, (result) => {
         if (result.error) {
           reject(new Error(result.error));
         } else {
-          resolve(result.sessions);
+          resolve({ sessions: result.sessions, totalCount: result.totalCount });
         }
       });
 

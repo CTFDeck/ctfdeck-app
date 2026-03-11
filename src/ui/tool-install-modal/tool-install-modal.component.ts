@@ -62,6 +62,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   readonly toolInstallState = ToolInstallState;
 
+  private readonly STORAGE_KEY_DISMISSED = 'ctfdeck_tool_install_dismissed';
   private readonly subscriptions = new Subscription();
   private inventoryRequestedOnce = false;
   private visibleToolIds = new Set<string>();
@@ -102,7 +103,8 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
         }
 
         const wasVisible = this.visible;
-        this.visible = this.hasMissingInstallableTools(tools);
+        const isDismissed = localStorage.getItem(this.STORAGE_KEY_DISMISSED) === 'true';
+        this.visible = !isDismissed && this.hasMissingInstallableTools(tools);
 
         if (!wasVisible && this.visible) {
           this.visibleToolIds = new Set(
@@ -174,6 +176,11 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
     this.visible = false;
     this.closed.emit();
+  }
+
+  dismiss(): void {
+    localStorage.setItem(this.STORAGE_KEY_DISMISSED, 'true');
+    this.close();
   }
 
   refresh(): void {

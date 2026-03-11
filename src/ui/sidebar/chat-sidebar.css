@@ -23,6 +23,26 @@
   max-width: 5rem;
   min-width: 5rem;
   --sidebar-width: 5rem;
+  flex-shrink: 0;
+  /* Décale le contenu de la sidebar sous la menubar */
+  /* La variable utilisée par hlm-sidebar (collapsible=none) */
+  --sidebar-width: 16rem;
+}
+
+/* Largeur fixe stricte en mode expanded (w-64 = 16rem) */
+:host.w-64 {
+  width: 16rem;
+  max-width: 16rem;
+  min-width: 16rem;
+  --sidebar-width: 16rem;
+}
+
+/* Largeur fixe stricte en mode collapsed (w-20 = 5rem) */
+:host.w-20 {
+  width: 5rem;
+  max-width: 5rem;
+  min-width: 5rem;
+  --sidebar-width: 5rem;
 }
 
 .ctf-chat-sidebar {
@@ -111,6 +131,7 @@
 
 .ctf-chat-sidebar button[hlmSidebarMenuButton].ctf-session-active {
   background: color-mix(in srgb, var(--primary) 10%, transparent);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
   color: var(--primary);
   font-weight: 500;
   position: relative;
@@ -118,16 +139,50 @@
 }
 
 .ctf-chat-sidebar button[hlmSidebarMenuButton].ctf-session-active::before {
-  content: '';
-  position: absolute;
-  left: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 1rem;
   background: var(--primary);
   border-radius: 99px;
   box-shadow: 0 0 10px var(--primary);
+}
+
+/* Folder & Project Hierarchy Styles */
+.ctf-chat-sidebar .group:hover {
+  background-color: var(--sidebar-accent);
+}
+
+.ctf-chat-sidebar .ctf-item-group button:hover {
+  background-color: var(--sidebar-accent);
+}
+
+.ctf-chat-sidebar .border-l {
+  border-left-width: 1px;
+  border-left-style: solid;
+  border-left-color: var(--sidebar-border);
+}
+
+.ctf-chat-sidebar .text-amber-500\/80 {
+  color: #f59e0b; /* Manual amber color since Tailwind might not be available */
+}
+
+.ctf-chat-sidebar .group\/item:hover .ctf-item-actions {
+  opacity: 1;
+}
+
+.ctf-chat-sidebar .group\/item .ctf-item-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-right: 0.5rem;
+  background: linear-gradient(to right, transparent, var(--sidebar-accent) 40%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
+.ctf-chat-sidebar .group\/item:hover .ctf-item-actions {
+  pointer-events: auto;
 }
 
 .ctf-chat-sidebar .truncate {
@@ -165,13 +220,8 @@
   align-items: center;
   gap: 1px;
   padding-right: 6px;
-  /* Le dégradé transparent → couleur du fond : crée l'effet de fondu sur le texte */
-  padding-left: 2.5rem;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--sidebar) 45%
-  );
+  /* Retrait du dégradé car l'ellipsis gère déjà l'espacement */
+  background: transparent;
   /* Invisible par défaut */
   opacity: 0;
   pointer-events: none;
@@ -182,11 +232,7 @@
 .ctf-chat-sidebar .ctf-item-group:hover .ctf-item-actions {
   opacity: 1;
   pointer-events: auto;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--sidebar-accent) 45%
-  );
+  background: transparent;
 }
 
 /* Boutons icon-only premium */
@@ -338,4 +384,119 @@
 
 .ctf-chat-sidebar button[hlmBtn] {
   transition: all 0.2s ease;
+}
+
+/* Animation for successful drop */
+@keyframes drop-success-pulse {
+  0% { 
+    background-color: transparent; 
+  }
+  15% { 
+    background-color: color-mix(in srgb, #22c55e 25%, transparent); 
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+  }
+  100% { 
+    background-color: transparent; 
+  }
+}
+
+.ctf-drop-success {
+  animation: drop-success-pulse 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+}
+
+.ctf-drop-success span, 
+.ctf-drop-success ng-icon {
+  color: #22c55e !important;
+  transition: color 0.3s ease;
+}
+
+.ctf-drop-success::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  border-radius: 4px;
+  pointer-events: none;
+  animation: fadeOut 2.5s forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Drag scroll indicators */
+.ctf-scroll-indicator {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  border-radius: 0.75rem;
+  backdrop-filter: blur(4px);
+  color: var(--primary);
+  border: 1px dashed color-mix(in srgb, var(--primary) 30%, transparent);
+  transition: all 0.2s ease;
+}
+
+.ctf-scroll-up {
+  top: 0.5rem;
+  background: linear-gradient(to bottom, 
+    color-mix(in srgb, var(--background) 90%, transparent), 
+    transparent);
+}
+
+.ctf-scroll-down {
+  bottom: 0.5rem;
+  background: linear-gradient(to top, 
+    color-mix(in srgb, var(--background) 90%, transparent), 
+    transparent);
+}
+
+.ctf-scroll-indicator ng-icon {
+  filter: drop-shadow(0 0 8px var(--primary));
+}
+
+/* Fix for "ghost hover" during scroll or drag */
+.ctf-is-scrolling .group:hover,
+.ctf-is-scrolling .ctf-item-group:hover,
+.ctf-is-dragging .group:hover,
+.ctf-is-dragging .ctf-item-group:hover {
+  background-color: transparent !important;
+}
+
+.ctf-is-scrolling .ctf-item-actions,
+.ctf-is-dragging .ctf-item-actions {
+  display: none !important;
+}
+
+/* Hide action buttons during drag to keep UI clean */
+.ctf-is-dragging .ctf-item-actions {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Folder Hovering & Auto-expand */
+.ctf-folder-hovering {
+  background-color: var(--sidebar-accent) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.animate-folder-progress {
+  width: 0%;
+  animation: folder-progress 450ms linear forwards;
+  box-shadow: 0 0 8px var(--primary);
+  border-radius: 0 99px 99px 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes folder-progress {
+  from { width: 0%; }
+  to { width: 100%; }
 }

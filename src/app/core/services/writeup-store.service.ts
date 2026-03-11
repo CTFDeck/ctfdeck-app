@@ -10,6 +10,21 @@ export class WriteUpStoreService implements OnDestroy {
   private writeUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
   writeUps$ = this.writeUpsSubject.asObservable();
 
+  private allWriteUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
+  allWriteUps$ = this.allWriteUpsSubject.asObservable();
+
+  private writeUpsTotalSubject = new BehaviorSubject<number>(0);
+  writeUpsTotal$ = this.writeUpsTotalSubject.asObservable();
+
+  private allWriteUpsTotalSubject = new BehaviorSubject<number>(0);
+  allWriteUpsTotal$ = this.allWriteUpsTotalSubject.asObservable();
+
+  private unassignedWriteUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
+  unassignedWriteUps$ = this.unassignedWriteUpsSubject.asObservable();
+
+  private unassignedTotalSubject = new BehaviorSubject<number>(0);
+  unassignedTotal$ = this.unassignedTotalSubject.asObservable();
+
   private writeUpsLoadingSubject = new BehaviorSubject<boolean>(false);
   writeUpsLoading$ = this.writeUpsLoadingSubject.asObservable();
 
@@ -43,19 +58,60 @@ export class WriteUpStoreService implements OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  async refreshWriteUps(sessionId?: string): Promise<void> {
+  async refreshWriteUps(sessionId?: string, offset: number = 0, limit: number = 6): Promise<void> {
     const sid = sessionId || this.sessionStore.getActiveSessionId();
-    if (!sid) return;
+    
+    // Refresh ALL writeups (unassigned for sidebar, all for hierarchy)
+    if (offset === 0) {
+      await Promise.all([
+         this.refreshAllWriteUps(0, 6, true),
+         this.refreshAllWriteUps(0, 50, false)
+      ]);
+    }
+
+    if (!sid) {
+       this.writeUpsSubject.next([]);
+       return;
+    }
 
     this.writeUpsLoadingSubject.next(true);
     try {
-      const list = await this.writeUpService.list(sid);
-      this.writeUpsSubject.next(list);
+      const res = await this.writeUpService.list(sid, offset, limit);
+      this.writeUpsTotalSubject.next(res.totalCount);
+      if (offset === 0) {
+        this.writeUpsSubject.next(res.writeUps);
+      } else {
+        this.writeUpsSubject.next([...this.writeUpsSubject.value, ...res.writeUps]);
+      }
     } catch (err: any) {
       toast.error('Failed to load writeups', { description: err?.message || 'Unknown error' });
     } finally {
       this.writeUpsLoadingSubject.next(false);
     }
+  }
+
+  async refreshAllWriteUps(offset: number = 0, limit: number = 6, unassignedOnly: boolean = false): Promise<void> {
+     try {
+       // Send zero UUID for "All"
+       const res = await this.writeUpService.list('00000000-0000-0000-0000-000000000000', offset, limit, unassignedOnly);
+       if (unassignedOnly) {
+         this.unassignedTotalSubject.next(res.totalCount);
+         if (offset === 0) {
+           this.unassignedWriteUpsSubject.next(res.writeUps);
+         } else {
+           this.unassignedWriteUpsSubject.next([...this.unassignedWriteUpsSubject.value, ...res.writeUps]);
+         }
+       } else {
+         this.allWriteUpsTotalSubject.next(res.totalCount);
+         if (offset === 0) {
+           this.allWriteUpsSubject.next(res.writeUps);
+         } else {
+           this.allWriteUpsSubject.next([...this.allWriteUpsSubject.value, ...res.writeUps]);
+         }
+       }
+     } catch (e) {
+       console.error('Failed to refresh all writeups:', e);
+     }
   }
 
   async selectWriteUp(writeUpId: string): Promise<void> {
@@ -76,17 +132,16 @@ export class WriteUpStoreService implements OnDestroy {
   }
 
   async createWriteUp(name: string): Promise<string | null> {
-    const sessionId = this.sessionStore.getActiveSessionId();
+    let sessionId = this.sessionStore.getActiveSessionId();
     if (!sessionId) {
-      toast.error('No active session', { description: 'Please select a session first' });
-      return null;
+      sessionId = '00000000-0000-0000-0000-000000000000';
     }
 
     this.isLoadingSubject.next(true);
     try {
       const result = await this.writeUpService.create(sessionId, name);
       if (result.success) {
-        await this.refreshWriteUps(sessionId);
+        await this.refreshWriteUps(sessionId === '00000000-0000-0000-0000-000000000000' ? undefined : sessionId);
         await this.selectWriteUp(result.writeUpId);
         return result.writeUpId;
       }
@@ -158,5 +213,31 @@ export class WriteUpStoreService implements OnDestroy {
 
   closeActiveWriteUp(): void {
     this.activeWriteUpSubject.next(null);
+  }
+
+  async moveWriteUp(writeUpId: string, projectId: string | null, folderId: string | null): Promise<boolean> {
+    try {
+      const success = await this.writeUpService.move(writeUpId, projectId, folderId);
+      if (success) {
+        if (this.activeWriteUpSubject.value?.id === writeUpId) {
+          const current = this.activeWriteUpSubject.value;
+          this.activeWriteUpSubject.next({ ...current, projectId, folderId });
+        }
+        // Refresh both lists to update sidebar and hierarchy
+        await Promise.all([
+          this.refreshAllWriteUps(0, 12, true),
+          this.refreshAllWriteUps(0, 50, false)
+        ]);
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      toast.error('Move failed', { description: err?.message || 'Unknown error' });
+      return false;
+    }
+  }
+
+  getTotalWriteUps(unassigned = false): number {
+    return unassigned ? this.unassignedTotalSubject.value : this.allWriteUpsTotalSubject.value;
   }
 }

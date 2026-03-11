@@ -29,6 +29,7 @@ import {
   lucideCheckCircle2,
   lucideAlertCircle,
   lucideX,
+  lucideColumns2,
 } from '@ng-icons/lucide';
 import { toast } from 'ngx-sonner';
 
@@ -59,6 +60,7 @@ import { toast } from 'ngx-sonner';
       lucideCheckCircle2,
       lucideAlertCircle,
       lucideX,
+      lucideColumns2,
     }),
   ],
   templateUrl: './writeup-editor.component.html',

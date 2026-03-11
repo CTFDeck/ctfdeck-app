@@ -1,4 +1,4 @@
-import { Component, signal, HostBinding, ViewChild, ElementRef } from '@angular/core';
+import { Component, signal, HostBinding, ViewChild, ElementRef, inject } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +8,11 @@ import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
+import { BRN_TOOLTIP_SCROLL_STRATEGY } from '@spartan-ng/brain/tooltip';
+import { Overlay } from '@angular/cdk/overlay';
+import { CdkScrollable } from '@angular/cdk/scrolling';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -21,14 +25,26 @@ import {
   lucidePencil,
   lucideTrash2,
   lucideFileText,
+  lucideFolderPlus,
+  lucideMoreVertical,
+  lucideChevronRight,
+  lucideChevronDown,
+  lucideLayoutGrid,
   lucideFolderOpen,
+  lucideFolder,
+  lucideBox,
+  lucideMessageSquarePlus,
+  lucideColumns2,
+  lucideChevronUp,
+  lucideFilePlus,
 } from '@ng-icons/lucide';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { SessionMetadata } from '../../app/core/services/session.protocol';
 import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
 import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
+import { ProjectStoreService, ProjectHierarchy } from '../../app/core/services/project-store.service';
 
 export enum SidebarMode {
   Chats = 'chats',
@@ -50,8 +66,15 @@ export enum SidebarMode {
     ...HlmLabelImports,
     ...BrnDialogImports,
     ...HlmDialogImports,
+    ...HlmTooltipImports,
+    CdkScrollable,
   ],
   providers: [
+    {
+      provide: BRN_TOOLTIP_SCROLL_STRATEGY,
+      useFactory: (overlay: Overlay) => () => overlay.scrollStrategies.close(),
+      deps: [Overlay],
+    },
     provideIcons({
       lucideSearch,
       lucidePlus,
@@ -62,9 +85,20 @@ export enum SidebarMode {
       lucidePencil,
       lucideTrash2,
       lucideFileText,
+      lucideFolderPlus,
+      lucideMoreVertical,
+      lucideChevronRight,
+      lucideChevronDown,
+      lucideLayoutGrid,
       lucideFolderOpen,
+      lucideFolder,
+      lucideBox,
+      lucideMessageSquarePlus,
+      lucideColumns2,
+      lucideChevronUp,
+      lucideFilePlus,
     }),
-  ],
+],
 
   templateUrl: './chat-sidebar.html',
   styleUrls: ['./chat-sidebar.css'],
@@ -95,6 +129,8 @@ export class ChatSidebar {
   }
 
   search = '';
+  sessionsDisplayLimit = signal(5);
+  writeUpsDisplayLimit = signal(5);
 
   sessions$: Observable<SessionMetadata[]>;
   activeSessionId$: Observable<string | null>;
@@ -103,6 +139,10 @@ export class ChatSidebar {
   writeUps$: Observable<WriteUpMetadata[]>;
   writeUpsLoading$: Observable<boolean>;
   activeWriteUpId$: Observable<string | null>;
+
+  totalProjectsCount$: Observable<number>;
+  totalSessions$: Observable<number>;
+  totalWriteUps$: Observable<number>;
 
   // Session dialog state
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
@@ -116,17 +156,47 @@ export class ChatSidebar {
   writeUpToRename: WriteUpMetadata | null = null;
   writeUpToDelete: WriteUpMetadata | null = null;
 
+  // Project & Folder dialog state
+  @ViewChild('createProjectTrigger') createProjectTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('createFolderTrigger') createFolderTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('renameFolderTrigger') renameFolderTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('deleteFolderTrigger') deleteFolderTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('newItemTrigger') newItemTrigger!: ElementRef<HTMLButtonElement>;
+
+  createProjectDraft = { name: '', description: '' };
+  createFolderDraft = { projectId: '', parentId: null as string | null, name: '' };
+  folderToRenameDraft = { projectId: '', folderId: '', name: '' };
+  folderToDeleteDraft = { projectId: '', folderId: '', name: '' };
+  newItemDraft = { name: '', type: 'session' as 'session' | 'writeup' };
+  successfullyDroppedId = signal<string | null>(null);
+  isDragging = signal(false);
+  isScrolling = signal(false);
+  
+  hoveredFolderId = signal<string | null>(null);
+  private folderExpandTimeout?: any;
+  private scrollTimeout: any;
+
+  private dragScrollInterval: any;
+  @ViewChild('scrollContainer', { read: ElementRef }) scrollContainer!: ElementRef;
+  hierarchy$: Observable<ProjectHierarchy[]>;
+  expandedProjectIds = signal<Set<string>>(new Set());
+  expandedFolderIds = signal<Set<string>>(new Set());
+  protected readonly projectStore = inject(ProjectStoreService);
   constructor(
     private sessionStore: SessionStoreService,
     private writeUpStore: WriteUpStoreService,
     private router: Router,
   ) {
-    this.sessions$ = this.sessionStore.sessions$;
+    this.hierarchy$ = this.projectStore.getHierarchy$();
+    this.sessions$ = this.sessionStore.unassignedSessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
     this.sessionsLoading$ = this.sessionStore.sessionsLoading$;
 
-    this.writeUps$ = this.writeUpStore.writeUps$;
+    this.writeUps$ = this.writeUpStore.unassignedWriteUps$;
     this.writeUpsLoading$ = this.writeUpStore.writeUpsLoading$;
+    this.totalProjectsCount$ = this.projectStore.totalProjectsCount$;
+    this.totalSessions$ = this.sessionStore.unassignedTotal$;
+    this.totalWriteUps$ = this.writeUpStore.unassignedTotal$;
     this.activeWriteUpId$ = new Observable((sub) => {
       this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
     });
@@ -143,20 +213,49 @@ export class ChatSidebar {
     localStorage.setItem(this.STORAGE_KEY, mode);
   }
 
+  newProject() {
+    this.createProjectDraft = { name: 'New Project', description: '' };
+    setTimeout(() => this.createProjectTrigger.nativeElement.click());
+  }
+
+  async createProject(ctx: { close: () => void }) {
+    const name = this.createProjectDraft.name.trim();
+    if (!name) return;
+    ctx.close();
+    await this.projectStore.createProject(name, this.createProjectDraft.description);
+  }
+
   newAction() {
     if (this.currentMode() === SidebarMode.Chats) {
-      void this.sessionStore.createSession('New chat').then(() => {
-        void this.router.navigate(['/terminal']);
-      });
+      this.newChat();
     } else {
-      void this.writeUpStore.createWriteUp('New writeup').then((id) => {
-        if (id) void this.router.navigate(['/writeup', id]);
-      });
+      this.newWriteUp();
     }
   }
 
   newChat() {
-    void this.sessionStore.createSession('New chat');
+    this.newItemDraft = { name: '', type: 'session' };
+    setTimeout(() => this.newItemTrigger.nativeElement.click());
+  }
+
+  newWriteUp() {
+    this.newItemDraft = { name: '', type: 'writeup' };
+    setTimeout(() => this.newItemTrigger.nativeElement.click());
+  }
+
+  async confirmCreateItem(ctx: { close: () => void }) {
+    const defaultName = this.newItemDraft.type === 'session' ? 'New chat' : 'New writeup';
+    const name = this.newItemDraft.name.trim() || defaultName;
+    
+    ctx.close();
+    
+    if (this.newItemDraft.type === 'session') {
+      await this.sessionStore.createSession(name);
+      void this.router.navigate(['/terminal']);
+    } else {
+      const id = await this.writeUpStore.createWriteUp(name);
+      if (id) void this.router.navigate(['/writeup', id]);
+    }
   }
 
   openChat(session: SessionMetadata) {
@@ -265,24 +364,281 @@ export class ChatSidebar {
     this.deletingWriteUpIds.set(next);
   }
 
-  // ── Filters ──────────────────────────────────────────────────────────────
-  filteredChats(sessions: SessionMetadata[]) {
-    const term = this.search?.toLowerCase().trim();
-    if (!term) return sessions;
-    return sessions.filter((s) => s.name.toLowerCase().includes(term));
-  }
-
   resultsCount(sessions: SessionMetadata[]): number {
     return this.filteredChats(sessions).length;
   }
 
-  filteredWriteUps(writeUps: WriteUpMetadata[]) {
-    const term = this.search?.toLowerCase().trim();
-    if (!term) return writeUps;
-    return writeUps.filter((w) => w.name.toLowerCase().includes(term));
-  }
-
   toggleSidebar() {
     this.isCollapsed.set(!this.isCollapsed());
+  }
+
+  toggleProject(projectId: string) {
+    const next = new Set(this.expandedProjectIds());
+    if (next.has(projectId)) next.delete(projectId); else next.add(projectId);
+    this.expandedProjectIds.set(next);
+    if (next.has(projectId)) {
+      void this.projectStore.loadProjectDetails(projectId);
+    }
+  }
+
+  toggleFolder(folderId: string) {
+    const next = new Set(this.expandedFolderIds());
+    if (next.has(folderId)) next.delete(folderId); else next.add(folderId);
+    this.expandedFolderIds.set(next);
+  }
+
+  isProjectExpanded(projectId: string): boolean {
+    return this.expandedProjectIds().has(projectId);
+  }
+
+  isFolderExpanded(folderId: string): boolean {
+    return this.expandedFolderIds().has(folderId);
+  }
+
+  // ── Folder CRUD ──────────────────────────────────────────────────────────
+  async openCreateFolderDialog(projectId: string, parentId: string | null = null) {
+    this.createFolderDraft = { projectId, parentId, name: 'New folder' };
+    setTimeout(() => this.createFolderTrigger.nativeElement.click());
+  }
+
+  async addFolder(ctx: { close: () => void }) {
+    const { projectId, parentId, name } = this.createFolderDraft;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    
+    ctx.close();
+    await this.projectStore.addFolder(projectId, trimmedName, parentId);
+    if (parentId) {
+      this.expandedFolderIds.update(s => new Set(s).add(parentId));
+    }
+  }
+
+  async openRenameFolderDialog(projectId: string, folderId: string, currentName: string) {
+    this.folderToRenameDraft = { projectId, folderId, name: currentName };
+    setTimeout(() => this.renameFolderTrigger.nativeElement.click());
+  }
+
+  async renameFolder(ctx: { close: () => void }) {
+    const { projectId, folderId, name } = this.folderToRenameDraft;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    
+    ctx.close();
+    await this.projectStore.renameFolder(projectId, folderId, trimmedName);
+  }
+
+  async openDeleteFolderDialog(projectId: string, folderId: string, name: string) {
+    this.folderToDeleteDraft = { projectId, folderId, name };
+    setTimeout(() => this.deleteFolderTrigger.nativeElement.click());
+  }
+
+  async deleteFolder(ctx: { close: () => void }) {
+    const { projectId, folderId } = this.folderToDeleteDraft;
+    ctx.close();
+    await this.projectStore.deleteFolder(projectId, folderId);
+  }
+
+  // ── Drag & Drop ────────────────────────────────────────────────────────
+  onDragStart(event: DragEvent, type: 'session' | 'writeup', id: string) {
+    if (event.dataTransfer) {
+      event.dataTransfer.setData('application/ctf-type', type);
+      event.dataTransfer.setData('application/ctf-id', id);
+      event.dataTransfer.effectAllowed = 'move';
+    }
+    this.isDragging.set(true);
+  }
+
+  onDragEnd() {
+    this.isDragging.set(false);
+    this.clearDragScroll();
+    this.clearFolderExpandTimer();
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    this.isScrolling.set(true); // Treat drag-scroll as scrolling
+    this.handleDragScroll(event);
+  }
+
+  onFolderDragOver(event: DragEvent, id: string, type: 'project' | 'folder' = 'folder') {
+    event.preventDefault();
+    this.handleDragScroll(event);
+
+    const isExpanded = type === 'project' ? this.isProjectExpanded(id) : this.isFolderExpanded(id);
+
+    if (isExpanded) {
+      if (this.hoveredFolderId() === id) {
+        this.clearFolderExpandTimer();
+      }
+      return;
+    }
+
+    if (this.hoveredFolderId() !== id) {
+      this.clearFolderExpandTimer();
+      this.hoveredFolderId.set(id);
+      
+      this.folderExpandTimeout = setTimeout(() => {
+        if (this.hoveredFolderId() === id) {
+          if (type === 'project') {
+            const next = new Set(this.expandedProjectIds());
+            next.add(id);
+            this.expandedProjectIds.set(next);
+            void this.projectStore.loadProjectDetails(id);
+          } else {
+            const next = new Set(this.expandedFolderIds());
+            next.add(id);
+            this.expandedFolderIds.set(next);
+          }
+          this.clearFolderExpandTimer();
+        }
+      }, 450); // Speed up to 450ms
+    }
+  }
+
+  onFolderDragLeave(event: DragEvent) {
+    const target = event.relatedTarget as HTMLElement;
+    if (target && (target.closest('.ctf-folder-node') || target.closest('.ctf-folder-content'))) {
+      return;
+    }
+    this.clearFolderExpandTimer();
+  }
+
+  private clearFolderExpandTimer() {
+    if (this.folderExpandTimeout) {
+      clearTimeout(this.folderExpandTimeout);
+      this.folderExpandTimeout = null;
+    }
+    this.hoveredFolderId.set(null);
+  }
+
+  onScroll() {
+    this.isScrolling.set(true);
+    clearTimeout(this.scrollTimeout);
+    this.scrollTimeout = setTimeout(() => {
+      this.isScrolling.set(false);
+    }, 150);
+  }
+
+  private handleDragScroll(event: DragEvent) {
+    if (!this.scrollContainer?.nativeElement) return;
+    const container = this.scrollContainer.nativeElement;
+    const rect = container.getBoundingClientRect();
+    const threshold = 60; // Distance from top/bottom to start scrolling
+    const speed = 8;
+
+    const mouseY = event.clientY;
+    const fromTop = mouseY - rect.top;
+    const fromBottom = rect.bottom - mouseY;
+
+    this.clearDragScroll();
+
+    if (fromTop < threshold && container.scrollTop > 0) {
+      this.dragScrollInterval = setInterval(() => {
+        container.scrollTop -= speed;
+        if (container.scrollTop <= 0) this.clearDragScroll();
+      }, 16);
+    } else if (fromBottom < threshold && container.scrollTop + container.clientHeight < container.scrollHeight) {
+      this.dragScrollInterval = setInterval(() => {
+        container.scrollTop += speed;
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight) this.clearDragScroll();
+      }, 16);
+    }
+  }
+
+  private clearDragScroll() {
+    if (this.dragScrollInterval) {
+      clearInterval(this.dragScrollInterval);
+      this.dragScrollInterval = null;
+    }
+  }
+
+  async onDrop(event: DragEvent, projectId: string, folderId: string | null) {
+    event.preventDefault();
+    this.clearDragScroll();
+    this.clearFolderExpandTimer();
+
+    const type = event.dataTransfer?.getData('application/ctf-type') as 'session' | 'writeup' | null;
+    const id = event.dataTransfer?.getData('application/ctf-id');
+
+    if (!type || !id) return;
+
+    // Avoid dropping on self if possible (simple ID check)
+    if (id === folderId) return;
+
+    try {
+      let success = false;
+      if (type === 'session') {
+        const res = await this.projectStore.assignSession(projectId, id, folderId);
+        success = !!res;
+      } else if (type === 'writeup') {
+        // Move writeup (this service handles the folderId and projectId)
+        success = await this.writeUpStore.moveWriteUp(id, projectId, folderId);
+      }
+      
+      if (success) {
+        // Force refresh project hierarchy to show the moved item
+        await this.projectStore.loadProjectDetails(projectId);
+        
+        // Success animation
+        this.successfullyDroppedId.set(id);
+        setTimeout(() => this.successfullyDroppedId.set(null), 2500);
+      }
+    } catch (e) {
+      console.error(`[ChatSidebar] Drop failed for ${type} ${id}:`, e);
+    }
+  }
+
+  async loadMoreProjects() {
+    const projects = (await firstValueFrom(this.projectStore.projects$)) as any[];
+    await this.projectStore.loadProjects(projects.length, 6);
+  }
+
+  async loadMoreSessions() {
+    this.sessionsDisplayLimit.update(n => n + 6);
+    const sessions = await firstValueFrom(this.sessions$);
+    await this.sessionStore.refreshSessions(true, sessions.length, 12, true);
+  }
+
+  async loadMoreWriteUps() {
+    this.writeUpsDisplayLimit.update(n => n + 6);
+    const writeUps = await firstValueFrom(this.writeUps$);
+    await this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
+  }
+
+  // Robust filtering with backend-supported unassigned filtering
+  filteredChats(sessions: SessionMetadata[]) {
+    const term = this.search?.toLowerCase().trim();
+    
+    const filtered = term 
+      ? sessions.filter((s) => s.name.toLowerCase().includes(term))
+      : sessions;
+
+    const limit = this.sessionsDisplayLimit();
+
+    // If we have fewer items than we want to display, 
+    // and the server has more total unassigned items to check, fetch more.
+    if (filtered.length < limit && sessions.length < (this.sessionStore.getTotalSessions(true) || 0)) {
+       void this.sessionStore.refreshSessions(true, sessions.length, 12, true);
+    }
+    
+    return filtered.slice(0, limit);
+  }
+
+  filteredWriteUps(writeUps: WriteUpMetadata[]) {
+    const term = this.search?.toLowerCase().trim();
+    
+    const filtered = term 
+      ? writeUps.filter((w) => w.name.toLowerCase().includes(term))
+      : writeUps;
+
+    const limit = this.writeUpsDisplayLimit();
+
+    if (filtered.length < limit && writeUps.length < (this.writeUpStore.getTotalWriteUps(true) || 0)) {
+       void this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
+    }
+    return filtered.slice(0, limit);
   }
 }

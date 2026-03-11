@@ -36,20 +36,22 @@ export interface SessionMetadata {
   id: string;
   name: string;
   description: string;
-  projectId: string;
+  projectId: string | null;
   createdAt: Date;
   updatedAt: Date;
   historyCount: number;
   targetCount: number;
+  folderId: string | null;
 }
 
 export interface SessionData {
   id: string;
   name: string;
   description: string;
-  projectId: string;
+  projectId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  folderId: string | null;
   history: SessionHistoryEntry[];
   targets: SessionTarget[];
 }
@@ -108,10 +110,19 @@ export function serializeSessionLoad(sessionId: string, messageId: string): Uint
   return buffer;
 }
 
-export function serializeSessionList(messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16);
+export function serializeSessionList(
+  offset: number,
+  limit: number,
+  messageId: string,
+  unassignedOnly: boolean = false,
+): Uint8Array {
+  const buffer = new Uint8Array(1 + 16 + 4 + 4 + 1);
+  const view = new DataView(buffer.buffer);
   buffer[0] = MessageType.SessionList;
   buffer.set(uuidToBytes(messageId), 1);
+  view.setInt32(17, offset, true);
+  view.setInt32(21, limit, true);
+  buffer[25] = unassignedOnly ? 1 : 0;
   return buffer;
 }
 
@@ -403,22 +414,24 @@ export function deserializeSessionEditTargetResult(data: Uint8Array): {
 
 export function deserializeSessionListResult(data: Uint8Array): {
   messageId: string;
+  totalCount: number;
   sessions: SessionMetadata[];
 } {
-  // Minimum packet size: 1 (type) + 16 (msgId) + 4 (count) = 21 bytes
-  if (data.byteLength < 21) {
+  // Minimum packet size: 1 (type) + 16 (msgId) + 4 (count) + 4 (totalCount) = 25 bytes
+  if (data.byteLength < 25) {
     throw new Error(`SessionListResult too short: ${data.byteLength} bytes`);
   }
 
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const messageId = bytesToUuid(data.subarray(1, 17));
   const count = view.getInt32(17, true);
+  const totalCount = view.getInt32(21, true);
 
   if (count < 0 || count > 10_000) {
     throw new Error(`SessionListResult invalid count: ${count}`);
   }
 
-  let offset = 21;
+  let offset = 25;
   const sessions: SessionMetadata[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -454,7 +467,12 @@ export function deserializeSessionListResult(data: Uint8Array): {
     const targetCount = view.getInt32(offset, true);
     offset += 4;
 
-    const projectId = bytesToUuid(data.subarray(offset, offset + 16));
+    const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+    const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+    offset += 16;
+
+    const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+    const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
     offset += 16;
 
     sessions.push({
@@ -462,6 +480,7 @@ export function deserializeSessionListResult(data: Uint8Array): {
       name,
       description,
       projectId,
+      folderId,
       createdAt: ticksToDate(createdAtTicks),
       updatedAt: ticksToDate(updatedAtTicks),
       historyCount,
@@ -469,7 +488,7 @@ export function deserializeSessionListResult(data: Uint8Array): {
     });
   }
 
-  return { messageId, sessions };
+  return { messageId, totalCount, sessions };
 }
 
 export function deserializeSessionLoadResult(data: Uint8Array): {
@@ -505,7 +524,12 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
   const updatedAtTicks = view.getBigInt64(offset, true);
   offset += 8;
 
-  const projectId = bytesToUuid(data.subarray(offset, offset + 16));
+  const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+  const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+  offset += 16;
+
+  const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
+  const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
   offset += 16;
 
   const historyCount = view.getInt32(offset, true);
@@ -594,6 +618,7 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
       name,
       description,
       projectId,
+      folderId,
       createdAt: ticksToDate(createdAtTicks),
       updatedAt: ticksToDate(updatedAtTicks),
       history,
