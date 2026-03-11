@@ -1,27 +1,16 @@
-/* Minimal menubar wrapper styles.
-   Color and theme variables come from the global source-of-truth: `src/styles.css`.
-   Keep only layout/padding here so the menubar inherits Spartan UI colors. */
 .ctf-menu-wrapper {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
   width: 100%;
   padding-left: 1rem;
   padding-right: 1rem;
   padding-block: 0.5rem;
-  /* Keep the menubar pinned and above content */
   position: sticky;
   top: 0;
-  /* use the global menubar height defined in `:root` so the whole app
-     can align to the same value. The menubar will be at least this tall. */
   min-height: var(--menubar-height, 3rem);
-  /* ensure the menubar always stacks above other page chrome (sidebar, panels) */
   z-index: 50;
-  /* translucent, theme-aware background + blur
-     Mix the popover with the page background (not `transparent`) so the bar
-     gains a visible tint over the page content in both light and dark modes.
-     Provide a simple fallback for older browsers. */
   background-color: var(--popover);
   background-color: color-mix(in srgb, var(--popover) 85%, var(--background) 15%);
   -webkit-backdrop-filter: blur(8px);
@@ -32,6 +21,7 @@
 .ctf-menu-left {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .ctf-logo {
@@ -44,14 +34,18 @@
 .ctf-menu-center {
   display: flex;
   align-items: center;
-  /* justify-content: center; */
-  flex: 1 1 auto;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .ctf-menu-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .ctf-menu-right button[themeToggle] {
@@ -60,10 +54,6 @@
   justify-content: center;
   padding: 0.25rem;
 }
-
-/* Use Spartan theme variables from `src/styles.css` as the source-of-truth for colors.
-   Keep these rules minimal and only map component elements to variables so
-   colors are not duplicated or hard-coded in component CSS. */
 
 hlm-menu-bar {
   display: flex;
@@ -85,15 +75,12 @@ button[hlmMenuBarItem] {
     color 150ms ease;
 }
 
-/* subtle, theme-aware hover/active states using foreground mixing so it's readable
-   in both light and dark modes (avoids white-on-white or black-on-black issues) */
 button[hlmMenuBarItem]:hover,
 button[hlmMenuBarItem][aria-expanded='true'] {
   background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
   color: var(--foreground);
 }
 
-/* Menus and sub-menus inherit popover colors from the theme */
 hlm-menu,
 hlm-sub-menu {
   background: var(--popover);
@@ -102,7 +89,6 @@ hlm-sub-menu {
   border-radius: calc(var(--radius) * 0.75);
 }
 
-/* Menu items should use inherited colors and simple hover state */
 button[hlmMenuItem],
 button[hlmMenuItemCheckbox],
 button[hlmMenuItemRadio] {
@@ -119,10 +105,7 @@ button[hlmMenuItem]:hover {
   color: var(--popover-foreground);
 }
 
-/* Shortcuts and separators should respect theme colors */
 hlm-menu-shortcut,
 hlm-menu-separator {
   color: var(--muted-foreground);
 }
-
-/* Keep any additional layout-only helpers here (no color overrides) */

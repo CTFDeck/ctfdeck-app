@@ -162,8 +162,6 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
           }
         });
 
-
-
         // Pre-select current session in add form if available
         if (session && this.addForm.sessionIds.length === 0) {
           this.addForm.sessionIds = [session.id];
