@@ -1,19 +1,22 @@
-import { Directive } from '@angular/core';
+import { computed, Directive, input } from '@angular/core';
 import { BrnDialogClose } from '@spartan-ng/brain/dialog';
-import { classes } from '@ctfdeck/helm/utils';
+import { hlm } from '@ctfdeck/helm/utils';
+import { ClassValue } from 'clsx';
 
 @Directive({
 	selector: 'button[hlmDialogClose]',
 	hostDirectives: [{ directive: BrnDialogClose, inputs: ['delay'] }],
 	host: {
 		'data-slot': 'dialog-close',
+		'[class]': '_computedClass()',
 	},
 })
 export class HlmDialogClose {
-	constructor() {
-		classes(
-			() =>
-				'ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute end-4 top-4 flex items-center justify-center rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none [&_ng-icon]:shrink-0',
-		);
-	}
+	public readonly userClass = input<ClassValue>('', { alias: 'class' });
+	protected readonly _computedClass = computed(() =>
+		hlm(
+			'ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute end-4 top-4 flex items-center justify-center rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none [&_ng-icon]:shrink-0',
+			this.userClass(),
+		),
+	);
 }

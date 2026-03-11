@@ -214,141 +214,157 @@
     </div>
   </ng-template>
 
-  <!-- DIALOG TRIGGERS (HIDDEN) -->
-  <button #renameTrigger brnDialogTrigger class="hidden"></button>
-  <button #deleteTrigger brnDialogTrigger class="hidden"></button>
-  <button #renameWriteUpTrigger brnDialogTrigger class="hidden"></button>
-  <button #deleteWriteUpTrigger brnDialogTrigger class="hidden"></button>
+  <!-- DIALOGS -->
   
-  <button #createProjectTrigger brnDialogTrigger class="hidden"></button>
-  <button #createFolderTrigger brnDialogTrigger class="hidden"></button>
-  <button #renameFolderTrigger brnDialogTrigger class="hidden"></button>
-  <button #deleteFolderTrigger brnDialogTrigger class="hidden"></button>
-
   <!-- Create Project Dialog -->
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>New Project</h2>
-      <p hlmDialogDescription>Create a new container for your labs.</p>
-    </hlm-dialog-header>
-    <div class="grid gap-4 py-4">
-      <div class="grid gap-2">
-        <label hlmLabel for="pname">Project Name</label>
-        <input hlmInput id="pname" [(ngModel)]="createProjectDraft.name" placeholder="Pro hacker lab..." />
+  <hlm-dialog>
+    <button #createProjectTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>New Project</h2>
+        <p hlmDialogDescription>Create a new container for your labs.</p>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="pname">Project Name</label>
+          <input hlmInput id="pname" [(ngModel)]="createProjectDraft.name" placeholder="Pro hacker lab..." />
+        </div>
+        <div class="grid gap-2">
+          <label hlmLabel for="pdesc">Description (Optional)</label>
+          <textarea hlmInput id="pdesc" [(ngModel)]="createProjectDraft.description" placeholder="A project about..."></textarea>
+        </div>
       </div>
-      <div class="grid gap-2">
-        <label hlmLabel for="pdesc">Description (Optional)</label>
-        <textarea hlmInput id="pdesc" [(ngModel)]="createProjectDraft.description" placeholder="A project about..."></textarea>
-      </div>
-    </div>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn (click)="createProject(ctx)">Create Project</button>
-    </hlm-dialog-footer>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="createProject(ctx)">Create Project</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
 
   <!-- Create Folder Dialog -->
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>New Folder</h2>
-      <p hlmDialogDescription>Organize your sessions and writeups.</p>
-    </hlm-dialog-header>
-    <div class="grid gap-4 py-4">
-      <div class="grid gap-2">
-        <label hlmLabel for="fname">Folder Name</label>
-        <input hlmInput id="fname" [(ngModel)]="createFolderDraft.name" placeholder="Web / Pwn / Misc..." (keyup.enter)="addFolder(ctx)" />
+  <hlm-dialog>
+    <button #createFolderTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>New Folder</h2>
+        <p hlmDialogDescription>Organize your sessions and writeups.</p>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="fname">Folder Name</label>
+          <input hlmInput id="fname" [(ngModel)]="createFolderDraft.name" placeholder="Web / Pwn / Misc..." (keyup.enter)="addFolder(ctx)" />
+        </div>
       </div>
-    </div>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn (click)="addFolder(ctx)">Create Folder</button>
-    </hlm-dialog-footer>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="addFolder(ctx)">Create Folder</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
 
   <!-- Rename Folder Dialog -->
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>Rename Folder</h2>
-    </hlm-dialog-header>
-    <div class="grid gap-4 py-4">
-      <div class="grid gap-2">
-        <label hlmLabel for="rfname">New Name</label>
-        <input hlmInput id="rfname" [(ngModel)]="folderToRenameDraft.name" (keyup.enter)="renameFolder(ctx)" />
+  <hlm-dialog>
+    <button #renameFolderTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>Rename Folder</h2>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="rfname">New Name</label>
+          <input hlmInput id="rfname" [(ngModel)]="folderToRenameDraft.name" (keyup.enter)="renameFolder(ctx)" />
+        </div>
       </div>
-    </div>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn (click)="renameFolder(ctx)">Save Changes</button>
-    </hlm-dialog-footer>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="renameFolder(ctx)">Save Changes</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
 
   <!-- Delete Folder Dialog -->
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>Delete Folder</h2>
-      <p hlmDialogDescription>
-        Are you sure you want to delete <strong>{{ folderToDeleteDraft.name }}</strong>? 
-        Items will be moved to the project root.
-      </p>
-    </hlm-dialog-header>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn variant="destructive" (click)="deleteFolder(ctx)">Delete Folder</button>
-    </hlm-dialog-footer>
+  <hlm-dialog>
+    <button #deleteFolderTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>Delete Folder</h2>
+        <p hlmDialogDescription>
+          Are you sure you want to delete <strong>{{ folderToDeleteDraft.name }}</strong>? 
+          Items will be moved to the project root.
+        </p>
+      </hlm-dialog-header>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn variant="destructive" (click)="deleteFolder(ctx)">Delete Folder</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
 
   <!-- Session Dialogs -->
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>Rename Session</h2>
-    </hlm-dialog-header>
-    <div class="grid gap-4 py-4" *ngIf="sessionToRename">
-      <div class="grid gap-2">
-        <label hlmLabel for="sname">Session Name</label>
-        <input hlmInput id="sname" [(ngModel)]="renameDraftById[sessionToRename.id]" (keyup.enter)="renameSession(ctx)" />
+  <hlm-dialog>
+    <button #renameTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>Rename Session</h2>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4" *ngIf="sessionToRename">
+        <div class="grid gap-2">
+          <label hlmLabel for="sname">Session Name</label>
+          <input hlmInput id="sname" [(ngModel)]="renameDraftById[sessionToRename.id]" (keyup.enter)="renameSession(ctx)" />
+        </div>
       </div>
-    </div>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn (click)="renameSession(ctx)">Save Changes</button>
-    </hlm-dialog-footer>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="renameSession(ctx)">Save Changes</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
 
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>Delete Session</h2>
-      <p hlmDialogDescription>Are you sure you want to delete this session? This action cannot be undone.</p>
-    </hlm-dialog-header>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn variant="destructive" (click)="deleteSession(ctx)">Delete Session</button>
-    </hlm-dialog-footer>
+  <hlm-dialog>
+    <button #deleteTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>Delete Session</h2>
+        <p hlmDialogDescription>Are you sure you want to delete this session? This action cannot be undone.</p>
+      </hlm-dialog-header>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn variant="destructive" (click)="deleteSession(ctx)">Delete Session</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
 
   <!-- WriteUp Dialogs -->
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>Rename WriteUp</h2>
-    </hlm-dialog-header>
-    <div class="grid gap-4 py-4" *ngIf="writeUpToRename">
-      <div class="grid gap-2">
-        <label hlmLabel for="wname">WriteUp Name</label>
-        <input hlmInput id="wname" [(ngModel)]="renameDraftById[writeUpToRename.id]" (keyup.enter)="renameWriteUp(ctx)" />
+  <hlm-dialog>
+    <button #renameWriteUpTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>Rename WriteUp</h2>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4" *ngIf="writeUpToRename">
+        <div class="grid gap-2">
+          <label hlmLabel for="wname">WriteUp Name</label>
+          <input hlmInput id="wname" [(ngModel)]="renameDraftById[writeUpToRename.id]" (keyup.enter)="renameWriteUp(ctx)" />
+        </div>
       </div>
-    </div>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn (click)="renameWriteUp(ctx)">Save Changes</button>
-    </hlm-dialog-footer>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="renameWriteUp(ctx)">Save Changes</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
 
-  <hlm-dialog *brnDialogContent="let ctx" class="max-w-[400px]">
-    <hlm-dialog-header>
-      <h2 hlmDialogTitle>Delete WriteUp</h2>
-      <p hlmDialogDescription>Are you sure you want to delete this writeup?</p>
-    </hlm-dialog-header>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn variant="destructive" (click)="deleteWriteUp(ctx)">Delete WriteUp</button>
-    </hlm-dialog-footer>
+  <hlm-dialog>
+    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>Delete WriteUp</h2>
+        <p hlmDialogDescription>Are you sure you want to delete this writeup?</p>
+      </hlm-dialog-header>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn variant="destructive" (click)="deleteWriteUp(ctx)">Delete WriteUp</button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
   </hlm-dialog>
+

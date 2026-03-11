@@ -4,8 +4,9 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, computed, inject,
 import { provideIcons } from '@ng-icons/core';
 import { lucideX } from '@ng-icons/lucide';
 import { BrnDialogRef, injectBrnDialogContext } from '@spartan-ng/brain/dialog';
+import { hlm } from '@ctfdeck/helm/utils';
+import { ClassValue } from 'clsx';
 import { HlmIconImports } from '@ctfdeck/helm/icon';
-import { classes } from '@ctfdeck/helm/utils';
 import { HlmDialogClose } from './hlm-dialog-close';
 
 @Component({
@@ -16,6 +17,7 @@ import { HlmDialogClose } from './hlm-dialog-close';
 	host: {
 		'data-slot': 'dialog-content',
 		'[attr.data-state]': 'state()',
+		'[class]': '_computedClass()',
 	},
 	template: `
 		@if (component) {
@@ -43,10 +45,12 @@ export class HlmDialogContent {
 	public readonly component = this._dialogContext?.$component;
 	private readonly _dynamicComponentClass = this._dialogContext?.$dynamicComponentClass;
 
-	constructor() {
-		classes(() => [
+	public readonly userClass = input<ClassValue>('', { alias: 'class' });
+	protected readonly _computedClass = computed(() =>
+		hlm(
 			'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 mx-auto grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border p-6 shadow-lg data-[state=closed]:duration-200 data-[state=open]:duration-200 sm:mx-0 sm:max-w-lg',
+			this.userClass(),
 			this._dynamicComponentClass,
-		]);
-	}
+		),
+	);
 }

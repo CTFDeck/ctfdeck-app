@@ -1,14 +1,17 @@
-import { Directive } from '@angular/core';
-import { classes } from '@ctfdeck/helm/utils';
+import { computed, Directive, input } from '@angular/core';
+import { hlm } from '@ctfdeck/helm/utils';
+import { ClassValue } from 'clsx';
 
 @Directive({
 	selector: '[hlmDialogFooter],hlm-dialog-footer',
 	host: {
 		'data-slot': 'dialog-footer',
+		'[class]': '_computedClass()',
 	},
 })
 export class HlmDialogFooter {
-	constructor() {
-		classes(() => 'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end');
-	}
+	public readonly userClass = input<ClassValue>('', { alias: 'class' });
+	protected readonly _computedClass = computed(() =>
+		hlm('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', this.userClass()),
+	);
 }
