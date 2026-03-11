@@ -142,15 +142,20 @@ export class ProjectService {
     });
   }
 
-  async addFolder(projectId: string, name: string, parentId: string | null = null): Promise<{ success: boolean; folderId: string }> {
-    const msgId = crypto.randomUUID();
-    const packet = serializeProjectAddFolder(projectId, name, parentId, msgId);
-    this.ws.sendBinary(packet); // Changed from this.wsService.send to this.ws.sendBinary
+  addFolder(projectId: string, name: string, parentId: string | null = null): Promise<{ success: boolean; folderId: string }> {
     return new Promise((resolve, reject) => {
-      this.pending.set(msgId, (result) => {
+      const messageId = generateUUID();
+      const buffer = serializeProjectAddFolder(projectId, name, parentId, messageId);
+      this.pending.set(messageId, (result) => {
         if (result.error) reject(new Error(result.error));
         else resolve({ success: result.success, folderId: result.folderId });
       });
+      try {
+        this.ws.sendBinary(buffer);
+      } catch (e) {
+        this.pending.delete(messageId);
+        reject(e);
+      }
     });
   }
 

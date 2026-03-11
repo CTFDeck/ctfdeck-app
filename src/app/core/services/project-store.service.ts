@@ -1,11 +1,12 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, combineLatest, map, Observable } from 'rxjs';
+import { Injectable, OnDestroy } from '@angular/core';
+import { BehaviorSubject, combineLatest, map, Observable, Subscription } from 'rxjs';
 import { ProjectService } from './project.service';
 import { ProjectMetadata, ProjectFolderMetadata, ProjectData } from './project.protocol';
 import { SessionStoreService } from './session-store.service';
 import { SessionMetadata } from './session.protocol';
 import { WriteUpStoreService } from './writeup-store.service';
 import { WriteUpMetadata } from './writeup.protocol';
+import { WebSocketService } from './websocket.service';
 
 export interface ProjectHierarchy {
   id: string;
@@ -24,7 +25,7 @@ export interface FolderHierarchy {
 }
 
 @Injectable({ providedIn: 'root' })
-export class ProjectStoreService {
+export class ProjectStoreService implements OnDestroy {
   private _projects = new BehaviorSubject<ProjectMetadata[]>([]);
   public projects$ = this._projects.asObservable();
 
@@ -35,12 +36,28 @@ export class ProjectStoreService {
   private _projectDataCache = new BehaviorSubject<Map<string, ProjectData>>(new Map());
   public projectDataCache$ = this._projectDataCache.asObservable();
 
+  private _subscriptions = new Subscription();
+
   constructor(
     private projectService: ProjectService,
     private sessionStore: SessionStoreService,
     private writeupStore: WriteUpStoreService,
+    private ws: WebSocketService,
   ) {
-    this.loadProjects();
+    this._subscriptions.add(
+      this.ws.isConnected$.subscribe((connected) => {
+        if (connected) {
+          this.loadProjects();
+        } else {
+          this._projects.next([]);
+          this._projectDataCache.next(new Map());
+        }
+      }),
+    );
+  }
+
+  ngOnDestroy() {
+    this._subscriptions.unsubscribe();
   }
 
   async loadProjects() {
