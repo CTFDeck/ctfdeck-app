@@ -10,6 +10,9 @@ import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { BrnDialogImports } from '@spartan-ng/brain/dialog';
+import { BRN_TOOLTIP_SCROLL_STRATEGY } from '@spartan-ng/brain/tooltip';
+import { Overlay } from '@angular/cdk/overlay';
+import { CdkScrollable } from '@angular/cdk/scrolling';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -62,8 +65,14 @@ export enum SidebarMode {
     ...BrnDialogImports,
     ...HlmDialogImports,
     ...HlmTooltipImports,
+    CdkScrollable,
   ],
   providers: [
+    {
+      provide: BRN_TOOLTIP_SCROLL_STRATEGY,
+      useFactory: (overlay: Overlay) => () => overlay.scrollStrategies.close(),
+      deps: [Overlay],
+    },
     provideIcons({
       lucideSearch,
       lucidePlus,
