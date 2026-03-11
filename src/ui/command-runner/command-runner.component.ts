@@ -426,7 +426,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
           errorBuffer += error;
         },
       )
-      .then(() => {
+      .then((result) => {
         this.isHelpRunning = false;
         this.renderHelpOutput(outputBuffer);
         this.cdr.detectChanges();
@@ -584,9 +584,5 @@ export class CommandRunnerComponent implements OnInit, OnDestroy {
           this.outputContainer.nativeElement.scrollHeight;
       }
     }, 0);
-  }
-
-  consoleLog(message: string) {
-    console.log(message);
   }
 }

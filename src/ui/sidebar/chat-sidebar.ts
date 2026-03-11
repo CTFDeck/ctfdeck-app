@@ -1,4 +1,5 @@
 import { Component, signal, HostBinding, ViewChild, ElementRef } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -16,14 +17,23 @@ import {
   lucideArrowUp,
   lucideCheck,
   lucideMessageCircleDashed,
-  lucideFolder,
   lucidePanelLeft,
   lucidePencil,
   lucideTrash2,
+  lucideFileText,
+  lucideFolderOpen,
 } from '@ng-icons/lucide';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { SessionMetadata } from '../../app/core/services/session.protocol';
+import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
+import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
 import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
+
+export enum SidebarMode {
+  Chats = 'chats',
+  WriteUps = 'writeups',
+}
 
 @Component({
   selector: 'ctf-chat-sidebar',
@@ -48,10 +58,11 @@ import { Observable } from 'rxjs';
       lucideArrowUp,
       lucideCheck,
       lucideMessageCircleDashed,
-      lucideFolder,
       lucidePanelLeft,
       lucidePencil,
       lucideTrash2,
+      lucideFileText,
+      lucideFolderOpen,
     }),
   ],
 
@@ -59,8 +70,18 @@ import { Observable } from 'rxjs';
   styleUrls: ['./chat-sidebar.css'],
 })
 export class ChatSidebar {
+  SidebarMode = SidebarMode;
+  currentMode = signal<SidebarMode>(SidebarMode.Chats);
+
+  private readonly STORAGE_KEY = 'ctf_sidebar_mode';
+
   isCollapsed = signal(false);
+
+  // Session delete animation tracking
   deletingSessionIds = signal<Set<string>>(new Set());
+  // WriteUp delete animation tracking
+  deletingWriteUpIds = signal<Set<string>>(new Set());
+
   renameDraftById: Record<string, string> = {};
 
   @HostBinding('class.w-64')
@@ -68,7 +89,7 @@ export class ChatSidebar {
     return !this.isCollapsed();
   }
 
-  @HostBinding('class.w-20') // 5rem = 80px
+  @HostBinding('class.w-20')
   get collapsed() {
     return this.isCollapsed();
   }
@@ -79,16 +100,59 @@ export class ChatSidebar {
   activeSessionId$: Observable<string | null>;
   sessionsLoading$: Observable<boolean>;
 
+  writeUps$: Observable<WriteUpMetadata[]>;
+  writeUpsLoading$: Observable<boolean>;
+  activeWriteUpId$: Observable<string | null>;
+
+  // Session dialog state
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
-
   sessionToRename: SessionMetadata | null = null;
   sessionToDelete: SessionMetadata | null = null;
 
-  constructor(private sessionStore: SessionStoreService) {
+  // WriteUp dialog state
+  @ViewChild('renameWriteUpTrigger') renameWriteUpTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('deleteWriteUpTrigger') deleteWriteUpTrigger!: ElementRef<HTMLButtonElement>;
+  writeUpToRename: WriteUpMetadata | null = null;
+  writeUpToDelete: WriteUpMetadata | null = null;
+
+  constructor(
+    private sessionStore: SessionStoreService,
+    private writeUpStore: WriteUpStoreService,
+    private router: Router,
+  ) {
     this.sessions$ = this.sessionStore.sessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
     this.sessionsLoading$ = this.sessionStore.sessionsLoading$;
+
+    this.writeUps$ = this.writeUpStore.writeUps$;
+    this.writeUpsLoading$ = this.writeUpStore.writeUpsLoading$;
+    this.activeWriteUpId$ = new Observable((sub) => {
+      this.writeUpStore.activeWriteUp$.subscribe((aw) => sub.next(aw?.id || null));
+    });
+
+    // Load persisted mode
+    const savedMode = localStorage.getItem(this.STORAGE_KEY) as SidebarMode;
+    if (savedMode && Object.values(SidebarMode).includes(savedMode)) {
+      this.currentMode.set(savedMode);
+    }
+  }
+
+  setMode(mode: SidebarMode) {
+    this.currentMode.set(mode);
+    localStorage.setItem(this.STORAGE_KEY, mode);
+  }
+
+  newAction() {
+    if (this.currentMode() === SidebarMode.Chats) {
+      void this.sessionStore.createSession('New chat').then(() => {
+        void this.router.navigate(['/terminal']);
+      });
+    } else {
+      void this.writeUpStore.createWriteUp('New writeup').then((id) => {
+        if (id) void this.router.navigate(['/writeup', id]);
+      });
+    }
   }
 
   newChat() {
@@ -97,13 +161,18 @@ export class ChatSidebar {
 
   openChat(session: SessionMetadata) {
     void this.sessionStore.selectSession(session.id);
+    void this.router.navigate(['/terminal']);
   }
 
-  // Rename Logic
+  async openWriteUp(writeUp: WriteUpMetadata) {
+    await this.writeUpStore.selectWriteUp(writeUp.id);
+    void this.router.navigate(['/writeup', writeUp.id]);
+  }
+
+  // ── Session: Rename ─────────────────────────────────────────────────────
   openRenameDialog(session: SessionMetadata) {
     this.sessionToRename = session;
     this.renameDraftById[session.id] = session.name;
-    // Defer click to ensure state update propagates if needed, though usually sync is fine here
     setTimeout(() => this.renameTrigger.nativeElement.click());
   }
 
@@ -111,15 +180,13 @@ export class ChatSidebar {
     if (!this.sessionToRename) return;
     const session = this.sessionToRename;
     const nextName = (this.renameDraftById[session.id] ?? '').trim();
-
     if (!nextName) return;
-
     ctx.close();
     await this.sessionStore.renameSession(session.id, nextName, session.description || '');
     this.sessionToRename = null;
   }
 
-  // Delete Logic
+  // ── Session: Delete ──────────────────────────────────────────────────────
   openDeleteDialog(session: SessionMetadata) {
     this.sessionToDelete = session;
     setTimeout(() => this.deleteTrigger.nativeElement.click());
@@ -128,10 +195,8 @@ export class ChatSidebar {
   async deleteSession(ctx: { close: () => void }) {
     if (!this.sessionToDelete) return;
     const session = this.sessionToDelete;
-
     ctx.close();
     if (this.isDeletingSession(session.id)) return;
-
     this.setSessionDeleting(session.id, true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 220));
@@ -148,23 +213,73 @@ export class ChatSidebar {
 
   private setSessionDeleting(sessionId: string, deleting: boolean) {
     const next = new Set(this.deletingSessionIds());
-    if (deleting) {
-      next.add(sessionId);
-    } else {
-      next.delete(sessionId);
-    }
+    if (deleting) next.add(sessionId); else next.delete(sessionId);
     this.deletingSessionIds.set(next);
   }
 
+  // ── WriteUp: Rename ──────────────────────────────────────────────────────
+  openRenameWriteUpDialog(writeUp: WriteUpMetadata) {
+    this.writeUpToRename = writeUp;
+    this.renameDraftById[writeUp.id] = writeUp.name;
+    setTimeout(() => this.renameWriteUpTrigger.nativeElement.click());
+  }
+
+  async renameWriteUp(ctx: { close: () => void }) {
+    if (!this.writeUpToRename) return;
+    const writeUp = this.writeUpToRename;
+    const nextName = (this.renameDraftById[writeUp.id] ?? '').trim();
+    if (!nextName) return;
+    ctx.close();
+    await this.writeUpStore.renameWriteUp(writeUp.id, nextName);
+    this.writeUpToRename = null;
+  }
+
+  // ── WriteUp: Delete ──────────────────────────────────────────────────────
+  openDeleteWriteUpDialog(writeUp: WriteUpMetadata) {
+    this.writeUpToDelete = writeUp;
+    setTimeout(() => this.deleteWriteUpTrigger.nativeElement.click());
+  }
+
+  async deleteWriteUp(ctx: { close: () => void }) {
+    if (!this.writeUpToDelete) return;
+    const writeUp = this.writeUpToDelete;
+    ctx.close();
+    if (this.isDeletingWriteUp(writeUp.id)) return;
+    this.setWriteUpDeleting(writeUp.id, true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 220));
+      await this.writeUpStore.deleteWriteUp(writeUp.id);
+    } finally {
+      this.setWriteUpDeleting(writeUp.id, false);
+      this.writeUpToDelete = null;
+    }
+  }
+
+  isDeletingWriteUp(writeUpId: string): boolean {
+    return this.deletingWriteUpIds().has(writeUpId);
+  }
+
+  private setWriteUpDeleting(writeUpId: string, deleting: boolean) {
+    const next = new Set(this.deletingWriteUpIds());
+    if (deleting) next.add(writeUpId); else next.delete(writeUpId);
+    this.deletingWriteUpIds.set(next);
+  }
+
+  // ── Filters ──────────────────────────────────────────────────────────────
   filteredChats(sessions: SessionMetadata[]) {
     const term = this.search?.toLowerCase().trim();
     if (!term) return sessions;
     return sessions.filter((s) => s.name.toLowerCase().includes(term));
   }
 
-  /** Number of results currently shown by the search filter */
   resultsCount(sessions: SessionMetadata[]): number {
     return this.filteredChats(sessions).length;
+  }
+
+  filteredWriteUps(writeUps: WriteUpMetadata[]) {
+    const term = this.search?.toLowerCase().trim();
+    if (!term) return writeUps;
+    return writeUps.filter((w) => w.name.toLowerCase().includes(term));
   }
 
   toggleSidebar() {

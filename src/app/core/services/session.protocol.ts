@@ -36,6 +36,7 @@ export interface SessionMetadata {
   id: string;
   name: string;
   description: string;
+  projectId: string;
   createdAt: Date;
   updatedAt: Date;
   historyCount: number;
@@ -46,6 +47,7 @@ export interface SessionData {
   id: string;
   name: string;
   description: string;
+  projectId: string;
   createdAt: Date;
   updatedAt: Date;
   history: SessionHistoryEntry[];
@@ -403,40 +405,63 @@ export function deserializeSessionListResult(data: Uint8Array): {
   messageId: string;
   sessions: SessionMetadata[];
 } {
+  // Minimum packet size: 1 (type) + 16 (msgId) + 4 (count) = 21 bytes
+  if (data.byteLength < 21) {
+    throw new Error(`SessionListResult too short: ${data.byteLength} bytes`);
+  }
+
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const messageId = bytesToUuid(data.subarray(1, 17));
   const count = view.getInt32(17, true);
+
+  if (count < 0 || count > 10_000) {
+    throw new Error(`SessionListResult invalid count: ${count}`);
+  }
+
   let offset = 21;
   const sessions: SessionMetadata[] = [];
 
   for (let i = 0; i < count; i++) {
+    if (offset + 16 > data.byteLength) {
+      throw new Error(`SessionListResult truncated at session ${i} (id), offset=${offset}, length=${data.byteLength}`);
+    }
     const id = bytesToUuid(data.subarray(offset, offset + 16));
     offset += 16;
 
+    if (offset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (nameLen)`);
     const nameLen = view.getInt32(offset, true);
+    if (nameLen < 0 || offset + 4 + nameLen > data.byteLength) throw new Error(`SessionListResult invalid nameLen=${nameLen} at session ${i}`);
     offset += 4;
     const name = decoder.decode(data.subarray(offset, offset + nameLen));
     offset += nameLen;
 
+    if (offset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (descLen)`);
     const descLen = view.getInt32(offset, true);
+    if (descLen < 0 || offset + 4 + descLen > data.byteLength) throw new Error(`SessionListResult invalid descLen=${descLen} at session ${i}`);
     offset += 4;
     const description = decoder.decode(data.subarray(offset, offset + descLen));
     offset += descLen;
 
+    if (offset + 16 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (timestamps)`);
     const createdAtTicks = view.getBigInt64(offset, true);
     offset += 8;
     const updatedAtTicks = view.getBigInt64(offset, true);
     offset += 8;
 
+    if (offset + 8 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (counts)`);
     const historyCount = view.getInt32(offset, true);
     offset += 4;
     const targetCount = view.getInt32(offset, true);
     offset += 4;
 
+    const projectId = bytesToUuid(data.subarray(offset, offset + 16));
+    offset += 16;
+
     sessions.push({
       id,
       name,
       description,
+      projectId,
       createdAt: ticksToDate(createdAtTicks),
       updatedAt: ticksToDate(updatedAtTicks),
       historyCount,
@@ -479,6 +504,9 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
   offset += 8;
   const updatedAtTicks = view.getBigInt64(offset, true);
   offset += 8;
+
+  const projectId = bytesToUuid(data.subarray(offset, offset + 16));
+  offset += 16;
 
   const historyCount = view.getInt32(offset, true);
   offset += 4;
@@ -565,6 +593,7 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
       id,
       name,
       description,
+      projectId,
       createdAt: ticksToDate(createdAtTicks),
       updatedAt: ticksToDate(updatedAtTicks),
       history,

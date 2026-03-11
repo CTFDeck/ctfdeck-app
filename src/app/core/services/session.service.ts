@@ -35,6 +35,7 @@ const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 export class SessionService {
   private pending = new Map<string, (result: any) => void>();
   private activeSessionId: string | null = null;
+  private activeProjectId: string | null = null;
 
   constructor(
     private ws: WebSocketService,
@@ -48,39 +49,45 @@ export class SessionService {
     if (!isSessionResponse(type)) return false;
 
     let result: any;
-    switch (type) {
-      case MessageType.SessionCreateResult:
-        result = deserializeSessionCreateResult(data);
-        break;
-      case MessageType.SessionSetActiveResult:
-        result = deserializeSessionSetActiveResult(data);
-        break;
-      case MessageType.SessionLoadResult:
-        result = deserializeSessionLoadResult(data);
-        break;
-      case MessageType.SessionListResult:
-        result = deserializeSessionListResult(data);
-        break;
-      case MessageType.SessionDeleteResult:
-        result = deserializeSessionDeleteResult(data);
-        break;
-      case MessageType.SessionUpdateResult:
-        result = deserializeSessionUpdateResult(data);
-        break;
-      case MessageType.SessionAddTargetResult:
-        result = deserializeSessionAddTargetResult(data);
-        break;
-      case MessageType.SessionDeleteTargetResult:
-        result = deserializeSessionDeleteTargetResult(data);
-        break;
-      case MessageType.SessionEditTargetResult:
-        result = deserializeSessionEditTargetResult(data);
-        break;
-      case MessageType.SessionOperationError:
-        result = deserializeSessionOperationError(data);
-        break;
-      default:
-        return false;
+    try {
+      switch (type) {
+        case MessageType.SessionCreateResult:
+          result = deserializeSessionCreateResult(data);
+          break;
+        case MessageType.SessionSetActiveResult:
+          result = deserializeSessionSetActiveResult(data);
+          break;
+        case MessageType.SessionLoadResult:
+          result = deserializeSessionLoadResult(data);
+          break;
+        case MessageType.SessionListResult:
+          result = deserializeSessionListResult(data);
+          break;
+        case MessageType.SessionDeleteResult:
+          result = deserializeSessionDeleteResult(data);
+          break;
+        case MessageType.SessionUpdateResult:
+          result = deserializeSessionUpdateResult(data);
+          break;
+        case MessageType.SessionAddTargetResult:
+          result = deserializeSessionAddTargetResult(data);
+          break;
+        case MessageType.SessionDeleteTargetResult:
+          result = deserializeSessionDeleteTargetResult(data);
+          break;
+        case MessageType.SessionEditTargetResult:
+          result = deserializeSessionEditTargetResult(data);
+          break;
+        case MessageType.SessionOperationError:
+          result = deserializeSessionOperationError(data);
+          break;
+        default:
+          return false;
+      }
+    } catch (e) {
+      console.error(`[SessionService] Failed to deserialize message type ${type}:`, e);
+      // Return true to indicate we claimed this message type; avoids spam logging from WebSocketService.
+      return true;
     }
 
     const callback = this.pending.get(result.messageId);
@@ -103,7 +110,10 @@ export class SessionService {
         if (result.error) {
           reject(new Error(result.error));
         } else {
-          resolve({ success: result.success, sessionId: result.sessionId });
+          resolve({
+            success: result.success,
+            sessionId: result.sessionId,
+          });
         }
       });
 
@@ -138,6 +148,9 @@ export class SessionService {
         if (result.error) {
           reject(new Error(result.error));
         } else {
+          if (result.success && result.session) {
+            this.activeProjectId = result.session.projectId;
+          }
           resolve({ success: result.success, session: result.session });
         }
       });
@@ -302,5 +315,9 @@ export class SessionService {
 
   getActiveSessionId(): string | null {
     return this.activeSessionId;
+  }
+
+  getActiveProjectId(): string | null {
+    return this.activeProjectId;
   }
 }

@@ -138,6 +138,5 @@ export class Menubar implements OnInit, OnDestroy {
   }
 
   saveTargets() {
-    console.log('Targets already saved in cookies');
   }
 }

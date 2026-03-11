@@ -6,6 +6,7 @@ import {
   ElementRef,
   AfterViewChecked,
   ChangeDetectorRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,23 +15,69 @@ import { WebSocketService } from '../../app/core/services/websocket.service';
 import { Subscription } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideServer, lucidePlus, lucideTrash2 } from '@ng-icons/lucide';
+import {
+  lucideServer,
+  lucidePlus,
+  lucideTrash2,
+  lucideFileText,
+  lucideSettings,
+  lucideX,
+  lucideSave,
+  lucideZap,
+  lucideGlobe,
+  lucideTerminal,
+  lucideCopy,
+  lucideMoreHorizontal,
+} from '@ng-icons/lucide';
 import AnsiToHtml from 'ansi-to-html';
 import { TerminalLine, LsEntry, FilePrefix } from './helpers/terminal-types';
 import { TerminalHistoryHelper } from './helpers/terminal-history.helper';
 import { TerminalAutocompleteHelper } from './helpers/terminal-autocomplete.helper';
 import { SessionStoreService } from '../../app/core/services/session-store.service';
 import { SessionData } from '../../app/core/services/session.protocol';
+import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
+import { WriteUpService } from '../../app/core/services/writeup.service';
+import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
+import { toast } from 'ngx-sonner';
+import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
+import { HlmMenuImports, HlmSubMenu } from '@ctfdeck/helm/menu';
+import { HlmInputImports } from '@ctfdeck/helm/input';
+import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { HlmDialogImports } from '@ctfdeck/helm/dialog';
+import { BrnDialogTrigger, BrnDialogContent } from '@spartan-ng/brain/dialog';
+
 
 @Component({
   selector: 'app-terminal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports],
+  imports: [
+    CommonModule,
+    FormsModule,
+    NgIcon,
+    HlmButtonImports,
+    BrnMenuTrigger,
+    ...HlmMenuImports,
+    HlmSubMenu,
+    ...HlmInputImports,
+    ...HlmLabelImports,
+    ...HlmDialogImports,
+    BrnDialogTrigger,
+    BrnDialogContent,
+  ],
   providers: [
     provideIcons({
       lucideServer,
       lucidePlus,
       lucideTrash2,
+      lucideFileText,
+      lucideSettings,
+      lucideX,
+      lucideSave,
+      lucideZap,
+      lucideGlobe,
+      lucideTerminal,
+      lucideCopy,
+      lucideMoreHorizontal,
     }),
   ],
   templateUrl: './terminal.component.html',
@@ -39,6 +86,7 @@ import { SessionData } from '../../app/core/services/session.protocol';
 export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   @ViewChild('commandInput') private commandInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('selectionTrigger', { read: BrnMenuTrigger }) private selectionTrigger?: BrnMenuTrigger;
 
   lines: TerminalLine[] = [];
   currentCommand: string = '';
@@ -57,9 +105,16 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private subscriptions: Subscription = new Subscription();
 
-  // Helpers
   private historyHelper = new TerminalHistoryHelper();
   public autocompleteHelper = new TerminalAutocompleteHelper();
+
+  private writeUpStore = inject(WriteUpStoreService);
+  private writeUpService = inject(WriteUpService);
+  writeUps$ = this.writeUpStore.writeUps$;
+
+  // Selection menu
+  selectedText: string = '';
+  selectionMenuPosition = { x: 0, y: 0 };
 
   private ansiConverter = new AnsiToHtml({
     fg: '#d4d4d4',
@@ -118,12 +173,23 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
-    this.wsService.disconnect();
+    // Do NOT disconnect the WebSocket here — it is a shared singleton used by all
+    // services and components (WriteUpEditor, ScriptService, etc.). Its lifecycle
+    // is managed by WebSocketService itself via auto-connect/retry.
   }
 
   ngAfterViewChecked(): void {}
 
   private connect() {
+    if (this.wsService.isConnected$.value) {
+      // Already connected (e.g. navigated back from writeup editor) — just init state.
+      this.addLine('info', 'Connected to WebSocket server.');
+      this.addLine('info', 'Type "help" for a list of available commands or just type away!');
+      this.scrollToBottom();
+      this.initializeTerminalState();
+      return;
+    }
+
     this.wsService
       .connect()
       .then(() => {
@@ -417,9 +483,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private addLine(type: 'command' | 'output' | 'error' | 'info', content: string) {
-    if (type === 'output') {
-      console.log('Received output content:', JSON.stringify(content));
-    }
 
     let renderedContent: SafeHtml | string = content;
 
@@ -517,5 +580,125 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectServer(url: string) {
     this.serverUrl = url;
     this.reconnect();
+  }
+
+  onMouseDown(event: MouseEvent) {
+    // Only clear if it's a left click (button 0)
+    // We want to keep the selection if user is right-clicking to open the menu
+    if (event.button === 0) {
+      this.dismissSelection();
+    }
+  }
+
+  onMouseUp(event: MouseEvent) {
+    if (event.button !== 0) return;
+    
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      if (this.selectedText) {
+        this.dismissSelection();
+      }
+      return;
+    }
+
+    const text = selection.toString().trim();
+    if (text.length >= 2) {
+      this.selectedText = text;
+    }
+  }
+
+  onContextMenu(event: MouseEvent) {
+    // Capture latest selection if available, fallback to previously captured text
+    const selection = window.getSelection();
+    const currentText = selection?.toString().trim();
+    if (currentText && currentText.length >= 2) {
+      this.selectedText = currentText;
+    }
+
+    if (this.selectedText && this.selectedText.length >= 2) {
+      // Prevent browser context menu
+      event.preventDefault();
+
+      // Position logic: at the cursor
+      this.selectionMenuPosition = {
+        x: event.clientX,
+        y: event.clientY,
+      };
+
+      // Ensure the UI has time to update the trigger position
+      this.cdr.detectChanges();
+
+      // Open the menu quickly
+      setTimeout(() => {
+        if (this.selectionTrigger) {
+          try {
+            // Trigger can be accessed differently depending on BrnMenuTrigger implementation
+            const trigger = (this.selectionTrigger as any)._cdkTrigger || 
+                           (this.selectionTrigger as any).menuTrigger ||
+                           (this.selectionTrigger as any)._menuTrigger;
+            
+            if (trigger) {
+              trigger.open();
+            } else {
+              // Fallback: try to find it on selectionTrigger itself
+              if (typeof (this.selectionTrigger as any).open === 'function') {
+                (this.selectionTrigger as any).open();
+              }
+            }
+          } catch (e) {
+            console.error('Failed to open selection menu', e);
+          }
+        }
+      }, 5);
+    }
+  }
+
+  dismissSelection() {
+    this.selectedText = '';
+    // Close the menu using the internal CDK trigger if available
+    (this.selectionTrigger as any)?._cdkTrigger?.close();
+    
+    // Clear actual browser selection to avoid ghosting
+    try {
+      window.getSelection()?.removeAllRanges();
+    } catch (e) {}
+  }
+
+  copySelection() {
+    if (this.selectedText) {
+      navigator.clipboard.writeText(this.selectedText);
+      toast.success('Copied to clipboard');
+      this.dismissSelection();
+    }
+  }
+
+  async appendToWriteUp(writeUp: WriteUpMetadata) {
+    if (!this.selectedText) return;
+
+    try {
+      // Use the store to load and then save with appended content
+      const { success, writeUp: fullWriteUp } = await this.writeUpService.load(writeUp.id);
+      if (success && fullWriteUp) {
+        const appended = `\n\n\`\`\`bash\n${this.selectedText}\n\`\`\`\n`;
+        const newContent = fullWriteUp.content + appended;
+        const saveOk = await this.writeUpStore.saveActiveWriteUp(newContent, fullWriteUp.name);
+
+        // If it's not the currently active writeup in the store, we need a manual update
+        if (!saveOk) {
+          await this.writeUpService.update(writeUp.id, fullWriteUp.name, newContent);
+        }
+
+        toast.success('Added to write-up!', {
+          description: `Content appended to "${writeUp.name}"`,
+        });
+        this.dismissSelection();
+      }
+    } catch (err: any) {
+      toast.error('Failed to append to write-up', {
+        description: err?.message || 'Unknown error',
+      });
+    } finally {
+      this.selectedText = '';
+    }
   }
 }

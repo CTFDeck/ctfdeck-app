@@ -45,11 +45,9 @@ export class ScriptService {
     this.ws.registerHandler(this.handleMessage.bind(this));
     this.ws.isConnected$.subscribe((connected) => {
       this.zone.run(() => {
-        console.log('[ScriptService] Connection state:', connected);
         this.isConnected = connected;
         if (connected) {
-          // Defer to next tick to ensure WebSocket is fully ready and avoid sync issues
-          setTimeout(() => void this.refreshList(), 500);
+          void this.refreshList();
         } else {
           this.scriptsSubject.next([]);
         }
@@ -61,7 +59,6 @@ export class ScriptService {
     const type = data[0];
     if (!isCustomScriptResponse(type)) return false;
 
-    console.log('[ScriptService] Received message type:', type);
     let result: any;
     switch (type) {
       case MessageType.CustomScriptCreateResult:
@@ -85,13 +82,10 @@ export class ScriptService {
 
     const callback = this.pending.get(result.messageId);
     if (callback) {
-      console.log('[ScriptService] Found pending callback for messageId:', result.messageId);
       this.zone.run(() => {
         this.pending.delete(result.messageId);
         callback(result);
       });
-    } else {
-      console.warn('[ScriptService] No pending callback for messageId:', result.messageId);
     }
 
     return true;
@@ -171,12 +165,6 @@ export class ScriptService {
   }
 
   list(force = false): Promise<CustomScript[]> {
-    console.log(
-      '[ScriptService] list() called, force=',
-      force,
-      'current length=',
-      this.scriptsSubject.value.length,
-    );
     if (!force && this.scriptsSubject.value.length > 0) {
       return Promise.resolve(this.scriptsSubject.value);
     }
@@ -184,66 +172,55 @@ export class ScriptService {
   }
 
   private refreshList(force = false): Promise<CustomScript[]> {
-    console.log('[ScriptService] refreshList() called, force=', force);
     if (!force && this.listRequest) {
       if (this.loadingSubject.value) {
-        console.log('[ScriptService] Using existing listRequest');
         return this.listRequest;
       }
-      console.warn('[ScriptService] Stale listRequest detected (loading=false), forcing refresh');
     }
 
     this.loadingSubject.next(true);
     this.listRequest = new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      console.log('[ScriptService] Requesting list, messageId:', messageId);
-      const buffer = serializeCustomScriptList(messageId);
-      const timeoutId = setTimeout(() => {
-        if (!this.pending.has(messageId)) return;
-        this.pending.delete(messageId);
+      const sendRequest = () => {
+        const messageId = generateUUID();
+        const buffer = serializeCustomScriptList(messageId);
+        const timeoutId = setTimeout(() => {
+          if (!this.pending.has(messageId)) return;
+          this.pending.delete(messageId);
+          this.loadingSubject.next(false);
+          this.listRequest = null;
+          // Timed out — will retry when connection is re-established via isConnected$ subscription
+          resolve(this.scriptsSubject.value);
+        }, ScriptService.LIST_TIMEOUT_MS);
+
+        this.pending.set(messageId, (result) => {
+          clearTimeout(timeoutId);
+          this.loadingSubject.next(false);
+          this.listRequest = null;
+          if (result.error) {
+            reject(new Error(result.error));
+          } else {
+            this.scriptsSubject.next(result.scripts);
+            resolve(result.scripts);
+          }
+        });
+
+        try {
+          this.ws.sendBinary(buffer);
+        } catch {
+          clearTimeout(timeoutId);
+          this.pending.delete(messageId);
+          this.loadingSubject.next(false);
+          this.listRequest = null;
+          resolve(this.scriptsSubject.value);
+        }
+      };
+
+      if (this.isConnected) {
+        sendRequest();
+      } else {
+        // Not connected yet — wait for the next connection event
         this.loadingSubject.next(false);
         this.listRequest = null;
-        if (this.isConnected) {
-          setTimeout(() => {
-            void this.refreshList(true);
-          }, ScriptService.RETRY_DELAY_MS);
-        }
-        resolve(this.scriptsSubject.value);
-      }, ScriptService.LIST_TIMEOUT_MS);
-
-      this.pending.set(messageId, (result) => {
-        clearTimeout(timeoutId);
-        this.loadingSubject.next(false);
-        this.listRequest = null;
-        if (result.error) {
-          reject(new Error(result.error));
-        } else {
-          this.scriptsSubject.next(result.scripts);
-          resolve(result.scripts);
-        }
-      });
-
-      try {
-        if (!this.isConnected) {
-          throw new Error('WebSocket not connected');
-        }
-        console.log('[ScriptService] Sending CustomScriptList message');
-        this.ws.sendBinary(buffer);
-      } catch (err) {
-        console.warn('[ScriptService] Failed to send list request:', err);
-        clearTimeout(timeoutId);
-        this.pending.delete(messageId);
-        this.loadingSubject.next(false);
-        this.listRequest = null;
-
-        // If it was a forced refresh or we have no scripts, retry after a delay
-        if (this.isConnected) {
-          console.log('[ScriptService] Scheduling retry in', ScriptService.RETRY_DELAY_MS, 'ms');
-          setTimeout(() => {
-            void this.refreshList(true);
-          }, ScriptService.RETRY_DELAY_MS);
-        }
-
         resolve(this.scriptsSubject.value);
       }
     });
