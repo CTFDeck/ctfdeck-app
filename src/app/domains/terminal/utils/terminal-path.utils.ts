@@ -25,14 +25,14 @@ export function looksLikeDirectoryListing(command: string): boolean {
 }
 
 export function getHomePathFromPath(path: string): string {
-  const match = path.match(/^(\/[a-z]\/Users\/[^\/]+|\/home\/[^\/]+|C:\/Users\/[^\/]+)/i);
+  const match = path.match(/^(\/[a-z]\/Users\/[^/]+|\/home\/[^/]+|C:\/Users\/[^/]+)/i);
 
   return match ? match[1] : '';
 }
 
 export function getHomePathFromWorkingDirectory(workingDirectory: string): string {
   const match = workingDirectory.match(
-    /^(\/[a-z]\/Users\/[^\/]+|\/home\/[^\/]+|C:\\Users\\[^\\/]+)/i,
+    /^(\/[a-z]\/Users\/[^/]+|\/home\/[^/]+|C:\\Users\\[^\\/]+)/i,
   );
 
   return match ? match[1].replace(/\\/g, '/') : '';

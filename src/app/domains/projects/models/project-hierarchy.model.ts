@@ -1,3 +1,6 @@
+import { WriteUpMetadata } from '../../writeups/models/writeup.model';
+import { SessionMetadata } from '../../sessions/models/session-metadata.model';
+
 export interface ProjectHierarchy {
   id: string;
   name: string;
@@ -9,7 +12,7 @@ export interface FolderHierarchy {
   id: string;
   name: string;
   isSystem: boolean;
-  sessions: any[];
-  writeups: any[];
+  sessions: SessionMetadata[];
+  writeups: WriteUpMetadata[];
   folders: FolderHierarchy[];
 }

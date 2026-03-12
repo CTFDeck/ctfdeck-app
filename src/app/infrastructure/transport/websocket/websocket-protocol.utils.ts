@@ -82,7 +82,7 @@ export class BinaryWriter {
 }
 
 export class BinaryReader {
-  private offset: number;
+  public offset: number;
   readonly view: DataView;
 
   constructor(

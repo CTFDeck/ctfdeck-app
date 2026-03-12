@@ -3,6 +3,7 @@ import { HlmButton, provideBrnButtonConfig } from '@ctfdeck/helm/button';
 import { ThemeService } from '../../theme.service';
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'button[themeToggle]',
   standalone: true,
   providers: [provideBrnButtonConfig({ variant: 'ghost', size: 'icon' })],

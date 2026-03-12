@@ -134,7 +134,7 @@ export class WebSocketService {
     if (this.ws) {
       try {
         this.ws.close();
-      } catch {}
+      } catch { /*Ignore*/ }
 
       this.ws = null;
     }
@@ -252,7 +252,7 @@ export class WebSocketService {
         this.handleMessage(event.data as ArrayBuffer);
       };
 
-      ws.onerror = () => {};
+      ws.onerror = () => { /* Ignore */ };
 
       ws.onclose = () => {
         this.zone.run(() => {
@@ -280,7 +280,7 @@ export class WebSocketService {
       this.ws.onerror = null;
       this.ws.onmessage = null;
       this.ws.close();
-    } catch {}
+    } catch { /* Ignore */ }
 
     this.ws = null;
   }
@@ -433,7 +433,7 @@ export class WebSocketService {
 
       try {
         pendingRequest.reject(error);
-      } catch {}
+      } catch { /* Ignore */ }
     }
 
     this.pending.clear();

@@ -148,7 +148,7 @@ export function deserializeToolInstallProgress(data: ArrayBuffer | Uint8Array): 
   const progressPercent = hasProgress ? reader.view.getFloat64(reader.currentOffset, true) : null;
 
   if (hasProgress) {
-    (reader as any).offset += 8;
+    reader.offset += 8;
   }
 
   const installedPath = reader.readStringOrNull();

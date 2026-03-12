@@ -47,6 +47,7 @@ import { WriteUpMetadata } from '../../domains/writeups/models/writeup.model';
 import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'ctf-workspace-sidebar',
   standalone: true,
   imports: [

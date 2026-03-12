@@ -59,6 +59,7 @@ import {
   getTargetIcon,
   getTargetKey,
 } from '../utils/target-manager.utils';
+import { SessionMetadata } from '../../sessions/models/session-metadata.model';
 
 @Component({
   selector: 'app-target-manager',
@@ -379,7 +380,7 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
 
   private async updateTargetSessionMapping(): Promise<void> {
     setTimeout(async () => {
-      const metas: any[] = [];
+      const metas: SessionMetadata[] = [];
       const sub = this.sessionStore.sessions$.subscribe((items) => metas.push(...items));
       sub.unsubscribe();
 

@@ -127,7 +127,7 @@ export class ScriptStore {
     messageId: string,
     buffer: Uint8Array,
     onSuccess: (result: PendingResult) => void,
-    reject: (err: any) => void,
+    reject: (err: Error) => void,
   ): void {
     this.pending.set(messageId, async (result) => {
       if ('error' in result) {
@@ -135,14 +135,14 @@ export class ScriptStore {
         return;
       }
 
-      await onSuccess(result);
+      onSuccess(result);
     });
 
     try {
       this.ws.sendBinary(buffer);
     } catch (error) {
       this.pending.delete(messageId);
-      reject(error);
+      reject(error as Error);
     }
   }
 

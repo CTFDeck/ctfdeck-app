@@ -1,5 +1,4 @@
 import {
-  AfterViewChecked,
   ChangeDetectorRef,
   Component,
   ElementRef,
@@ -56,6 +55,18 @@ import { WriteUpStore } from '../../../writeups/state/writeup.store';
 import { WriteUpClientService } from '../../../writeups/infrastructure/writeup-client.service';
 import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
 
+interface MenuTriggerLike {
+  open(): void;
+  close?(): void;
+}
+
+interface BrnMenuTriggerInternals {
+  _cdkTrigger?: MenuTriggerLike;
+  menuTrigger?: MenuTriggerLike;
+  _menuTrigger?: MenuTriggerLike;
+  open?(): void;
+}
+
 @Component({
   selector: 'app-terminal',
   standalone: true,
@@ -93,7 +104,7 @@ import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
   templateUrl: './terminal.component.html',
   styleUrls: ['./terminal.component.css'],
 })
-export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class TerminalComponent implements OnInit, OnDestroy {
   private readonly wsService = inject(WebSocketService);
   private readonly sessionStore = inject(SessionStore);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -187,8 +198,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
-
-  ngAfterViewChecked(): void {}
 
   async executeCommand(): Promise<void> {
     const cmd = this.currentCommand.trim();
@@ -443,20 +452,19 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         }
 
         try {
+          const internals = this.selectionTrigger as unknown as BrnMenuTriggerInternals;
           const trigger =
-            (this.selectionTrigger as any)._cdkTrigger ||
-            (this.selectionTrigger as any).menuTrigger ||
-            (this.selectionTrigger as any)._menuTrigger;
+            internals._cdkTrigger || internals.menuTrigger || internals._menuTrigger;
 
           if (trigger) {
             trigger.open();
             return;
           }
 
-          if (typeof (this.selectionTrigger as any).open === 'function') {
-            (this.selectionTrigger as any).open();
+          if (typeof internals.open === 'function') {
+            internals.open();
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Failed to open selection menu', error);
         }
       }, 5);
@@ -465,11 +473,13 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   dismissSelection(): void {
     this.selectedText = '';
-    (this.selectionTrigger as any)?._cdkTrigger?.close();
+
+    const internals = this.selectionTrigger as unknown as BrnMenuTriggerInternals;
+    internals._cdkTrigger?.close?.();
 
     try {
       window.getSelection()?.removeAllRanges();
-    } catch {}
+    } catch { /* Ignore */ }
   }
 
   copySelection(): void {
@@ -477,7 +487,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    navigator.clipboard.writeText(this.selectedText).then(() => {/* Ignore */});
+    navigator.clipboard.writeText(this.selectedText).then(() => { /* Ignore */ });
     toast.success('Copied to clipboard');
     this.dismissSelection();
   }
@@ -547,8 +557,8 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.wsService
       .executeCommandStreaming(
         'pwd',
-        () => {},
-        () => {},
+        () => { /* Ignore */ },
+        () => { /* Ignore */ },
       )
       .then((result) => {
         if (result.workingDirectory) {
@@ -557,7 +567,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
         this.refreshAutocompleteCache();
       })
-      .catch(() => {});
+      .catch(() => { /* Ignore */ });
   }
 
   private renderOutputBuffer(lineIndex: number, buffer: string): void {
@@ -592,14 +602,14 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         (data) => {
           output += data;
         },
-        () => {},
+        () => { /* Ignore */ },
       )
       .then(() => {
         if (output) {
           this.updateLsCache(output);
         }
       })
-      .catch(() => {});
+      .catch(() => { /* Ignore */ });
   }
 
   private updatePwd(workingDirectory: string): void {
@@ -698,8 +708,6 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   private scrollToBottom(): void {
     try {
       this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } catch {
-      /* Ignore */
-    }
+    } catch { /* Ignore */ }
   }
 }

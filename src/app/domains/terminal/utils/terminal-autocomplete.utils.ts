@@ -258,6 +258,7 @@ export class TerminalAutocomplete {
   } {
     const coloredMap = new Map<string, string>();
     const typeMap = new Map<string, FilePrefix>();
+    // eslint-disable-next-line no-control-regex
     const ansiPattern = /((?:\x1B\[[0-9;]*m)+)([^\s\x1B]+)((?:\x1B\[[0-9;]*m)*)/g;
 
     let match: RegExpExecArray | null;
@@ -318,6 +319,7 @@ export class TerminalAutocomplete {
   }
 
   private stripAnsi(text: string): string {
+    // eslint-disable-next-line no-control-regex
     return text.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
   }
 }

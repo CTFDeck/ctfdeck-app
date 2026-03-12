@@ -106,8 +106,7 @@ export class ToolsStore implements OnDestroy {
           if (
             result.state === ToolInstallState.Failed ||
             result.state === ToolInstallState.Success
-          ) {
-          }
+          ) { /*Ignore*/ }
 
           return true;
         }

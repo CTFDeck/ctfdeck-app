@@ -84,8 +84,8 @@ export class WriteUpStore implements OnDestroy {
       }
 
       this.writeUpsSubject.next([...this.writeUpsSubject.value, ...result.writeUps]);
-    } catch (error: any) {
-      toast.error('Failed to load writeups', { description: error?.message || 'Unknown error' });
+    } catch {
+      toast.error('Failed to load writeups');
     } finally {
       this.writeUpsLoadingSubject.next(false);
     }
@@ -171,8 +171,8 @@ export class WriteUpStore implements OnDestroy {
       await this.refreshWriteUps(sessionId === ALL_SESSIONS_ID ? undefined : sessionId);
       await this.selectWriteUp(result.writeUpId);
       return result.writeUpId;
-    } catch (error: any) {
-      toast.error('Writeup creation failed', { description: error?.message || 'Unknown error' });
+    } catch {
+      toast.error('Writeup creation failed');
       return null;
     } finally {
       this.isLoadingSubject.next(false);
@@ -204,8 +204,8 @@ export class WriteUpStore implements OnDestroy {
 
       await this.refreshWriteUps();
       return true;
-    } catch (error: any) {
-      toast.error('Save failed', { description: error?.message || 'Unknown error' });
+    } catch {
+      toast.error('Save failed');
       return false;
     } finally {
       this.isLoadingSubject.next(false);
@@ -225,8 +225,8 @@ export class WriteUpStore implements OnDestroy {
       }
 
       await this.refreshWriteUps();
-    } catch (error: any) {
-      toast.error('Delete failed', { description: error?.message || 'Unknown error' });
+    } catch {
+      toast.error('Delete failed');
     }
   }
 
@@ -297,8 +297,8 @@ export class WriteUpStore implements OnDestroy {
       ]);
 
       return true;
-    } catch (error: any) {
-      toast.error('Move failed', { description: error?.message || 'Unknown error' });
+    } catch {
+      toast.error('Move failed');
       return false;
     }
   }

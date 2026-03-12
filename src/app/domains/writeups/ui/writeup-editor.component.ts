@@ -364,6 +364,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let index = 0; index < items.length; index++) {
       if (!items[index].type.includes('image')) {
         continue;
@@ -387,6 +388,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let index = 0; index < files.length; index++) {
       const file = files[index];
       if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
@@ -405,7 +407,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     }
 
     const contentWithPrefixes = this.content.replace(
-      /(\!\[[^\]]*\]\()([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(\))/gi,
+      /(!\[[^\]]*]\()([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(\))/gi,
       '$1media://$2$3',
     );
 
@@ -530,8 +532,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       this.insertAtCursor(markdown);
       toast.success('Media uploaded and inserted');
       this.autoSave$.next();
-    } catch (error: any) {
-      toast.error('Media upload failed', { description: error?.message || 'Unknown error' });
+    } catch (error: unknown) {
+      toast.error('Media upload failed');
     }
   }
 
