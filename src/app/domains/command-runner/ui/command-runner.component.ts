@@ -64,6 +64,7 @@ import {
   errorMessageOf,
   toSafeHtml,
 } from '../utils/command-runner-render.utils';
+import { createRenderScheduler } from '../utils/command-runner-render-scheduler.utils';
 
 @Component({
   selector: 'app-command-runner',
@@ -216,10 +217,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     this.subscriptions.unsubscribe();
   }
 
-  close(): void {
-    this.closeEvent.emit();
-  }
-
   onTargetChange(): void {
     this.updateCommandPreview();
   }
@@ -308,32 +305,10 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
     let outputLineIndex = -1;
     let outputBuffer = '';
-    let pendingRender = false;
-    let lastRenderTime = 0;
-    const minRenderInterval = 16;
 
-    const scheduleRender = () => {
-      if (pendingRender) {
-        return;
-      }
-
-      const now = performance.now();
-
-      if (now - lastRenderTime < minRenderInterval) {
-        pendingRender = true;
-
-        requestAnimationFrame(() => {
-          pendingRender = false;
-          lastRenderTime = performance.now();
-          this.renderOutputBuffer(outputLineIndex, outputBuffer);
-        });
-
-        return;
-      }
-
-      lastRenderTime = now;
+    const renderScheduler = createRenderScheduler(() => {
       this.renderOutputBuffer(outputLineIndex, outputBuffer);
-    };
+    });
 
     this.sessionStore.broadcastTerminalEvent({
       type: 'command',
@@ -352,7 +327,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
           }
 
           this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
-          scheduleRender();
+          renderScheduler.schedule();
         },
         (data: string) => {
           this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
@@ -395,39 +370,17 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
     let outputBuffer = '';
     let errorBuffer = '';
-    let pendingRender = false;
-    let lastRenderTime = 0;
-    const minRenderInterval = 16;
 
-    const scheduleRender = () => {
-      if (pendingRender) {
-        return;
-      }
-
-      const now = performance.now();
-
-      if (now - lastRenderTime < minRenderInterval) {
-        pendingRender = true;
-
-        requestAnimationFrame(() => {
-          pendingRender = false;
-          lastRenderTime = performance.now();
-          this.renderHelpOutput(outputBuffer);
-        });
-
-        return;
-      }
-
-      lastRenderTime = now;
+    const renderScheduler = createRenderScheduler(() => {
       this.renderHelpOutput(outputBuffer);
-    };
+    });
 
     this.wsService
       .executeCommandStreaming(
         `${this.selectedToolId} -h`,
         (data: string) => {
           outputBuffer += data;
-          scheduleRender();
+          renderScheduler.schedule();
         },
         (error: string) => {
           errorBuffer += error;

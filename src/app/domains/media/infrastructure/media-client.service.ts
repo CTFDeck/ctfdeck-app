@@ -16,14 +16,14 @@ import {
   serializeMediaUpload,
 } from './media.websocket.protocol';
 
-type PendingMediaResult = {
+interface PendingMediaResult {
   messageId: string;
   success?: boolean;
   mediaId?: string;
   media?: MediaData | null;
   mediaList?: MediaMetadata[];
   error?: string;
-};
+}
 
 @Injectable({ providedIn: 'root' })
 export class MediaClientService {
