@@ -218,11 +218,6 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
     ).length;
   }
 
-  getProgressPercent(toolId: string): number | null {
-    const progress = this.progressByToolId[toolId];
-    return progress?.progressPercent ?? null;
-  }
-
   getProgressLabel(toolId: string): string {
     const progress = this.progressByToolId[toolId];
 
@@ -239,9 +234,5 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   getStateLabel(state: ToolInstallState): string {
     return getToolInstallStateLabel(state);
-  }
-
-  trackByToolId(_: number, tool: ToolStatus): string {
-    return tool.id;
   }
 }

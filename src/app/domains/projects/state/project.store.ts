@@ -18,7 +18,6 @@ export class ProjectStore implements OnDestroy {
   readonly projects$ = this.projectsSubject.asObservable();
 
   private loadingSubject = new BehaviorSubject<boolean>(false);
-  readonly loading$ = this.loadingSubject.asObservable();
 
   private totalProjectsCountSubject = new BehaviorSubject<number>(0);
   readonly totalProjectsCount$ = this.totalProjectsCountSubject.asObservable();

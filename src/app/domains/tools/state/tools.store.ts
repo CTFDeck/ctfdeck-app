@@ -26,7 +26,6 @@ export class ToolsStore implements OnDestroy {
   readonly tools$ = this.toolsSubject.asObservable();
 
   private readonly installAcceptedSubject = new Subject<ToolInstallAccepted>();
-  readonly installAccepted$ = this.installAcceptedSubject.asObservable();
 
   private readonly progressSubject = new Subject<ToolInstallProgress>();
   readonly progress$ = this.progressSubject.asObservable();

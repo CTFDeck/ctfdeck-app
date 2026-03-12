@@ -59,6 +59,4 @@ export class App {
   closeCommandRunner() {
     this.commandRunnerVisible = false;
   }
-
-  saveTargets() {}
 }

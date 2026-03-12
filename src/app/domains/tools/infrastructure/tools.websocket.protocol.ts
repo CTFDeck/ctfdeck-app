@@ -31,6 +31,10 @@ export interface ToolOperationError {
   error: string;
 }
 
+function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
+  return data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+}
+
 export function serializeToolInventoryRequest(messageId: string): Uint8Array {
   const id = uuidToBytes(messageId);
   const buffer = new Uint8Array(1 + 16);
@@ -75,7 +79,7 @@ export function serializeToolInstallRequest(toolIds: string[], messageId: string
 export function deserializeToolCatalogSnapshot(
   data: ArrayBuffer | Uint8Array,
 ): ToolCatalogSnapshot {
-  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const u8 = toUint8Array(data);
   const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const decoder = new TextDecoder();
 
@@ -147,7 +151,7 @@ export function deserializeToolCatalogSnapshot(
 export function deserializeToolInventoryResult(
   data: ArrayBuffer | Uint8Array,
 ): ToolInventoryResult {
-  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const u8 = toUint8Array(data);
   const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const decoder = new TextDecoder();
 
@@ -211,7 +215,7 @@ export function deserializeToolInventoryResult(
 export function deserializeToolInstallAccepted(
   data: ArrayBuffer | Uint8Array,
 ): ToolInstallAccepted {
-  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const u8 = toUint8Array(data);
   const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
 
   let offset = 0;
@@ -237,7 +241,7 @@ export function deserializeToolInstallAccepted(
 export function deserializeToolInstallProgress(
   data: ArrayBuffer | Uint8Array,
 ): ToolInstallProgress {
-  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const u8 = toUint8Array(data);
   const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const decoder = new TextDecoder();
 
@@ -291,7 +295,7 @@ export function deserializeToolInstallProgress(
 }
 
 export function deserializeToolOperationError(data: ArrayBuffer | Uint8Array): ToolOperationError {
-  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const u8 = toUint8Array(data);
   const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const decoder = new TextDecoder();
 

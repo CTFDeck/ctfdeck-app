@@ -58,7 +58,6 @@ import {
   createTargetTypeOptions,
   getTargetIcon,
   getTargetKey,
-  getTargetTypeLabel,
 } from '../utils/target-manager.utils';
 
 @Component({
@@ -221,10 +220,6 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
 
   getSessionsForTarget(target: SessionTarget): string[] {
     return this.targetToSessions.get(getTargetKey(target)) || [];
-  }
-
-  getTargetTypeLabel(type: number): string {
-    return getTargetTypeLabel(type, this.targetTypes);
   }
 
   getTargetIcon(type: number): string {

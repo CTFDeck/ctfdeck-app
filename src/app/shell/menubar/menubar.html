@@ -203,35 +203,34 @@
 
   <ng-template #customscripts>
     <hlm-sub-menu>
-      <div *ngIf="customScriptsLoading && customScripts.length === 0" class="px-2 py-2 space-y-1">
-        <div class="h-6 w-36 rounded bg-muted/70 animate-pulse"></div>
-        <div class="h-6 w-32 rounded bg-muted/70 animate-pulse"></div>
-      </div>
+      @if (customScriptsLoading && customScripts.length === 0) {
+        <div class="px-2 py-2 space-y-1">
+          <div class="h-6 w-36 rounded bg-muted/70 animate-pulse"></div>
+          <div class="h-6 w-32 rounded bg-muted/70 animate-pulse"></div>
+        </div>
+      }
 
-      <button
-        hlmMenuItem
-        *ngFor="let script of recentCustomScripts"
-        (click)="openCommandRunner(script.id)"
-      >
-        {{ script.name }}
-      </button>
+      @for (script of recentCustomScripts; track script.id) {
+        <button hlmMenuItem (click)="openCommandRunner(script.id)">
+          {{ script.name }}
+        </button>
+      }
 
-      <div
-        *ngIf="!customScriptsLoading && recentCustomScripts.length === 0"
-        class="px-3 py-2 text-sm text-muted-foreground"
-      >
-        No custom scripts yet
-      </div>
+      @if (!customScriptsLoading && recentCustomScripts.length === 0) {
+        <div class="px-3 py-2 text-sm text-muted-foreground">
+          No custom scripts yet
+        </div>
+      }
 
-      <ng-container *ngIf="recentCustomScripts.length > 0">
+      @if (recentCustomScripts.length > 0) {
         <hlm-menu-separator />
-      </ng-container>
+      }
 
       <button hlmMenuItem (click)="manageCustomScripts()">Manage Scripts</button>
     </hlm-sub-menu>
   </ng-template>
 
-  <ng-template #documentation>
+  <ng-template>
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
         @if (hasToolsInCategory('UTILS')) {
@@ -300,8 +299,12 @@
   <ng-template #documentation>
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
-        <button hlmMenuItem (click)="navigate('/docs/developer')">Developer Documentation</button>
-        <button hlmMenuItem (click)="navigate('/docs/user')">User Documentation</button>
+        <button hlmMenuItem (click)="openUrl('https://github.com/CTFDeck/ctfdeck-app/wiki')">
+          Developer Documentation
+        </button>
+        <button hlmMenuItem (click)="openUrl('https://github.com/CTFDeck/ctfdeck-app/wiki/USER')">
+          User Documentation
+        </button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>

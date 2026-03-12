@@ -38,6 +38,7 @@ export const buttonVariants = cva(
 export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
 @Directive({
+  // eslint-disable-next-line @angular-eslint/directive-selector
 	selector: 'button[hlmBtn], a[hlmBtn]',
 	exportAs: 'hlmBtn',
 	hostDirectives: [{ directive: BrnButton, inputs: ['disabled'] }],

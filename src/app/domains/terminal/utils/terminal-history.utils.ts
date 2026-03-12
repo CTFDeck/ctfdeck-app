@@ -34,10 +34,6 @@ export class TerminalHistory {
     return currentInput;
   }
 
-  reset(): void {
-    this.index = this.history.length;
-  }
-
   setHistory(commands: string[]): void {
     this.history = [...commands];
     this.index = this.history.length;

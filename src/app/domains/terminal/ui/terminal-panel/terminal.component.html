@@ -25,8 +25,8 @@
             [class.bg-red-500]="!isConnected"
           ></div>
           <span class="status-text text-xs text-muted-foreground">{{
-            isConnected ? 'Connected to ' + serverUrl : 'Disconnected'
-          }}</span>
+              isConnected ? 'Connected to ' + serverUrl : 'Disconnected'
+            }}</span>
           <ng-icon name="lucideSettings" size="xs" class="ml-1 opacity-50" />
         </button>
 
@@ -55,32 +55,35 @@
               </div>
             </div>
 
-            <div *ngIf="savedServers.length > 0" class="space-y-2">
-              <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Saved Servers
-              </h4>
-              <div class="grid gap-1 max-h-40 overflow-y-auto pr-1">
-                <div
-                  *ngFor="let server of savedServers"
-                  class="flex items-center justify-between p-2 rounded-md border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer group"
-                  (click)="selectServer(server)"
-                >
-                  <div class="flex items-center gap-2 overflow-hidden">
-                    <ng-icon name="lucideGlobe" size="xs" class="text-muted-foreground" />
-                    <span class="text-xs truncate">{{ server }}</span>
-                  </div>
-                  <button
-                    hlmBtn
-                    size="icon"
-                    variant="ghost"
-                    class="h-6 w-6 opacity-0 group-hover:opacity-100"
-                    (click)="removeServer(server, $event)"
-                  >
-                    <ng-icon name="lucideTrash2" size="xs" class="text-destructive" />
-                  </button>
+            @if (savedServers.length > 0) {
+              <div class="space-y-2">
+                <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Saved Servers
+                </h4>
+                <div class="grid gap-1 max-h-40 overflow-y-auto pr-1">
+                  @for (server of savedServers; track server) {
+                    <div
+                      class="flex items-center justify-between p-2 rounded-md border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer group"
+                      (click)="selectServer(server)"
+                    >
+                      <div class="flex items-center gap-2 overflow-hidden">
+                        <ng-icon name="lucideGlobe" size="xs" class="text-muted-foreground" />
+                        <span class="text-xs truncate">{{ server }}</span>
+                      </div>
+                      <button
+                        hlmBtn
+                        size="icon"
+                        variant="ghost"
+                        class="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        (click)="removeServer(server, $event)"
+                      >
+                        <ng-icon name="lucideTrash2" size="xs" class="text-destructive" />
+                      </button>
+                    </div>
+                  }
                 </div>
               </div>
-            </div>
+            }
           </div>
 
           <hlm-dialog-footer>
@@ -102,40 +105,34 @@
     (mousedown)="onMouseDown($event)"
     (contextmenu)="onContextMenu($event)"
   >
-    <div
-      *ngFor="let line of lines"
-      class="line mb-0.5 break-all"
-      [ngClass]="{
-        'font-bold text-foreground mt-2': line.type === 'command',
-        'text-muted-foreground': line.type === 'output',
-        'text-destructive': line.type === 'error',
-        'text-primary italic': line.type === 'info',
-        'line-animated': line.type === 'output' || line.type === 'ls',
-      }"
-    >
-      <ng-container *ngIf="line.type === 'ls' && line.lsEntries?.length; else normalLine">
-        <div class="ls-grid">
-          <span
-            *ngFor="let e of line.lsEntries"
-            class="ls-item"
-            [ngClass]="classForPrefix(e.prefix)"
-          >
-            {{ e.name }}
-          </span>
-        </div>
-      </ng-container>
-
-      <ng-template #normalLine>
-        <span
-          *ngIf="line.type === 'output'"
-          class="content whitespace-pre-wrap"
-          [innerHTML]="line.content"
-        ></span>
-        <span *ngIf="line.type !== 'output'" class="content whitespace-pre-wrap">{{
-          line.content
-        }}</span>
-      </ng-template>
-    </div>
+    @for (line of lines; track line) {
+      <div
+        class="line mb-0.5 break-all"
+        [ngClass]="{
+          'font-bold text-foreground mt-2': line.type === 'command',
+          'text-muted-foreground': line.type === 'output',
+          'text-destructive': line.type === 'error',
+          'text-primary italic': line.type === 'info',
+          'line-animated': line.type === 'output' || line.type === 'ls',
+        }"
+      >
+        @if (line.type === 'ls' && line.lsEntries?.length) {
+          <div class="ls-grid">
+            @for (e of line.lsEntries; track e.name) {
+              <span class="ls-item" [ngClass]="classForPrefix(e.prefix)">
+                {{ e.name }}
+              </span>
+            }
+          </div>
+        } @else {
+          @if (line.type === 'output') {
+            <span class="content whitespace-pre-wrap" [innerHTML]="line.content"></span>
+          } @else {
+            <span class="content whitespace-pre-wrap">{{ line.content }}</span>
+          }
+        }
+      </div>
+    }
 
     <button
       #selectionTrigger
@@ -145,16 +142,15 @@
       [style.top.px]="selectionMenuPosition.y"
     ></button>
 
-    <div *ngIf="autocompleteSuggestions.length > 0" class="autocomplete-suggestions mb-2">
-      <div class="autocomplete-grid">
-        <span
-          *ngFor="let e of autocompleteSuggestions"
-          class="autocomplete-item"
-          [ngClass]="classForPrefix(e.prefix)"
-          >{{ e.name }}</span
-        >
+    @if (autocompleteSuggestions.length > 0) {
+      <div class="autocomplete-suggestions mb-2">
+        <div class="autocomplete-grid">
+          @for (e of autocompleteSuggestions; track e.name) {
+            <span class="autocomplete-item" [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
+          }
+        </div>
       </div>
-    </div>
+    }
 
     <div class="input-line flex items-center mt-2">
       <span class="prompt text-primary font-bold mr-2">{{ prompt }}</span>
@@ -214,20 +210,19 @@
   >
     <hlm-menu-label>Target Write-up</hlm-menu-label>
     <hlm-menu-separator />
-    <hlm-menu-group *ngIf="(writeUps$ | async)?.length; else noWriteUps">
-      <button
-        hlmMenuItem
-        *ngFor="let writeUp of writeUps$ | async"
-        (click)="appendToWriteUp(writeUp)"
-      >
-        <ng-icon name="lucideFileText" size="sm" class="mr-2 opacity-50" />
-        <span class="truncate">{{ writeUp.name }}</span>
-      </button>
-    </hlm-menu-group>
-    <ng-template #noWriteUps>
+    @if ((writeUps$ | async)?.length) {
+      <hlm-menu-group>
+        @for (writeUp of (writeUps$ | async)!; track writeUp.name) {
+          <button hlmMenuItem (click)="appendToWriteUp(writeUp)">
+            <ng-icon name="lucideFileText" size="sm" class="mr-2 opacity-50" />
+            <span class="truncate">{{ writeUp.name }}</span>
+          </button>
+        }
+      </hlm-menu-group>
+    } @else {
       <div class="px-4 py-6 text-center text-xs text-muted-foreground italic">
         No active write-ups found.
       </div>
-    </ng-template>
+    }
   </hlm-sub-menu>
 </ng-template>

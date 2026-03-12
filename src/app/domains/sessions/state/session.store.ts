@@ -18,7 +18,6 @@ export class SessionStore implements OnDestroy {
   readonly sessions$ = this.sessionsSubject.asObservable();
 
   private readonly sessionsTotalSubject = new BehaviorSubject<number>(0);
-  readonly sessionsTotal$ = this.sessionsTotalSubject.asObservable();
 
   private readonly sessionsLoadingSubject = new BehaviorSubject<boolean>(false);
   readonly sessionsLoading$ = this.sessionsLoadingSubject.asObservable();
@@ -51,8 +50,7 @@ export class SessionStore implements OnDestroy {
         if (connected) {
           void this.initializeOnConnect();
         } else {
-          this.activeSessionSubject.next(null);
-          this.activeSessionIdSubject.next(null);
+          this.clearActiveSessionState();
         }
       }),
     );
@@ -101,9 +99,7 @@ export class SessionStore implements OnDestroy {
           }
         }
       } catch (error: unknown) {
-        toast.error('Session list failed', {
-          description: error instanceof Error ? error.message : 'Unknown error',
-        });
+        this.showError('Session list failed', error);
       } finally {
         this.sessionsLoadingSubject.next(false);
       }
@@ -133,26 +129,25 @@ export class SessionStore implements OnDestroy {
       const setOk = await this.sessions.setActive(sessionId);
 
       if (!setOk) {
-        throw new Error('Failed to set active session');
+        this.clearActiveSessionState();
+        this.showError('Session load failed', 'Failed to set active session');
+        return;
       }
 
       const loaded = await this.sessions.load(sessionId);
 
       if (!loaded.success || !loaded.session) {
-        throw new Error('Failed to load session');
+        this.clearActiveSessionState();
+        this.showError('Session load failed', 'Failed to load session');
+        return;
       }
 
       this.activeSessionSubject.next(loaded.session);
       this.activeSessionIdSubject.next(sessionId);
       localStorage.setItem(ACTIVE_SESSION_KEY, sessionId);
     } catch (error: unknown) {
-      this.activeSessionSubject.next(null);
-      this.activeSessionIdSubject.next(null);
-      localStorage.removeItem(ACTIVE_SESSION_KEY);
-
-      toast.error('Session load failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
+      this.clearActiveSessionState();
+      this.showError('Session load failed', error);
     } finally {
       this.isLoadingSubject.next(false);
     }
@@ -160,30 +155,33 @@ export class SessionStore implements OnDestroy {
 
   async createSession(name: string): Promise<string> {
     this.isLoadingSubject.next(true);
+    let result;
 
     try {
-      const result = await this.sessions.create(name);
+      result = await this.sessions.create(name);
+    } catch (error: unknown) {
+      this.showError('Session create failed', error);
+      this.isLoadingSubject.next(false);
+      throw error;
+    }
 
-      if (!result.success) {
-        throw new Error('Failed to create session');
-      }
+    if (!result.success) {
+      this.isLoadingSubject.next(false);
+      const error = new Error('Failed to create session');
+      this.showError('Session create failed', error);
+      throw error;
+    }
 
+    try {
       await this.selectSession(result.sessionId);
       await Promise.all([
         this.refreshSessions(true, 0, 50, false),
         this.refreshSessions(true, 0, 6, true),
       ]);
-
-      return result.sessionId;
-    } catch (error: unknown) {
-      toast.error('Session create failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-
-      throw error;
     } finally {
       this.isLoadingSubject.next(false);
     }
+    return result.sessionId;
   }
 
   async ensureActiveSession(defaultName = 'New chat'): Promise<string> {
@@ -209,13 +207,12 @@ export class SessionStore implements OnDestroy {
       const ok = await this.sessions.delete(sessionId);
 
       if (!ok) {
-        throw new Error('Failed to delete session');
+        this.showError('Session delete failed', 'Failed to delete session');
+        return;
       }
 
       if (this.activeSessionIdSubject.value === sessionId) {
-        this.activeSessionSubject.next(null);
-        this.activeSessionIdSubject.next(null);
-        localStorage.removeItem(ACTIVE_SESSION_KEY);
+        this.clearActiveSessionState();
       }
 
       await Promise.all([
@@ -223,9 +220,7 @@ export class SessionStore implements OnDestroy {
         this.refreshSessions(true, 0, 6, true),
       ]);
     } catch (error: unknown) {
-      toast.error('Session delete failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
+      this.showError('Session delete failed', error);
     }
   }
 
@@ -234,7 +229,8 @@ export class SessionStore implements OnDestroy {
       const ok = await this.sessions.update(sessionId, name, description);
 
       if (!ok) {
-        throw new Error('Failed to rename session');
+        this.showError('Session update failed', 'Failed to rename session');
+        return;
       }
 
       await Promise.all([
@@ -250,9 +246,7 @@ export class SessionStore implements OnDestroy {
         });
       }
     } catch (error: unknown) {
-      toast.error('Session update failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
+      this.showError('Session update failed', error);
     }
   }
 
@@ -272,9 +266,7 @@ export class SessionStore implements OnDestroy {
         this.activeSessionSubject.next(loaded.session);
       }
     } catch (error: unknown) {
-      toast.error('Session refresh failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
+      this.showError('Session refresh failed', error);
     } finally {
       this.isLoadingSubject.next(false);
     }
@@ -359,7 +351,9 @@ export class SessionStore implements OnDestroy {
 
     const loadUnassigned = this.refreshSessions(false, 0, 6, true);
     const loadAll = this.refreshSessions(false, 0, 50, false);
-    const restoreLastSession = lastSession ? await this.selectSession(lastSession) : await Promise.resolve();
+    const restoreLastSession = lastSession
+      ? await this.selectSession(lastSession)
+      : await Promise.resolve();
 
     await Promise.all([loadUnassigned, loadAll, restoreLastSession]);
 
@@ -374,5 +368,18 @@ export class SessionStore implements OnDestroy {
         await this.selectSession(sorted[0].id);
       }
     }
+  }
+
+  private clearActiveSessionState(): void {
+    this.activeSessionSubject.next(null);
+    this.activeSessionIdSubject.next(null);
+    localStorage.removeItem(ACTIVE_SESSION_KEY);
+  }
+
+  private showError(title: string, error: unknown): void {
+    toast.error(title, {
+      description:
+        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error',
+    });
   }
 }

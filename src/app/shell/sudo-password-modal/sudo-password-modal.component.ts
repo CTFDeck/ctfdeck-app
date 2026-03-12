@@ -1,4 +1,4 @@
-import { AsyncPipe, NgIf } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
@@ -6,9 +6,10 @@ import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { SudoPasswordModalStore } from './sudo-password-modal.store';
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'ctfdeck-sudo-password-modal',
   standalone: true,
-  imports: [NgIf, AsyncPipe, ...HlmButtonImports, ...HlmInputImports, ...HlmLabelImports],
+  imports: [AsyncPipe, ...HlmButtonImports, ...HlmInputImports, ...HlmLabelImports],
   templateUrl: './sudo-password-modal.component.html',
   styleUrls: ['./sudo-password-modal.component.css'],
 })

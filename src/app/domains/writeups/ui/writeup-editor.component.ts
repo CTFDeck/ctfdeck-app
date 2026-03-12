@@ -322,10 +322,6 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     toast.success(`Exported ${mediaFiles.size} media file(s) + writeup.md`);
   }
 
-  goBack(): void {
-    this.router.navigate(['/terminal']).then(() => {/* Ignore */});
-  }
-
   setMode(mode: 'edit' | 'preview' | 'split'): void {
     this.mode.set(mode);
 
@@ -334,7 +330,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     }
   }
 
-  onPreviewMouseOver(event: MouseEvent): void {
+  onPreviewMouseOver(event: MouseEvent | FocusEvent): void {
     let element = event.target as HTMLElement | null;
 
     while (element && element !== event.currentTarget) {
@@ -434,21 +430,6 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     morphdom(this.previewBody.nativeElement, temp, {
       childrenOnly: true,
-      onBeforeElUpdated: (fromEl, toEl) => {
-        if (fromEl.nodeName === 'VIDEO') {
-          return false;
-        }
-
-        if (fromEl.nodeName === 'IMG') {
-          const fromSrc = (fromEl as HTMLImageElement).src;
-          const toSrc = (toEl as HTMLImageElement).getAttribute('src');
-          if (fromSrc && fromSrc.startsWith('blob:') && !toSrc) {
-            return false;
-          }
-        }
-
-        return !fromEl.isEqualNode(toEl);
-      },
     });
   }
 

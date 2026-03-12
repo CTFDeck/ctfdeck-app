@@ -10,10 +10,6 @@ export class TerminalAutocomplete {
     return this.lastLsEntries;
   }
 
-  getCache(): LsEntry[] {
-    return this.lastLsEntries;
-  }
-
   getSuggestions(input: string): LsEntry[] {
     if (this.lastLsEntries.length === 0) {
       return [];

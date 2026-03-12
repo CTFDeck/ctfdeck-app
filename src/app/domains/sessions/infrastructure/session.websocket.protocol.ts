@@ -70,69 +70,6 @@ export function serializeSessionDelete(sessionId: string, messageId: string): Ui
   return buffer;
 }
 
-export function serializeSessionUpdateTargets(
-  sessionId: string,
-  targets: SessionTarget[],
-  messageId: string,
-): Uint8Array {
-  let size = 1 + 16 + 16 + 4;
-
-  for (const target of targets) {
-    const addrBytes = encoder.encode(target.address);
-    const nameBytes = encoder.encode(target.name);
-    const descBytes = encoder.encode(target.description || '');
-
-    size += 16 + 4 + addrBytes.length + 4 + 4 + nameBytes.length + 4 + descBytes.length + 4;
-  }
-
-  const buffer = new Uint8Array(size);
-  const view = new DataView(buffer.buffer);
-  let offset = 0;
-
-  buffer[offset] = MessageType.SessionUpdateTargets;
-  offset += 1;
-
-  buffer.set(uuidToBytes(messageId), offset);
-  offset += 16;
-
-  buffer.set(uuidToBytes(sessionId), offset);
-  offset += 16;
-
-  view.setInt32(offset, targets.length, true);
-  offset += 4;
-
-  for (const target of targets) {
-    buffer.set(uuidToBytes(target.id), offset);
-    offset += 16;
-
-    const addrBytes = encoder.encode(target.address);
-    view.setInt32(offset, addrBytes.length, true);
-    offset += 4;
-    buffer.set(addrBytes, offset);
-    offset += addrBytes.length;
-
-    view.setInt32(offset, target.port ?? -1, true);
-    offset += 4;
-
-    const nameBytes = encoder.encode(target.name);
-    view.setInt32(offset, nameBytes.length, true);
-    offset += 4;
-    buffer.set(nameBytes, offset);
-    offset += nameBytes.length;
-
-    const descBytes = encoder.encode(target.description || '');
-    view.setInt32(offset, descBytes.length, true);
-    offset += 4;
-    buffer.set(descBytes, offset);
-    offset += descBytes.length;
-
-    view.setInt32(offset, target.type, true);
-    offset += 4;
-  }
-
-  return buffer;
-}
-
 export function serializeSessionUpdate(
   sessionId: string,
   name: string,

@@ -45,10 +45,6 @@ export function getTargetKey(target: { address: string; port?: number | null }):
   return `${target.address}${target.port ? ':' + target.port : ''}`;
 }
 
-export function getTargetTypeLabel(type: number, targetTypes: TargetTypeOption[]): string {
-  return targetTypes.find((item) => item.value === type)?.label || 'Unknown';
-}
-
 export function getTargetIcon(type: number): string {
   switch (type) {
     case TargetType.Web:

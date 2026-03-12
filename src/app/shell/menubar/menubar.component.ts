@@ -23,6 +23,7 @@ import type { MenubarCustomScript } from './menubar.models';
 import { HlmIcon } from '@ctfdeck/helm/icon';
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'spartan-menubar',
   standalone: true,
   imports: [
@@ -49,7 +50,6 @@ import { HlmIcon } from '@ctfdeck/helm/icon';
   styleUrls: ['./menubar.css'],
 })
 export class MenubarComponent implements OnInit, OnDestroy {
-  private readonly router = inject(Router);
   private readonly scriptStore = inject(ScriptStore);
   private readonly toolCatalogStore = inject(ToolCatalogStore);
 
@@ -97,10 +97,6 @@ export class MenubarComponent implements OnInit, OnDestroy {
     return this.customScripts.slice(-3).reverse();
   }
 
-  navigate(path: string): void {
-    void this.router.navigate([path]);
-  }
-
   openExternal(url: string): void {
     window.open(url, '_blank', 'noopener');
   }
@@ -136,5 +132,9 @@ export class MenubarComponent implements OnInit, OnDestroy {
 
   manageCustomScripts(): void {
     this.openCommandRunner('__manage_scripts__');
+  }
+
+  openUrl(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 }

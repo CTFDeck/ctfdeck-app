@@ -4,6 +4,7 @@ import { hlm } from '@ctfdeck/helm/utils';
 import { ClassValue } from 'clsx';
 
 @Directive({
+  // eslint-disable-next-line @angular-eslint/directive-selector
 	selector: 'button[hlmDialogClose]',
 	hostDirectives: [{ directive: BrnDialogClose, inputs: ['delay'] }],
 	host: {

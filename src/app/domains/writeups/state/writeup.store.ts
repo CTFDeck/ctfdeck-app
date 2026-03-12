@@ -19,10 +19,8 @@ export class WriteUpStore implements OnDestroy {
   readonly allWriteUps$ = this.allWriteUpsSubject.asObservable();
 
   private writeUpsTotalSubject = new BehaviorSubject<number>(0);
-  readonly writeUpsTotal$ = this.writeUpsTotalSubject.asObservable();
 
   private allWriteUpsTotalSubject = new BehaviorSubject<number>(0);
-  readonly allWriteUpsTotal$ = this.allWriteUpsTotalSubject.asObservable();
 
   private unassignedWriteUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
   readonly unassignedWriteUps$ = this.unassignedWriteUpsSubject.asObservable();
@@ -136,12 +134,18 @@ export class WriteUpStore implements OnDestroy {
       const result = await this.writeUpClient.load(writeUpId);
 
       if (!result.success || !result.writeUp) {
-        throw new Error('Failed to load writeup content');
+        toast.error('Writeup load failed', {
+          description: 'Failed to load writeup content',
+        });
+        this.activeWriteUpSubject.next(null);
+        return;
       }
 
       this.activeWriteUpSubject.next(result.writeUp);
-    } catch (error: any) {
-      toast.error('Writeup load failed', { description: error?.message || 'Unknown error' });
+    } catch (error: unknown) {
+      toast.error('Writeup load failed', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
       this.activeWriteUpSubject.next(null);
     } finally {
       this.isLoadingSubject.next(false);
@@ -231,7 +235,10 @@ export class WriteUpStore implements OnDestroy {
       const loadResult = await this.writeUpClient.load(writeUpId);
 
       if (!loadResult.success || !loadResult.writeUp) {
-        throw new Error('Failed to load writeup for renaming');
+        toast.error('Rename failed', {
+          description: 'Failed to load writeup for renaming',
+        });
+        return;
       }
 
       const success = await this.writeUpClient.update(
@@ -252,8 +259,10 @@ export class WriteUpStore implements OnDestroy {
       }
 
       await this.refreshWriteUps();
-    } catch (error: any) {
-      toast.error('Rename failed', { description: error?.message || 'Unknown error' });
+    } catch (error: unknown) {
+      toast.error('Rename failed', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
 

@@ -4,7 +4,6 @@ import { generateUUID } from '../../../infrastructure/transport/websocket/websoc
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
 import type { SessionData } from '../models/session-data.model';
 import type { SessionListResponse } from '../models/session-list-response.model';
-import type { SessionTarget } from '../models/session-target.model';
 import { EMPTY_GUID } from './session.constants';
 import {
   deserializeSessionAddTargetResult,
@@ -27,7 +26,6 @@ import {
   serializeSessionLoad,
   serializeSessionSetActive,
   serializeSessionUpdate,
-  serializeSessionUpdateTargets,
 } from './session.websocket.protocol';
 
 interface SessionCreateResult {
@@ -218,29 +216,6 @@ export class SessionClientService {
     });
   }
 
-  updateTargets(sessionId: string, targets: SessionTarget[]): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      const buffer = serializeSessionUpdateTargets(sessionId, targets, messageId);
-
-      this.pending.set(messageId, (result) => {
-        if (this.isErrorResult(result)) {
-          reject(new Error(result.error));
-          return;
-        }
-
-        if (!this.isBooleanResult(result)) {
-          reject(new Error('Unexpected session update targets response'));
-          return;
-        }
-
-        resolve(result.success);
-      });
-
-      this.ws.sendBinary(buffer);
-    });
-  }
-
   update(sessionId: string, name: string, description: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
@@ -366,14 +341,6 @@ export class SessionClientService {
 
       this.ws.sendBinary(buffer);
     });
-  }
-
-  getActiveSessionId(): string | null {
-    return this.activeSessionId;
-  }
-
-  getActiveProjectId(): string | null {
-    return this.activeProjectId;
   }
 
   private handleMessage(data: Uint8Array): boolean {

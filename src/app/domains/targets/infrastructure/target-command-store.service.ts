@@ -30,16 +30,6 @@ export class TargetCommandStoreService {
     return commandsByTarget[targetId]?.[commandId] ?? null;
   }
 
-  deleteTargetCommands(targetId: string): void {
-    if (!targetId) {
-      return;
-    }
-
-    const commandsByTarget = this.readCommands();
-    delete commandsByTarget[targetId];
-    localStorage.setItem(this.COMMANDS_KEY, JSON.stringify(commandsByTarget));
-  }
-
   private readCommands(): CommandsByTarget {
     const stored = localStorage.getItem(this.COMMANDS_KEY);
 

@@ -11,7 +11,7 @@ export class ToolCatalogStore implements OnDestroy {
   private readonly webSocketService = inject(WebSocketService);
   private readonly toolsStore = inject(ToolsStore);
 
-  private unregisterHandler: (() => void) | null = null;
+  private readonly unregisterHandler: (() => void) | null = null;
   private readonly subscriptions = new Subscription();
 
   private readonly toolsSubject = new BehaviorSubject<ToolCatalogItem[]>([]);
@@ -65,17 +65,5 @@ export class ToolCatalogStore implements OnDestroy {
   ngOnDestroy(): void {
     this.unregisterHandler?.();
     this.subscriptions.unsubscribe();
-  }
-
-  getCurrentTools(): ToolCatalogItem[] {
-    return this.toolsSubject.value;
-  }
-
-  getToolById(toolId: string): ToolCatalogItem | undefined {
-    return this.toolsSubject.value.find((tool) => tool.id === toolId);
-  }
-
-  getCommandTemplate(toolId: string): string | null {
-    return this.getToolById(toolId)?.commandTemplate ?? null;
   }
 }

@@ -381,10 +381,6 @@ export class WorkspaceSidebarComponent {
     this.deletingWriteUpIds.set(next);
   }
 
-  resultsCount(sessions: SessionMetadata[]): number {
-    return this.filteredChats(sessions).length;
-  }
-
   toggleSidebar(): void {
     this.isCollapsed.set(!this.isCollapsed());
   }
@@ -626,7 +622,7 @@ export class WorkspaceSidebarComponent {
     }
 
     try {
-      let success = false;
+      let success;
 
       if (type === 'session') {
         const result = await this.projectStore.assignSession(projectId, id, folderId);

@@ -5,8 +5,6 @@ export enum MessageType {
   StreamError = 2,
   StreamEnd = 3,
 
-  CommandKill = 4,
-  CommandKillResult = 5,
   CommandExecute = 6,
 
   PasswordRequest = 7,
@@ -62,7 +60,6 @@ export enum MessageType {
   MediaList = 73,
   MediaUploadResult = 80,
   MediaLoadResult = 81,
-  MediaDeleteResult = 82,
   MediaListResult = 83,
   MediaOperationError = 89,
 
@@ -85,10 +82,6 @@ export enum MessageType {
   ProjectRenameFolderResult = 107,
   ProjectAssignSessionResult = 108,
   ProjectOperationError = 109,
-  ProjectListSessions = 110,
-  ProjectListSessionsResult = 111,
-  ProjectListWriteUps = 112,
-  ProjectListWriteUpsResult = 113,
 
   ToolInventoryRequest = 120,
   ToolInventoryResult = 121,

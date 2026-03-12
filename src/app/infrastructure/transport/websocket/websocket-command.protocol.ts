@@ -33,6 +33,10 @@ export interface PasswordRequest {
 
 export type StreamMessage = CommandResponse | StreamChunk | StreamEnd | PasswordRequest;
 
+function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
+  return data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+}
+
 export function serializeCommand(command: string, messageId: string): Uint8Array {
   const encoder = new TextEncoder();
   const commandBytes = encoder.encode(command);
@@ -66,7 +70,7 @@ export function serializePasswordProvide(messageId: string, password: string): U
 }
 
 export function deserializeMessage(data: ArrayBuffer | Uint8Array): StreamMessage {
-  const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+  const u8 = toUint8Array(data);
   const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const decoder = new TextDecoder();
 
@@ -85,16 +89,6 @@ export function deserializeMessage(data: ArrayBuffer | Uint8Array): StreamMessag
     default:
       throw new Error(`Unknown message type: ${messageType}`);
   }
-}
-
-export function deserializeResponse(data: ArrayBuffer | Uint8Array): CommandResponse {
-  const message = deserializeMessage(data);
-
-  if (message.type === MessageType.CompleteResponse) {
-    return message;
-  }
-
-  throw new Error(`Expected CompleteResponse but got: ${message.type}`);
 }
 
 function deserializeCompleteResponse(

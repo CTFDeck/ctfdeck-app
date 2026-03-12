@@ -15,37 +15,48 @@
     </main>
   </div>
 
-  <div
-    *ngIf="targetManagerVisible"
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-    (click)="closeTargetManager()"
-  >
+  @if (targetManagerVisible) {
     <div
-      class="bg-slate-900 border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
-      (click)="$event.stopPropagation()"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      tabindex="0"
+      role="button"
+      aria-label="Close target manager"
+      (click)="$event.target === $event.currentTarget && closeTargetManager()"
+      (keydown.enter)="closeTargetManager()"
+      (keydown.space)="closeTargetManager(); $event.preventDefault()"
     >
-      <app-target-manager
-        [mode]="targetManagerMode"
-        (closeEvent)="closeTargetManager()"
-      ></app-target-manager>
+      <div
+        class="bg-slate-900 border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+      >
+        <app-target-manager
+          #targetManager
+          [mode]="targetManagerMode"
+          (closeEvent)="closeTargetManager()"
+        ></app-target-manager>
+      </div>
     </div>
-  </div>
+  }
 
-  <div
-    *ngIf="commandRunnerVisible"
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-    (click)="closeCommandRunner()"
-  >
+  @if (commandRunnerVisible) {
     <div
-      class="bg-background border border-border rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-      (click)="$event.stopPropagation()"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      tabindex="0"
+      role="button"
+      aria-label="Close command runner"
+      (click)="$event.target === $event.currentTarget && closeCommandRunner()"
+      (keydown.enter)="closeCommandRunner()"
+      (keydown.space)="closeCommandRunner(); $event.preventDefault()"
     >
-      <app-command-runner
-        [initialToolId]="selectedToolId"
-        (closeEvent)="closeCommandRunner()"
-      ></app-command-runner>
+      <div
+        class="bg-background border border-border rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+      >
+        <app-command-runner
+          [initialToolId]="selectedToolId"
+          (closeEvent)="closeCommandRunner()"
+        ></app-command-runner>
+      </div>
     </div>
-  </div>
+  }
 
   <ctfdeck-sudo-password-modal></ctfdeck-sudo-password-modal>
   <app-tool-install-modal #toolModal></app-tool-install-modal>

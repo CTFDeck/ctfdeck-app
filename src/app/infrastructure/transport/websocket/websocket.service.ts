@@ -220,28 +220,6 @@ export class WebSocketService {
     });
   }
 
-  executeCommand(command: string): Promise<CommandResponse> {
-    return new Promise<CommandResponse>((resolve, reject) => {
-      this.executeCommandStreaming(
-        command,
-        () => {},
-        () => {},
-      )
-        .then((result) => {
-          resolve({
-            type: MessageType.CompleteResponse,
-            exitCode: result.exitCode,
-            commandOutput: '',
-            output: '',
-            error: '',
-            workingDirectory: result.workingDirectory,
-            messageId: '',
-          });
-        })
-        .catch(reject);
-    });
-  }
-
   private connectWithRetry(): void {
     this.manualDisconnect = false;
     this.connectInternal();

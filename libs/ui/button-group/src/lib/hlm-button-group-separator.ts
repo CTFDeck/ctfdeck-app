@@ -4,6 +4,7 @@ import { hlm } from '@ctfdeck/helm/utils';
 import type { ClassValue } from 'clsx';
 
 @Directive({
+  // eslint-disable-next-line @angular-eslint/directive-selector
 	selector: '[hlmButtonGroupSeparator],hlm-button-group-separator',
 	providers: [provideBrnSeparatorConfig({ orientation: 'vertical' })],
 	hostDirectives: [{ directive: BrnSeparator, inputs: ['orientation', 'decorative'] }],

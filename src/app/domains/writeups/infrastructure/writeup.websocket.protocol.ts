@@ -271,7 +271,6 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
   const createdAtTicks = view.getBigInt64(offset, true);
   offset += 8;
   const updatedAtTicks = view.getBigInt64(offset, true);
-  offset += 8;
 
   return {
     messageId,
