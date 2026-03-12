@@ -9,10 +9,15 @@
     </div>
 
     <div class="flex flex-col gap-1 items-end min-w-[200px]">
-      <label hlmLabel class="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+      <label
+        hlmLabel
+        for="active-session-select"
+        class="text-[10px] uppercase tracking-wider text-muted-foreground font-bold"
+      >
         Active Session
       </label>
       <brn-select
+        id="active-session-select"
         class="inline-block w-full"
         [(ngModel)]="activeSessionId"
         (ngModelChange)="switchSession($event)"
@@ -123,6 +128,8 @@
               size="icon"
               variant="ghost"
               class="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+              type="button"
+              aria-label="Edit target"
               (click)="startEditing(target)"
             >
               <ng-icon hlm name="lucidePencil" size="sm" />
@@ -132,6 +139,8 @@
               size="icon"
               variant="ghost"
               class="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              type="button"
+              aria-label="Delete target"
               (click)="deleteOneTarget(target)"
             >
               <ng-icon hlm name="lucideTrash2" size="sm" />
@@ -154,8 +163,13 @@
             />
           </div>
           <div class="grid gap-2">
-            <label hlmLabel>Target Type</label>
-            <brn-select class="inline-block" placeholder="Select type" [(ngModel)]="addForm.type">
+            <label hlmLabel for="add-type">Target Type</label>
+            <brn-select
+              id="add-type"
+              class="inline-block"
+              placeholder="Select type"
+              [(ngModel)]="addForm.type"
+            >
               <hlm-select-trigger class="w-full">
                 <hlm-select-value />
               </hlm-select-trigger>
@@ -171,8 +185,9 @@
         </div>
 
         <div class="grid gap-2">
-          <label hlmLabel>Sessions</label>
+          <label hlmLabel for="add-sessions">Sessions</label>
           <brn-select
+            id="add-sessions"
             class="inline-block"
             [multiple]="true"
             placeholder="Select sessions"
@@ -222,7 +237,7 @@
           ></textarea>
         </div>
       </div>
-      <button hlmBtn class="w-full h-11" (click)="addTarget()">Add to List</button>
+      <button hlmBtn class="w-full h-11" type="button" (click)="addTarget()">Add to List</button>
     </div>
 
     <div hlmTabsContent="delete" class="space-y-4 pt-2">
@@ -230,8 +245,13 @@
         @for (target of targets; track target.id) {
           <div
             (click)="toggleSelection(target.id)"
+            (keydown.enter)="toggleSelection(target.id)"
+            (keydown.space)="toggleSelection(target.id); $event.preventDefault()"
             [class.bg-accent]="selectedIds.has(target.id)"
             class="flex items-center gap-3 p-4 border-b border-border last:border-0 cursor-pointer hover:bg-accent/50 transition-colors"
+            tabindex="0"
+            role="button"
+            [attr.aria-pressed]="selectedIds.has(target.id)"
           >
             <div
               class="h-4 w-4 rounded border border-primary flex items-center justify-center"
@@ -250,6 +270,7 @@
         hlmBtn
         variant="destructive"
         class="w-full"
+        type="button"
         [disabled]="selectedIds.size === 0"
         (click)="deleteSelected()"
       >
@@ -259,12 +280,16 @@
   </hlm-tabs>
 
   <div class="mt-10 pt-4 border-t border-border flex justify-end">
-    <button hlmBtn variant="secondary" (click)="closeEvent.emit()">Close Manager</button>
+    <button hlmBtn variant="secondary" type="button" (click)="closeEvent.emit()">
+      Close Manager
+    </button>
   </div>
 </div>
 
 <hlm-dialog>
-  <button #editTrigger brnDialogTrigger class="hidden"></button>
+  <button #editTrigger brnDialogTrigger class="hidden" type="button" aria-label="Open edit target dialog">
+    Open edit target dialog
+  </button>
   <hlm-dialog-content
     *brnDialogContent="let ctx"
     [showCloseButton]="false"
@@ -284,8 +309,13 @@
           <input hlmInput id="edit-name" [(ngModel)]="editForm.name" placeholder="Name" />
         </div>
         <div class="grid gap-2">
-          <label hlmLabel>Target Type</label>
-          <brn-select class="inline-block" placeholder="Type" [(ngModel)]="editForm.type">
+          <label hlmLabel for="edit-type">Target Type</label>
+          <brn-select
+            id="edit-type"
+            class="inline-block"
+            placeholder="Type"
+            [(ngModel)]="editForm.type"
+          >
             <hlm-select-trigger class="w-full">
               <hlm-select-value />
             </hlm-select-trigger>
@@ -301,8 +331,9 @@
       </div>
 
       <div class="grid gap-2">
-        <label hlmLabel>Active Session</label>
+        <label hlmLabel for="edit-session">Active Session</label>
         <brn-select
+          id="edit-session"
           class="inline-block"
           placeholder="Select session"
           [(ngModel)]="editForm.sessionId"
@@ -354,15 +385,23 @@
 
     <hlm-dialog-footer class="p-6 border-t border-border bg-accent/10">
       <div class="flex w-full justify-between items-center">
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn (click)="saveEdit(ctx)">Save Changes</button>
+        <button hlmBtn variant="ghost" type="button" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="saveEdit(ctx)">Save Changes</button>
       </div>
     </hlm-dialog-footer>
   </hlm-dialog-content>
 </hlm-dialog>
 
 <hlm-alert-dialog>
-  <button #deleteSingleTrigger brnAlertDialogTrigger class="hidden"></button>
+  <button
+    #deleteSingleTrigger
+    brnAlertDialogTrigger
+    class="hidden"
+    type="button"
+    aria-label="Open delete target confirmation"
+  >
+    Open delete target confirmation
+  </button>
   <hlm-alert-dialog-content *brnAlertDialogContent="let ctx" class="max-w-[400px]">
     <hlm-alert-dialog-header>
       <h3 hlmAlertDialogTitle>Confirm Deletion</h3>
@@ -373,14 +412,24 @@
       </p>
     </hlm-alert-dialog-header>
     <hlm-alert-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn variant="destructive" (click)="confirmDeleteOne(ctx)">Delete Target</button>
+      <button hlmBtn variant="ghost" type="button" (click)="ctx.close()">Cancel</button>
+      <button hlmBtn variant="destructive" type="button" (click)="confirmDeleteOne(ctx)">
+        Delete Target
+      </button>
     </hlm-alert-dialog-footer>
   </hlm-alert-dialog-content>
 </hlm-alert-dialog>
 
 <hlm-alert-dialog>
-  <button #deleteBulkTrigger brnAlertDialogTrigger class="hidden"></button>
+  <button
+    #deleteBulkTrigger
+    brnAlertDialogTrigger
+    class="hidden"
+    type="button"
+    aria-label="Open bulk delete confirmation"
+  >
+    Open bulk delete confirmation
+  </button>
   <hlm-alert-dialog-content *brnAlertDialogContent="let ctx" class="max-w-[400px]">
     <hlm-alert-dialog-header>
       <h3 hlmAlertDialogTitle>Confirm Bulk Deletion</h3>
@@ -391,8 +440,8 @@
       </p>
     </hlm-alert-dialog-header>
     <hlm-alert-dialog-footer>
-      <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-      <button hlmBtn variant="destructive" (click)="confirmDeleteSelected(ctx)">
+      <button hlmBtn variant="ghost" type="button" (click)="ctx.close()">Cancel</button>
+      <button hlmBtn variant="destructive" type="button" (click)="confirmDeleteSelected(ctx)">
         Confirm Deletion
       </button>
     </hlm-alert-dialog-footer>

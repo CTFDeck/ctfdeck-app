@@ -1,16 +1,23 @@
 <div
   class="terminal-container flex flex-col h-full w-full bg-card text-card-foreground overflow-hidden font-mono"
   (click)="focusInput()"
+  (keydown.enter)="focusInput()"
+  (keydown.space)="focusInput(); $event.preventDefault()"
+  tabindex="0"
 >
   <div
     class="terminal-header flex items-center px-4 h-14 border-b border-border/50"
     (click)="$event.stopPropagation()"
+    (keydown.enter)="$event.stopPropagation()"
+    (keydown.space)="$event.stopPropagation(); $event.preventDefault()"
+    tabindex="0"
   >
     <div class="relative inline-block">
       <hlm-dialog>
         <button
           brnDialogTrigger
           hlmBtn
+          type="button"
           [variant]="'outline'"
           [class.border-red-400]="!isConnected"
           [class.text-red-500]="!isConnected"
@@ -49,8 +56,9 @@
                   placeholder="ws://localhost:42712"
                   class="flex-1"
                 />
-                <button hlmBtn variant="secondary" (click)="saveServer()">
+                <button hlmBtn type="button" variant="secondary" aria-label="Save server" (click)="saveServer()">
                   <ng-icon name="lucideSave" size="sm" />
+                  <span class="sr-only">Save server</span>
                 </button>
               </div>
             </div>
@@ -65,6 +73,10 @@
                     <div
                       class="flex items-center justify-between p-2 rounded-md border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer group"
                       (click)="selectServer(server)"
+                      (keydown.enter)="selectServer(server)"
+                      (keydown.space)="selectServer(server); $event.preventDefault()"
+                      tabindex="0"
+                      role="button"
                     >
                       <div class="flex items-center gap-2 overflow-hidden">
                         <ng-icon name="lucideGlobe" size="xs" class="text-muted-foreground" />
@@ -72,12 +84,15 @@
                       </div>
                       <button
                         hlmBtn
+                        type="button"
                         size="icon"
                         variant="ghost"
                         class="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        aria-label="Remove saved server"
                         (click)="removeServer(server, $event)"
                       >
                         <ng-icon name="lucideTrash2" size="xs" class="text-destructive" />
+                        <span class="sr-only">Remove saved server</span>
                       </button>
                     </div>
                   }
@@ -87,8 +102,8 @@
           </div>
 
           <hlm-dialog-footer>
-            <button hlmBtn variant="outline" brnDialogClose>Cancel</button>
-            <button hlmBtn (click)="reconnect(); ctx.close()" class="gap-2">
+            <button hlmBtn type="button" variant="outline" brnDialogClose>Cancel</button>
+            <button hlmBtn type="button" (click)="reconnect(); ctx.close()" class="gap-2">
               <ng-icon name="lucideZap" size="sm" />
               Connect
             </button>
@@ -136,11 +151,15 @@
 
     <button
       #selectionTrigger
+      type="button"
       [brnMenuTriggerFor]="selectionMenu"
       class="fixed pointer-events-none w-1 h-1 opacity-0"
       [style.left.px]="selectionMenuPosition.x"
       [style.top.px]="selectionMenuPosition.y"
-    ></button>
+      aria-label="Open selection menu"
+    >
+      <span class="sr-only">Open selection menu</span>
+    </button>
 
     @if (autocompleteSuggestions.length > 0) {
       <div class="autocomplete-suggestions mb-2">
@@ -181,13 +200,19 @@
     </hlm-menu-label>
     <hlm-menu-separator />
     <hlm-menu-group>
-      <button hlmMenuItem (click)="copySelection()">
+      <button hlmMenuItem type="button" (click)="copySelection()">
         <ng-icon name="lucideCopy" hlmMenuIcon class="mr-2" />
         <span>Copy Selection</span>
         <hlm-menu-shortcut>⌘C</hlm-menu-shortcut>
       </button>
 
-      <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="writeupsSubMenu">
+      <button
+        hlmMenuItem
+        type="button"
+        align="start"
+        side="right"
+        [brnMenuTriggerFor]="writeupsSubMenu"
+      >
         <ng-icon name="lucideFileText" hlmMenuIcon class="mr-2" />
         <span>Add to Write-up</span>
         <hlm-menu-item-sub-indicator />
@@ -196,7 +221,7 @@
 
     <hlm-menu-separator />
     <hlm-menu-group>
-      <button hlmMenuItem class="text-muted-foreground" (click)="dismissSelection()">
+      <button hlmMenuItem type="button" class="text-muted-foreground" (click)="dismissSelection()">
         <ng-icon name="lucideX" hlmMenuIcon class="mr-2" />
         <span>Dismiss</span>
       </button>
@@ -213,7 +238,7 @@
     @if ((writeUps$ | async)?.length) {
       <hlm-menu-group>
         @for (writeUp of (writeUps$ | async)!; track writeUp.name) {
-          <button hlmMenuItem (click)="appendToWriteUp(writeUp)">
+          <button hlmMenuItem type="button" (click)="appendToWriteUp(writeUp)">
             <ng-icon name="lucideFileText" size="sm" class="mr-2 opacity-50" />
             <span class="truncate">{{ writeUp.name }}</span>
           </button>

@@ -14,11 +14,14 @@
       }
       <button
         hlmSidebarMenuButton
+        type="button"
         (click)="toggleSidebar()"
         class="ml-auto p-1 h-8 w-8 flex items-center justify-center shrink-0"
         tooltip="Toggle Sidebar"
+        aria-label="Toggle sidebar"
       >
         <ng-icon name="lucidePanelLeft" />
+        <span class="sr-only">Toggle sidebar</span>
       </button>
     </div>
   </hlm-sidebar-header>
@@ -36,6 +39,7 @@
         <div class="px-3 py-2 flex flex-col gap-2">
           <button
             hlmSidebarMenuButton
+            type="button"
             (click)="newProject()"
             class="text-xs flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
             tooltip="New Project"
@@ -43,29 +47,37 @@
             <ng-icon name="lucideLayoutGrid" />
             @if (!isCollapsed()) {
               <span class="truncate font-medium">New Project</span>
+            } @else {
+              <span class="sr-only">New Project</span>
             }
           </button>
 
           <div class="flex gap-2">
             <button
               hlmSidebarMenuButton
+              type="button"
               (click)="newChat()"
               class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
             >
               <ng-icon name="lucideMessageSquarePlus" />
               @if (!isCollapsed()) {
                 <span class="truncate font-medium">Chat</span>
+              } @else {
+                <span class="sr-only">New chat</span>
               }
             </button>
 
             <button
               hlmSidebarMenuButton
+              type="button"
               (click)="newWriteUp()"
               class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
             >
               <ng-icon name="lucideFilePlus" />
               @if (!isCollapsed()) {
                 <span class="truncate font-medium">WriteUp</span>
+              } @else {
+                <span class="sr-only">New write-up</span>
               }
             </button>
           </div>
@@ -106,9 +118,14 @@
                     class="ctf-folder-node group flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
                     [class.ctf-folder-hovering]="hoveredFolderId() === p.id"
                     (click)="toggleProject(p.id)"
+                    (keydown.enter)="toggleProject(p.id)"
+                    (keydown.space)="toggleProject(p.id); $event.preventDefault()"
                     (dragover)="onFolderDragOver($event, p.id, 'project')"
                     (dragleave)="onFolderDragLeave($event)"
                     (drop)="onDrop($event, p.id, null)"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-expanded]="isProjectExpanded(p.id)"
                   >
                     @if (hoveredFolderId() === p.id && !isProjectExpanded(p.id)) {
                       <div
@@ -129,11 +146,14 @@
                     </span>
 
                     <button
+                      type="button"
                       class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
                       (click)="$event.stopPropagation(); openCreateFolderDialog(p.id)"
                       hlmTooltipTrigger="Add folder"
+                      aria-label="Add folder"
                     >
                       <ng-icon name="lucideFolderPlus" class="w-3.5 h-3.5" />
+                      <span class="sr-only">Add folder</span>
                     </button>
                   </div>
 
@@ -156,6 +176,7 @@
 
           @if ((((hierarchy$ | async)?.length || 0) < ((totalProjectsCount$ | async) || 0)) && !isCollapsed()) {
             <button
+              type="button"
               class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
               (click)="loadMoreProjects()"
             >
@@ -170,8 +191,14 @@
               <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
                 Recent Chats
               </span>
-              <button class="p-1 hover:bg-accent rounded" (click)="newChat()">
+              <button
+                type="button"
+                class="p-1 hover:bg-accent rounded"
+                (click)="newChat()"
+                aria-label="New chat"
+              >
                 <ng-icon name="lucideMessageSquarePlus" class="w-3.5 h-3.5 text-white" />
+                <span class="sr-only">New chat</span>
               </button>
             </div>
           }
@@ -191,6 +218,7 @@
                 (dragend)="onDragEnd()"
               >
                 <button
+                  type="button"
                   (click)="openChat(s)"
                   class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
                 >
@@ -199,18 +227,24 @@
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
                   <button
+                    type="button"
                     class="ctf-action-btn"
                     (click)="$event.stopPropagation(); openRenameDialog(s)"
                     hlmTooltipTrigger="Rename"
+                    aria-label="Rename chat"
                   >
                     <ng-icon name="lucidePencil" />
+                    <span class="sr-only">Rename chat</span>
                   </button>
                   <button
+                    type="button"
                     class="ctf-action-btn ctf-action-destroy"
                     (click)="$event.stopPropagation(); openDeleteDialog(s)"
                     hlmTooltipTrigger="Delete"
+                    aria-label="Delete chat"
                   >
                     <ng-icon name="lucideTrash2" />
+                    <span class="sr-only">Delete chat</span>
                   </button>
                 </div>
               </div>
@@ -219,6 +253,7 @@
 
           @if ((((sessions$ | async)?.length || 0) < ((totalSessions$ | async) || 0)) && !isCollapsed()) {
             <button
+              type="button"
               class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
               (click)="loadMoreSessions()"
             >
@@ -233,8 +268,14 @@
               <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
                 Recent WriteUps
               </span>
-              <button class="p-1 hover:bg-accent rounded" (click)="newWriteUp()">
+              <button
+                type="button"
+                class="p-1 hover:bg-accent rounded"
+                (click)="newWriteUp()"
+                aria-label="New write-up"
+              >
                 <ng-icon name="lucideFilePlus" class="w-3.5 h-3.5 text-white" />
+                <span class="sr-only">New write-up</span>
               </button>
             </div>
           }
@@ -254,6 +295,7 @@
                 (dragend)="onDragEnd()"
               >
                 <button
+                  type="button"
                   (click)="openWriteUp(w)"
                   class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
                 >
@@ -262,18 +304,24 @@
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
                   <button
+                    type="button"
                     class="ctf-action-btn"
                     (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)"
                     hlmTooltipTrigger="Rename"
+                    aria-label="Rename write-up"
                   >
                     <ng-icon name="lucidePencil" />
+                    <span class="sr-only">Rename write-up</span>
                   </button>
                   <button
+                    type="button"
                     class="ctf-action-btn ctf-action-destroy"
                     (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)"
                     hlmTooltipTrigger="Delete"
+                    aria-label="Delete write-up"
                   >
                     <ng-icon name="lucideTrash2" />
+                    <span class="sr-only">Delete write-up</span>
                   </button>
                 </div>
               </div>
@@ -282,6 +330,7 @@
 
           @if ((((writeUps$ | async)?.length || 0) < ((totalWriteUps$ | async) || 0)) && !isCollapsed()) {
             <button
+              type="button"
               class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
               (click)="loadMoreWriteUps()"
             >
@@ -300,9 +349,14 @@
           class="ctf-folder-node group flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
           [class.ctf-folder-hovering]="hoveredFolderId() === f.id"
           (click)="toggleFolder(f.id)"
+          (keydown.enter)="toggleFolder(f.id)"
+          (keydown.space)="toggleFolder(f.id); $event.preventDefault()"
           (dragover)="onFolderDragOver($event, f.id, 'folder')"
           (dragleave)="onFolderDragLeave($event)"
           (drop)="onDrop($event, projectId, f.id)"
+          tabindex="0"
+          role="button"
+          [attr.aria-expanded]="isFolderExpanded(f.id)"
         >
           @if (hoveredFolderId() === f.id && !isFolderExpanded(f.id)) {
             <div
@@ -323,29 +377,38 @@
           <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-auto">
             @if (depth < 1) {
               <button
+                type="button"
                 class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
                 (click)="$event.stopPropagation(); openCreateFolderDialog(projectId, f.id)"
                 hlmTooltipTrigger="Add subfolder"
+                aria-label="Add subfolder"
               >
                 <ng-icon name="lucideFolderPlus" class="w-3 h-3" />
+                <span class="sr-only">Add subfolder</span>
               </button>
             }
             @if (!f.isSystem) {
               <button
+                type="button"
                 class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
                 (click)="$event.stopPropagation(); openRenameFolderDialog(projectId, f.id, f.name)"
                 hlmTooltipTrigger="Rename"
+                aria-label="Rename folder"
               >
                 <ng-icon name="lucidePencil" class="w-3 h-3" />
+                <span class="sr-only">Rename folder</span>
               </button>
             }
             @if (!f.isSystem) {
               <button
+                type="button"
                 class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
                 (click)="$event.stopPropagation(); openDeleteFolderDialog(projectId, f.id, f.name)"
                 hlmTooltipTrigger="Delete"
+                aria-label="Delete folder"
               >
                 <ng-icon name="lucideTrash2" class="w-3 h-3" />
+                <span class="sr-only">Delete folder</span>
               </button>
             }
           </div>
@@ -372,6 +435,7 @@
                 (dragend)="onDragEnd()"
               >
                 <button
+                  type="button"
                   (click)="openChat(s)"
                   class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14"
                 >
@@ -380,18 +444,24 @@
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
                   <button
+                    type="button"
                     class="ctf-action-btn"
                     (click)="$event.stopPropagation(); openRenameDialog(s)"
                     hlmTooltipTrigger="Rename"
+                    aria-label="Rename chat"
                   >
                     <ng-icon name="lucidePencil" />
+                    <span class="sr-only">Rename chat</span>
                   </button>
                   <button
+                    type="button"
                     class="ctf-action-btn ctf-action-destroy"
                     (click)="$event.stopPropagation(); openDeleteDialog(s)"
                     hlmTooltipTrigger="Delete"
+                    aria-label="Delete chat"
                   >
                     <ng-icon name="lucideTrash2" />
+                    <span class="sr-only">Delete chat</span>
                   </button>
                 </div>
               </div>
@@ -407,6 +477,7 @@
                 (dragend)="onDragEnd()"
               >
                 <button
+                  type="button"
                   (click)="openWriteUp(w)"
                   class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14"
                 >
@@ -415,18 +486,24 @@
                 </button>
                 <div class="ctf-item-actions group-hover/item:opacity-100">
                   <button
+                    type="button"
                     class="ctf-action-btn"
                     (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)"
                     hlmTooltipTrigger="Rename"
+                    aria-label="Rename write-up"
                   >
                     <ng-icon name="lucidePencil" />
+                    <span class="sr-only">Rename write-up</span>
                   </button>
                   <button
+                    type="button"
                     class="ctf-action-btn ctf-action-destroy"
                     (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)"
                     hlmTooltipTrigger="Delete"
+                    aria-label="Delete write-up"
                   >
                     <ng-icon name="lucideTrash2" />
+                    <span class="sr-only">Delete write-up</span>
                   </button>
                 </div>
               </div>
@@ -456,7 +533,9 @@
   }
 
   <hlm-dialog>
-    <button #createProjectTrigger brnDialogTrigger class="hidden"></button>
+    <button #createProjectTrigger brnDialogTrigger class="hidden" type="button">
+      Open create project dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -486,8 +565,8 @@
         </div>
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn (click)="createProject(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="createProject(ctx)">
           <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> Create Project
         </button>
       </hlm-dialog-footer>
@@ -495,7 +574,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #createFolderTrigger brnDialogTrigger class="hidden"></button>
+    <button #createFolderTrigger brnDialogTrigger class="hidden" type="button">
+      Open create folder dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -517,8 +598,8 @@
         </div>
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn (click)="addFolder(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="addFolder(ctx)">
           <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> Create Folder
         </button>
       </hlm-dialog-footer>
@@ -526,7 +607,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #renameFolderTrigger brnDialogTrigger class="hidden"></button>
+    <button #renameFolderTrigger brnDialogTrigger class="hidden" type="button">
+      Open rename folder dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -546,8 +629,8 @@
         </div>
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn (click)="renameFolder(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="renameFolder(ctx)">
           <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> Save Changes
         </button>
       </hlm-dialog-footer>
@@ -555,7 +638,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #deleteFolderTrigger brnDialogTrigger class="hidden"></button>
+    <button #deleteFolderTrigger brnDialogTrigger class="hidden" type="button">
+      Open delete folder dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -568,8 +653,8 @@
         </p>
       </hlm-dialog-header>
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn variant="destructive" (click)="deleteFolder(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" variant="destructive" (click)="deleteFolder(ctx)">
           <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete Folder
         </button>
       </hlm-dialog-footer>
@@ -577,7 +662,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #renameTrigger brnDialogTrigger class="hidden"></button>
+    <button #renameTrigger brnDialogTrigger class="hidden" type="button">
+      Open rename session dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -599,8 +686,8 @@
         </div>
       }
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn (click)="renameSession(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="renameSession(ctx)">
           <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> Save Changes
         </button>
       </hlm-dialog-footer>
@@ -608,7 +695,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #deleteTrigger brnDialogTrigger class="hidden"></button>
+    <button #deleteTrigger brnDialogTrigger class="hidden" type="button">
+      Open delete session dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -620,8 +709,8 @@
         </p>
       </hlm-dialog-header>
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn variant="destructive" (click)="deleteSession(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" variant="destructive" (click)="deleteSession(ctx)">
           <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete Session
         </button>
       </hlm-dialog-footer>
@@ -629,7 +718,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #renameWriteUpTrigger brnDialogTrigger class="hidden"></button>
+    <button #renameWriteUpTrigger brnDialogTrigger class="hidden" type="button">
+      Open rename write-up dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -651,8 +742,8 @@
         </div>
       }
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn (click)="renameWriteUp(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="renameWriteUp(ctx)">
           <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> Save Changes
         </button>
       </hlm-dialog-footer>
@@ -660,7 +751,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden"></button>
+    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden" type="button">
+      Open delete write-up dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -670,8 +763,8 @@
         <p hlmDialogDescription>Are you sure you want to delete this writeup?</p>
       </hlm-dialog-header>
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn variant="destructive" (click)="deleteWriteUp(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" variant="destructive" (click)="deleteWriteUp(ctx)">
           <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete WriteUp
         </button>
       </hlm-dialog-footer>
@@ -679,7 +772,9 @@
   </hlm-dialog>
 
   <hlm-dialog>
-    <button #newItemTrigger brnDialogTrigger class="hidden"></button>
+    <button #newItemTrigger brnDialogTrigger class="hidden" type="button">
+      Open new item dialog
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -709,8 +804,8 @@
         </div>
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
-        <button hlmBtn (click)="confirmCreateItem(ctx)">
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="confirmCreateItem(ctx)">
           <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> Create
         </button>
       </hlm-dialog-footer>
