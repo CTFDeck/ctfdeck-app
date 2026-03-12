@@ -2,7 +2,7 @@ import { Component, signal, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MenubarComponent } from './shell/menubar/menubar.component';
-import { ChatSidebar } from '../ui/sidebar/chat-sidebar';
+import { WorkspaceSidebarComponent} from './shell/sidebar/workspace-sidebar.component';
 import { TargetManagerComponent } from './domains/targets/ui/target-manager.component';
 import { CommandRunnerComponent } from './domains/command-runner/ui/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
@@ -16,7 +16,7 @@ import { ToolInstallModalComponent } from './domains/tools/ui/tool-install-modal
     CommonModule,
     RouterOutlet,
     MenubarComponent,
-    ChatSidebar,
+    WorkspaceSidebarComponent,
     TargetManagerComponent,
     CommandRunnerComponent,
     HlmToaster,

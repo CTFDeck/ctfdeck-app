@@ -1,0 +1,554 @@
+<hlm-sidebar
+  class="ctf-chat-sidebar"
+  collapsible="none"
+  [class.ctf-is-scrolling]="isScrolling()"
+  [class.ctf-is-dragging]="isDragging()"
+>
+  <hlm-sidebar-header>
+    <div class="flex w-full items-center justify-between px-4 py-3">
+      <div *ngIf="!isCollapsed()" class="overflow-hidden whitespace-nowrap">
+        <div class="font-semibold text-sm">Workspace</div>
+        <div class="text-xs text-muted-foreground">Manage your lab</div>
+      </div>
+      <button
+        hlmSidebarMenuButton
+        (click)="toggleSidebar()"
+        class="ml-auto p-1 h-8 w-8 flex items-center justify-center shrink-0"
+        tooltip="Toggle Sidebar"
+      >
+        <ng-icon name="lucidePanelLeft" />
+      </button>
+    </div>
+  </hlm-sidebar-header>
+
+  <hlm-sidebar-content class="relative">
+    <ng-scrollbar #scrollContainer hlm class="h-full" cdkScrollable (dragover)="onDragOver($event)" (scroll)="onScroll()">
+      <hlm-sidebar-group>
+        <div class="px-3 py-2 flex flex-col gap-2">
+          <button
+            hlmSidebarMenuButton
+            (click)="newProject()"
+            class="text-xs flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
+            tooltip="New Project"
+          >
+            <ng-icon name="lucideLayoutGrid" />
+            <span *ngIf="!isCollapsed()" class="truncate font-medium">New Project</span>
+          </button>
+
+          <div class="flex gap-2">
+            <button
+              hlmSidebarMenuButton
+              (click)="newChat()"
+              class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+            >
+              <ng-icon name="lucideMessageSquarePlus" />
+              <span *ngIf="!isCollapsed()" class="truncate font-medium">Chat</span>
+            </button>
+
+            <button
+              hlmSidebarMenuButton
+              (click)="newWriteUp()"
+              class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+            >
+              <ng-icon name="lucideFilePlus" />
+              <span *ngIf="!isCollapsed()" class="truncate font-medium">WriteUp</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="px-3 py-2 mb-2" *ngIf="!isCollapsed()">
+          <div hlmInputGroup class="w-full">
+            <div hlmInputGroupAddon>
+              <ng-icon name="lucideSearch" />
+            </div>
+            <input
+              hlmInputGroupInput
+              class="w-full text-xs h-8"
+              placeholder="Search everything..."
+              [(ngModel)]="search"
+            />
+          </div>
+        </div>
+
+        <hlm-sidebar-separator />
+
+        <div class="mt-4 px-2">
+          <div class="flex items-center gap-2 px-2 py-1 mb-1" *ngIf="!isCollapsed()">
+            <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Projects</span>
+          </div>
+
+          <div *ngIf="hierarchy$ | async as projects" class="flex flex-col gap-0.5">
+            <div *ngFor="let p of projects" class="flex flex-col">
+              <div
+                class="ctf-folder-node group flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+                [class.ctf-folder-hovering]="hoveredFolderId() === p.id"
+                (click)="toggleProject(p.id)"
+                (dragover)="onFolderDragOver($event, p.id, 'project')"
+                (dragleave)="onFolderDragLeave($event)"
+                (drop)="onDrop($event, p.id, null)"
+              >
+                <div
+                  *ngIf="hoveredFolderId() === p.id && !isProjectExpanded(p.id)"
+                  class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"
+                ></div>
+
+                <ng-icon
+                  [name]="isProjectExpanded(p.id) ? 'lucideChevronDown' : 'lucideChevronRight'"
+                  class="text-foreground w-3.5 h-3.5 pointer-events-none"
+                />
+                <ng-icon name="lucideLayoutGrid" class="text-primary w-4 h-4 pointer-events-none" />
+                <span class="text-sm font-medium truncate flex-1 pointer-events-none">{{ p.name }}</span>
+
+                <button
+                  class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+                  (click)="$event.stopPropagation(); openCreateFolderDialog(p.id)"
+                  hlmTooltipTrigger="Add folder"
+                >
+                  <ng-icon name="lucideFolderPlus" class="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div *ngIf="isProjectExpanded(p.id)" class="ml-4 pl-2 border-l border-border flex flex-col gap-1 mt-1 ctf-folder-content">
+                <ng-container *ngTemplateOutlet="folderTree; context: { $implicit: p.folders, projectId: p.id, depth: 0 }"></ng-container>
+              </div>
+            </div>
+          </div>
+
+          <button
+            *ngIf="((hierarchy$ | async)?.length || 0) < ((totalProjectsCount$ | async) || 0) && !isCollapsed()"
+            class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
+            (click)="loadMoreProjects()"
+          >
+            Load more
+          </button>
+        </div>
+
+        <div class="mt-6 px-2">
+          <div class="flex items-center justify-between px-2 py-1 mb-1" *ngIf="!isCollapsed()">
+            <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Recent Chats</span>
+            <button class="p-1 hover:bg-accent rounded" (click)="newChat()">
+              <ng-icon name="lucideMessageSquarePlus" class="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+
+          <div class="flex flex-col gap-0.5 px-1" (dragover)="onDragOver($event)" (drop)="onDrop($event, '', null)">
+            <div
+              *ngFor="let s of filteredChats((sessions$ | async) || [])"
+              class="ctf-item-group relative group/item"
+              [class.bg-accent]="s.id === (activeSessionId$ | async)"
+              [class.ctf-drop-success]="successfullyDroppedId() === s.id"
+              draggable="true"
+              (dragstart)="onDragStart($event, 'session', s.id)"
+              (dragend)="onDragEnd()"
+            >
+              <button
+                (click)="openChat(s)"
+                class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
+              >
+                <ng-icon name="lucideMessageCircleDashed" class="w-3.5 h-3.5 text-white" />
+                <span class="truncate">{{ s.name }}</span>
+              </button>
+              <div class="ctf-item-actions group-hover/item:opacity-100">
+                <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameDialog(s)" hlmTooltipTrigger="Rename">
+                  <ng-icon name="lucidePencil" />
+                </button>
+                <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteDialog(s)" hlmTooltipTrigger="Delete">
+                  <ng-icon name="lucideTrash2" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            *ngIf="((sessions$ | async)?.length || 0) < ((totalSessions$ | async) || 0) && !isCollapsed()"
+            class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
+            (click)="loadMoreSessions()"
+          >
+            Load more
+          </button>
+        </div>
+
+        <div class="mt-6 px-2 pb-10">
+          <div class="flex items-center justify-between px-2 py-1 mb-1" *ngIf="!isCollapsed()">
+            <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Recent WriteUps</span>
+            <button class="p-1 hover:bg-accent rounded" (click)="newWriteUp()">
+              <ng-icon name="lucideFilePlus" class="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+
+          <div class="flex flex-col gap-0.5 px-1" (dragover)="onDragOver($event)" (drop)="onDrop($event, '', null)">
+            <div
+              *ngFor="let w of filteredWriteUps((writeUps$ | async) || [])"
+              class="ctf-item-group relative group/item"
+              [class.bg-accent]="w.id === (activeWriteUpId$ | async)"
+              [class.ctf-drop-success]="successfullyDroppedId() === w.id"
+              draggable="true"
+              (dragstart)="onDragStart($event, 'writeup', w.id)"
+              (dragend)="onDragEnd()"
+            >
+              <button
+                (click)="openWriteUp(w)"
+                class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
+              >
+                <ng-icon name="lucideFileText" class="w-3.5 h-3.5 text-foreground" />
+                <span class="truncate">{{ w.name }}</span>
+              </button>
+              <div class="ctf-item-actions group-hover/item:opacity-100">
+                <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)" hlmTooltipTrigger="Rename">
+                  <ng-icon name="lucidePencil" />
+                </button>
+                <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)" hlmTooltipTrigger="Delete">
+                  <ng-icon name="lucideTrash2" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            *ngIf="((writeUps$ | async)?.length || 0) < ((totalWriteUps$ | async) || 0) && !isCollapsed()"
+            class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
+            (click)="loadMoreWriteUps()"
+          >
+            Load more
+          </button>
+        </div>
+      </hlm-sidebar-group>
+    </ng-scrollbar>
+  </hlm-sidebar-content>
+
+  <ng-template #folderTree let-folders let-projectId="projectId" let-depth="depth">
+    <div *ngFor="let f of folders" class="flex flex-col">
+      <div
+        class="ctf-folder-node group flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+        [class.ctf-folder-hovering]="hoveredFolderId() === f.id"
+        (click)="toggleFolder(f.id)"
+        (dragover)="onFolderDragOver($event, f.id, 'folder')"
+        (dragleave)="onFolderDragLeave($event)"
+        (drop)="onDrop($event, projectId, f.id)"
+      >
+        <div
+          *ngIf="hoveredFolderId() === f.id && !isFolderExpanded(f.id)"
+          class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"
+        ></div>
+
+        <ng-icon
+          [name]="isFolderExpanded(f.id) ? 'lucideChevronDown' : 'lucideChevronRight'"
+          class="text-foreground w-3 h-3 pointer-events-none"
+        />
+        <ng-icon
+          [name]="isFolderExpanded(f.id) ? 'lucideFolderOpen' : 'lucideFolder'"
+          class="text-foreground w-3.5 h-3.5 pointer-events-none"
+        />
+        <span class="text-xs truncate flex-1 font-medium pointer-events-none">{{ f.name }}</span>
+
+        <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-auto">
+          <button
+            *ngIf="depth < 1"
+            class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+            (click)="$event.stopPropagation(); openCreateFolderDialog(projectId, f.id)"
+            hlmTooltipTrigger="Add subfolder"
+          >
+            <ng-icon name="lucideFolderPlus" class="w-3 h-3" />
+          </button>
+          <button
+            *ngIf="!f.isSystem"
+            class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+            (click)="$event.stopPropagation(); openRenameFolderDialog(projectId, f.id, f.name)"
+            hlmTooltipTrigger="Rename"
+          >
+            <ng-icon name="lucidePencil" class="w-3 h-3" />
+          </button>
+          <button
+            *ngIf="!f.isSystem"
+            class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
+            (click)="$event.stopPropagation(); openDeleteFolderDialog(projectId, f.id, f.name)"
+            hlmTooltipTrigger="Delete"
+          >
+            <ng-icon name="lucideTrash2" class="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="isFolderExpanded(f.id)" class="ml-4 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5 ctf-folder-content">
+        <ng-container *ngTemplateOutlet="folderTree; context: { $implicit: f.folders, projectId: projectId, depth: depth + 1 }"></ng-container>
+
+        <div
+          *ngFor="let s of f.sessions"
+          class="ctf-item-group relative group/item"
+          [class.bg-accent]="s.id === (activeSessionId$ | async)"
+          [class.ctf-drop-success]="successfullyDroppedId() === s.id"
+          draggable="true"
+          (dragstart)="onDragStart($event, 'session', s.id)"
+          (dragend)="onDragEnd()"
+        >
+          <button (click)="openChat(s)" class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14">
+            <ng-icon name="lucideMessageCircleDashed" class="w-3 h-3 text-foreground" />
+            <span class="truncate">{{ s.name }}</span>
+          </button>
+          <div class="ctf-item-actions group-hover/item:opacity-100">
+            <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameDialog(s)" hlmTooltipTrigger="Rename">
+              <ng-icon name="lucidePencil" />
+            </button>
+            <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteDialog(s)" hlmTooltipTrigger="Delete">
+              <ng-icon name="lucideTrash2" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          *ngFor="let w of f.writeups"
+          class="ctf-item-group relative group/item"
+          [class.bg-accent]="w.id === (activeWriteUpId$ | async)"
+          [class.ctf-drop-success]="successfullyDroppedId() === w.id"
+          draggable="true"
+          (dragstart)="onDragStart($event, 'writeup', w.id)"
+          (dragend)="onDragEnd()"
+        >
+          <button (click)="openWriteUp(w)" class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14">
+            <ng-icon name="lucideFileText" class="w-3 h-3 text-foreground" />
+            <span class="truncate">{{ w.name }}</span>
+          </button>
+          <div class="ctf-item-actions group-hover/item:opacity-100">
+            <button class="ctf-action-btn" (click)="$event.stopPropagation(); openRenameWriteUpDialog(w)" hlmTooltipTrigger="Rename">
+              <ng-icon name="lucidePencil" />
+            </button>
+            <button class="ctf-action-btn ctf-action-destroy" (click)="$event.stopPropagation(); openDeleteWriteUpDialog(w)" hlmTooltipTrigger="Delete">
+              <ng-icon name="lucideTrash2" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <div *ngIf="isDragging()" class="ctf-scroll-indicator ctf-scroll-up pointer-events-none">
+    <div class="flex flex-col items-center gap-1">
+      <ng-icon name="lucideChevronUp" class="h-6 w-6 animate-bounce" />
+      <span class="text-[10px] font-bold uppercase tracking-tighter opacity-70">Scroll Up</span>
+    </div>
+  </div>
+
+  <div *ngIf="isDragging()" class="ctf-scroll-indicator ctf-scroll-down pointer-events-none">
+    <div class="flex flex-col items-center gap-1">
+      <span class="text-[10px] font-bold uppercase tracking-tighter opacity-70">Scroll Down</span>
+      <ng-icon name="lucideChevronDown" class="h-6 w-6 animate-bounce" />
+    </div>
+  </div>
+
+  <hlm-dialog>
+    <button #createProjectTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideLayoutGrid" class="text-primary h-5 w-5" />
+          <span>New Project</span>
+        </h2>
+        <p hlmDialogDescription>Create a new container for your labs.</p>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="pname">Project Name</label>
+          <input hlmInput id="pname" [(ngModel)]="createProjectDraft.name" placeholder="Pro hacker lab..." />
+        </div>
+        <div class="grid gap-2">
+          <label hlmLabel for="pdesc">Description (Optional)</label>
+          <textarea hlmInput id="pdesc" [(ngModel)]="createProjectDraft.description" placeholder="A project about..."></textarea>
+        </div>
+      </div>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="createProject(ctx)">
+          <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> Create Project
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #createFolderTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideFolderPlus" class="text-primary h-5 w-5" />
+          <span>New Folder</span>
+        </h2>
+        <p hlmDialogDescription>Organize your sessions and writeups.</p>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="fname">Folder Name</label>
+          <input hlmInput id="fname" [(ngModel)]="createFolderDraft.name" placeholder="Web / Pwn / Misc..." (keyup.enter)="addFolder(ctx)" />
+        </div>
+      </div>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="addFolder(ctx)">
+          <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> Create Folder
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #renameFolderTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucidePencil" class="text-primary h-5 w-5" />
+          <span>Rename Folder</span>
+        </h2>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="rfname">New Name</label>
+          <input hlmInput id="rfname" [(ngModel)]="folderToRenameDraft.name" (keyup.enter)="renameFolder(ctx)" />
+        </div>
+      </div>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="renameFolder(ctx)">
+          <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> Save Changes
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #deleteFolderTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideTrash2" class="text-destructive h-5 w-5" />
+          <span>Delete Folder</span>
+        </h2>
+        <p hlmDialogDescription>
+          Are you sure you want to delete <strong>{{ folderToDeleteDraft.name }}</strong>?
+          Items will be moved to the project root.
+        </p>
+      </hlm-dialog-header>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn variant="destructive" (click)="deleteFolder(ctx)">
+          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete Folder
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #renameTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucidePencil" class="text-primary h-5 w-5" />
+          <span>Rename Session</span>
+        </h2>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4" *ngIf="sessionToRename">
+        <div class="grid gap-2">
+          <label hlmLabel for="sname">Session Name</label>
+          <input hlmInput id="sname" [(ngModel)]="renameDraftById[sessionToRename.id]" (keyup.enter)="renameSession(ctx)" />
+        </div>
+      </div>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="renameSession(ctx)">
+          <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> Save Changes
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #deleteTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideTrash2" class="text-destructive h-5 w-5" />
+          <span>Delete Session</span>
+        </h2>
+        <p hlmDialogDescription>Are you sure you want to delete this session? This action cannot be undone.</p>
+      </hlm-dialog-header>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn variant="destructive" (click)="deleteSession(ctx)">
+          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete Session
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #renameWriteUpTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucidePencil" class="text-primary h-5 w-5" />
+          <span>Rename WriteUp</span>
+        </h2>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4" *ngIf="writeUpToRename">
+        <div class="grid gap-2">
+          <label hlmLabel for="wname">WriteUp Name</label>
+          <input hlmInput id="wname" [(ngModel)]="renameDraftById[writeUpToRename.id]" (keyup.enter)="renameWriteUp(ctx)" />
+        </div>
+      </div>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="renameWriteUp(ctx)">
+          <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> Save Changes
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideTrash2" class="text-destructive h-5 w-5" />
+          <span>Delete WriteUp</span>
+        </h2>
+        <p hlmDialogDescription>Are you sure you want to delete this writeup?</p>
+      </hlm-dialog-header>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn variant="destructive" (click)="deleteWriteUp(ctx)">
+          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete WriteUp
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #newItemTrigger brnDialogTrigger class="hidden"></button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon [name]="newItemDraft.type === 'session' ? 'lucideMessageSquarePlus' : 'lucideFilePlus'" class="text-primary h-5 w-5" />
+          <span>New {{ newItemDraft.type === 'session' ? 'Chat' : 'WriteUp' }}</span>
+        </h2>
+        <p hlmDialogDescription>Give a name to your new {{ newItemDraft.type === 'session' ? 'conversation' : 'document' }}.</p>
+      </hlm-dialog-header>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="itemname">Name</label>
+          <input
+            hlmInput
+            id="itemname"
+            [(ngModel)]="newItemDraft.name"
+            [placeholder]="newItemDraft.type === 'session' ? 'Exploitation research...' : 'Final report...'"
+            (keyup.enter)="confirmCreateItem(ctx)"
+          />
+        </div>
+      </div>
+      <hlm-dialog-footer>
+        <button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn (click)="confirmCreateItem(ctx)">
+          <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> Create
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+</hlm-sidebar>
