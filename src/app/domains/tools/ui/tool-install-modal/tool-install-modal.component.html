@@ -7,7 +7,6 @@
       class="w-full sm:max-w-3xl rounded-t-2xl sm:rounded-2xl border border-border bg-background text-foreground shadow-2xl overflow-hidden flex flex-col max-h-[95dvh] sm:max-h-[calc(100vh-8rem)]"
       (click)="$event.stopPropagation()"
     >
-      <!-- Header -->
       <div class="border-b border-border bg-accent/20 px-5 sm:px-8 py-4 sm:py-6 flex-shrink-0">
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
@@ -39,7 +38,6 @@
         </div>
       </div>
 
-      <!-- Top actions -->
       <div
         class="flex flex-wrap items-center gap-2 border-b border-border px-5 sm:px-8 py-3 sm:py-4 bg-card/30 flex-shrink-0"
       >
@@ -82,7 +80,6 @@
         </div>
       </div>
 
-      <!-- Error -->
       @if (errorMessage) {
         <div class="px-5 sm:px-8 pt-4 flex-shrink-0">
           <div
@@ -93,7 +90,6 @@
         </div>
       }
 
-      <!-- Loading -->
       @if (loadingInventory) {
         <div class="px-5 sm:px-8 py-10 flex-shrink-0">
           <div
@@ -105,7 +101,6 @@
           </div>
         </div>
       } @else {
-        <!-- Tools list -->
         <div
           class="overflow-y-auto px-5 sm:px-8 py-4 sm:py-6 space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0"
         >
@@ -114,7 +109,6 @@
               class="group rounded-xl border border-border bg-card/40 p-3 sm:p-4 transition-all hover:bg-accent/40"
             >
               <div class="flex items-start gap-3 sm:gap-4">
-                <!-- Selection -->
                 <div class="pt-1 shrink-0">
                   <input
                     type="checkbox"
@@ -125,7 +119,6 @@
                   />
                 </div>
 
-                <!-- Tool content -->
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
                     <h4 class="text-sm sm:text-base font-bold tracking-tight text-foreground">
@@ -239,7 +232,6 @@
         </div>
       }
 
-      <!-- Footer -->
       <div
         class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border bg-accent/10 px-5 sm:px-8 py-4 sm:py-5 flex-shrink-0"
       >

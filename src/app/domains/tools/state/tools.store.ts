@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
@@ -18,6 +18,8 @@ import type { ToolStatus } from '../models/tool-status.model';
 
 @Injectable({ providedIn: 'root' })
 export class ToolsStore implements OnDestroy {
+  private readonly webSocketService = inject(WebSocketService);
+
   private unregisterHandler: (() => void) | null = null;
 
   private readonly toolsSubject = new BehaviorSubject<ToolStatus[]>([]);
@@ -38,7 +40,7 @@ export class ToolsStore implements OnDestroy {
   private readonly installingSubject = new BehaviorSubject<boolean>(false);
   readonly installing$ = this.installingSubject.asObservable();
 
-  constructor(private readonly webSocketService: WebSocketService) {
+  constructor() {
     this.registerProtocolHandler();
   }
 

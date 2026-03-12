@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { firstValueFrom, filter, timeout, TimeoutError } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
@@ -23,7 +23,7 @@ import {
   serializeProjectUpdate,
 } from './project.websocket.protocol';
 
-type PendingProjectResult = {
+interface PendingProjectResult {
   messageId: string;
   success?: boolean;
   projectId?: string;
@@ -32,16 +32,16 @@ type PendingProjectResult = {
   project?: ProjectData | null;
   folderId?: string;
   error?: string;
-};
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProjectClientService {
+  private ws = inject(WebSocketService);
+  private zone = inject(NgZone);
+
   private pending = new Map<string, (result: PendingProjectResult) => void>();
 
-  constructor(
-    private ws: WebSocketService,
-    private zone: NgZone,
-  ) {
+  constructor() {
     this.ws.registerHandler(this.handleMessage.bind(this));
   }
 
@@ -165,8 +165,8 @@ export class ProjectClientService {
   }
 
   list(
-    offset: number = 0,
-    limit: number = 50,
+    offset = 0,
+    limit = 50,
   ): Promise<{ projects: ProjectMetadata[]; totalCount: number }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();

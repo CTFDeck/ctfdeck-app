@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SudoPasswordModalStore } from '../../../shell/sudo-password-modal/sudo-password-modal.store';
 import {
@@ -27,6 +27,9 @@ export interface StreamingCallbacks {
 
 @Injectable({ providedIn: 'root' })
 export class WebSocketService {
+  private readonly zone = inject(NgZone);
+  private readonly sudoModal = inject(SudoPasswordModalStore);
+
   private ws: WebSocket | null = null;
   private currentUrl = 'ws://localhost:42712';
   private retryCount = 0;
@@ -49,10 +52,7 @@ export class WebSocketService {
   private readonly streamingCallbacks = new Map<string, StreamingCallbacks>();
   private readonly messageHandlers = new Set<(data: Uint8Array) => boolean>();
 
-  constructor(
-    private readonly zone: NgZone,
-    private readonly sudoModal: SudoPasswordModalStore,
-  ) {
+  constructor() {
     this.connectWithRetry();
   }
 
@@ -375,7 +375,7 @@ export class WebSocketService {
 
       const payload = serializePasswordProvide(message.messageId, password ?? '');
       this.sendBinary(payload);
-    });
+    }).then(() => {/* Ignore */});
   }
 
   private handleCommandMessage(data: Uint8Array): void {

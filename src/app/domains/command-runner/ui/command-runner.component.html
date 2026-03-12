@@ -1,5 +1,4 @@
 <div class="h-full flex flex-col bg-background text-foreground p-6">
-  <!-- Header -->
   <div class="flex justify-between items-center mb-6 border-b border-border pb-4">
     <div class="flex items-center gap-2">
       <ng-icon hlm name="lucideTerminal" class="text-primary text-2xl" />
@@ -7,11 +6,8 @@
     </div>
   </div>
 
-  <!-- Settings Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-    <!-- Left: Target & Tool -->
     <div class="space-y-6">
-      <!-- Target Section -->
       <div class="space-y-2">
         <div class="flex justify-between items-center">
           <label hlmLabel>Target</label>
@@ -71,7 +67,6 @@
       </div>
     </div>
 
-    <!-- Right: Command & Controls -->
     <div class="space-y-6">
       <div class="space-y-2">
         <div class="flex justify-between items-center">
@@ -95,7 +90,6 @@
             <ng-icon hlm name="lucideSave" size="sm" />
           </button>
 
-          <!-- Help Dialog Trigger -->
           <hlm-dialog>
             <button
               brnDialogTrigger
@@ -173,7 +167,6 @@
     </div>
   </div>
 
-  <!-- Output Terminal -->
   <div
     class="flex-1 flex flex-col min-h-0 rounded-md border border-border bg-card text-card-foreground overflow-hidden font-mono"
   >

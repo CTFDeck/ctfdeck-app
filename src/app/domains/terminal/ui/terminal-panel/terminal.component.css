@@ -34,14 +34,6 @@
     box-shadow 0.3s ease;
 }
 
-.status-indicator.bg-green-500 {
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
-}
-
-.status-indicator.bg-red-500 {
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
-}
-
 .ls-grid {
   display: flex;
   flex-wrap: wrap;
@@ -53,35 +45,6 @@
   white-space: nowrap;
 }
 
-.ft-dir {
-  color: #60a5fa;
-} /* blue */
-.ft-arc {
-  color: #fbbf24;
-} /* yellow */
-.ft-bin {
-  color: #f87171;
-} /* red */
-.ft-lnk {
-  color: #a78bfa;
-} /* purple */
-.ft-txt {
-  color: #d1d5db;
-} /* light grey */
-.ft-img {
-  color: #34d399;
-} /* green */
-.ft-vid {
-  color: #fb7185;
-} /* pink */
-.ft-aud {
-  color: #22c55e;
-} /* green */
-.ft-unk {
-  color: #9ca3af;
-} /* grey */
-
-/* Autocomplete suggestions grid */
 .autocomplete-grid {
   display: flex;
   flex-wrap: wrap;
@@ -94,36 +57,6 @@
   white-space: nowrap;
 }
 
-/* Ensure file type colors apply to autocomplete items with higher specificity */
-.autocomplete-item.ft-dir {
-  color: #60a5fa !important;
-}
-.autocomplete-item.ft-arc {
-  color: #fbbf24 !important;
-}
-.autocomplete-item.ft-bin {
-  color: #f87171 !important;
-}
-.autocomplete-item.ft-lnk {
-  color: #a78bfa !important;
-}
-.autocomplete-item.ft-txt {
-  color: #d1d5db !important;
-}
-.autocomplete-item.ft-img {
-  color: #34d399 !important;
-}
-.autocomplete-item.ft-vid {
-  color: #fb7185 !important;
-}
-.autocomplete-item.ft-aud {
-  color: #22c55e !important;
-}
-.autocomplete-item.ft-unk {
-  color: #9ca3af !important;
-}
-
-/* Inline autocomplete suggestions area */
 .autocomplete-suggestions {
   border-left: 2px solid var(--primary, #60a5fa);
   padding-left: 0.5rem;

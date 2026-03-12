@@ -81,7 +81,7 @@ export function serializeWriteUpList(
   offset: number,
   limit: number,
   messageId: string,
-  unassignedOnly: boolean = false,
+  unassignedOnly = false,
 ): Uint8Array {
   const buffer = new Uint8Array(1 + 16 + 16 + 4 + 4 + 1);
   const view = new DataView(buffer.buffer);

@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subscription, combineLatest, map } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { SessionStore } from '../../sessions/state/session.store';
@@ -9,6 +9,11 @@ import { ProjectClientService } from '../infrastructure/project-client.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectStore implements OnDestroy {
+  private projectClient = inject(ProjectClientService);
+  private sessionStore = inject(SessionStore);
+  private writeUpStore = inject(WriteUpStore);
+  private ws = inject(WebSocketService);
+
   private projectsSubject = new BehaviorSubject<ProjectMetadata[]>([]);
   readonly projects$ = this.projectsSubject.asObservable();
 
@@ -23,12 +28,7 @@ export class ProjectStore implements OnDestroy {
 
   private subscriptions = new Subscription();
 
-  constructor(
-    private projectClient: ProjectClientService,
-    private sessionStore: SessionStore,
-    private writeUpStore: WriteUpStore,
-    private ws: WebSocketService,
-  ) {
+  constructor() {
     this.subscriptions.add(
       this.ws.isConnected$.subscribe((connected) => {
         if (connected) {
@@ -46,7 +46,7 @@ export class ProjectStore implements OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  async loadProjects(offset: number = 0, limit: number = 6): Promise<void> {
+  async loadProjects(offset = 0, limit = 6): Promise<void> {
     this.loadingSubject.next(true);
 
     try {

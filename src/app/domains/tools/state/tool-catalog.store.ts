@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
@@ -8,16 +8,16 @@ import { ToolsStore } from './tools.store';
 
 @Injectable({ providedIn: 'root' })
 export class ToolCatalogStore implements OnDestroy {
+  private readonly webSocketService = inject(WebSocketService);
+  private readonly toolsStore = inject(ToolsStore);
+
   private unregisterHandler: (() => void) | null = null;
   private readonly subscriptions = new Subscription();
 
   private readonly toolsSubject = new BehaviorSubject<ToolCatalogItem[]>([]);
   readonly tools$ = this.toolsSubject.asObservable();
 
-  constructor(
-    private readonly webSocketService: WebSocketService,
-    private readonly toolsStore: ToolsStore,
-  ) {
+  constructor() {
     this.unregisterHandler = this.webSocketService.registerHandler((data: Uint8Array) => {
       const type = data[0] as MessageType;
 

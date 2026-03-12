@@ -84,14 +84,6 @@ textarea {
   background: color-mix(in srgb, var(--muted-foreground), transparent 70%);
 }
 
-:host ::ng-deep .markdown-body {
-  color: var(--foreground);
-  line-height: 1.6;
-  max-width: 80ch;
-  margin-left: auto;
-  margin-right: auto;
-}
-
 :host ::ng-deep .markdown-body h1 {
   font-size: 2.25rem;
   font-weight: 800;
@@ -190,16 +182,6 @@ textarea {
 
 :host ::ng-deep .markdown-body li {
   margin-bottom: 0.5rem;
-}
-
-:host ::ng-deep .markdown-body .table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  margin: 2rem 0;
-  border-radius: 12px;
-  border: 1px solid var(--border) !important;
-  background: color-mix(in srgb, var(--card), transparent 50%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 :host ::ng-deep .markdown-body table {

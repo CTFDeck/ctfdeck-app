@@ -32,7 +32,7 @@ export class App {
   targetManagerVisible = false;
   targetManagerMode: 'view' | 'add' | 'delete' = 'view';
   commandRunnerVisible = false;
-  selectedToolId: string = '';
+  selectedToolId = '';
 
   @ViewChild('targetManager', { static: false }) targetManager?: TargetManagerComponent;
 

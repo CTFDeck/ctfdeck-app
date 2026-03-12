@@ -1,13 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  EventEmitter,
-  OnDestroy,
-  OnInit,
-  Output,
-} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, distinctUntilChanged, filter } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -36,11 +28,12 @@ import {
   hasMissingInstallableTools,
   isToolSelectable,
 } from './tool-install-modal.utils';
+import { HlmIcon } from '@ctfdeck/helm/icon';
 
 @Component({
   selector: 'app-tool-install-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, HlmSpinner],
+  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, HlmSpinner, HlmIcon],
   providers: [
     provideIcons({
       lucideWrench,
@@ -56,6 +49,10 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ToolInstallModalComponent implements OnInit, OnDestroy {
+  private readonly toolsStore = inject(ToolsStore);
+  private readonly webSocketService = inject(WebSocketService);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   @Output() closed = new EventEmitter<void>();
 
   visible = false;
@@ -72,12 +69,6 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
   private inventoryRequestedOnce = false;
   private visibleToolIds = new Set<string>();
-
-  constructor(
-    private readonly toolsStore: ToolsStore,
-    private readonly webSocketService: WebSocketService,
-    private readonly cdr: ChangeDetectorRef,
-  ) {}
 
   get installableTools(): ToolStatus[] {
     return getInstallableVisibleTools(this.tools, this.visibleToolIds);

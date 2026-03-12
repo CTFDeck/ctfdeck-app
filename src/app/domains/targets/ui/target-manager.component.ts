@@ -20,13 +20,12 @@ import { HlmTabsImports } from '@ctfdeck/helm/tabs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
-import { BrnSelectImports } from '@spartan-ng/brain/select';
+import { BrnSelect, BrnSelectImports } from '@spartan-ng/brain/select';
 import { HlmSelectImports } from '@ctfdeck/helm/select/src';
 import { HlmButtonGroupImports } from '@ctfdeck/helm/button-group';
-import { BrnDialogImports } from '@spartan-ng/brain/dialog';
+import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
-import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
-import { BrnAlertDialogImports } from '@spartan-ng/brain/alert-dialog';
+import { BrnAlertDialogContent, BrnAlertDialogImports, BrnAlertDialogTrigger } from '@spartan-ng/brain/alert-dialog';
 import { HlmAlertDialogImports } from '@ctfdeck/helm/alert-dialog/src';
 
 import { HlmIcon } from '@ctfdeck/helm/icon';
@@ -80,9 +79,13 @@ import {
     ...HlmButtonGroupImports,
     ...BrnDialogImports,
     ...HlmDialogImports,
-    ...HlmScrollAreaImports,
     ...BrnAlertDialogImports,
     ...HlmAlertDialogImports,
+    BrnSelect,
+    BrnDialogContent,
+    BrnAlertDialogContent,
+    BrnDialogTrigger,
+    BrnAlertDialogTrigger,
   ],
   providers: [
     provideIcons({
@@ -141,7 +144,7 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
 
   ngOnInit(): void {
-    this.sessionStore.refreshSessions();
+    this.sessionStore.refreshSessions().then(() => { /* Ignore */ });
 
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {

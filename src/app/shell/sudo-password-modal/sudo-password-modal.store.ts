@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SudoPasswordRequest } from './sudo-password-request.model';
 
-type PendingSudoPasswordRequest = {
+interface PendingSudoPasswordRequest {
   request: SudoPasswordRequest;
   resolve: (password: string | null) => void;
-};
+}
 
 @Injectable({ providedIn: 'root' })
 export class SudoPasswordModalStore {

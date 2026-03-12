@@ -5,6 +5,7 @@
   min-width: 0;
   flex-shrink: 0;
   --sidebar-width: 16rem;
+  --scrollbar-thumb: rgba(100, 100, 110, 0.5);
 }
 
 :host.w-64 {
@@ -107,20 +108,6 @@
   overflow: hidden;
 }
 
-.ctf-chat-sidebar button[hlmSidebarMenuButton].ctf-session-active {
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  color: var(--primary);
-  font-weight: 500;
-  position: relative;
-  padding-left: 1.25rem;
-}
-
-.ctf-chat-sidebar button[hlmSidebarMenuButton].ctf-session-active::before {
-  background: var(--primary);
-  border-radius: 99px;
-  box-shadow: 0 0 10px var(--primary);
-}
-
 .ctf-chat-sidebar .group:hover {
   background-color: var(--sidebar-accent);
 }
@@ -133,10 +120,6 @@
   border-left-width: 1px;
   border-left-style: solid;
   border-left-color: var(--sidebar-border);
-}
-
-.ctf-chat-sidebar .text-amber-500\/80 {
-  color: #f59e0b;
 }
 
 .ctf-chat-sidebar .group\/item:hover .ctf-item-actions {
@@ -230,15 +213,6 @@
   min-width: 0;
 }
 
-.ctf-chat-sidebar .ctf-session-deleting {
-  opacity: 0;
-  transform: translateX(14px) scale(0.98);
-  transition:
-    opacity 220ms ease,
-    transform 220ms ease;
-  pointer-events: none;
-}
-
 .ctf-chat-sidebar::after {
   content: '';
   position: absolute;
@@ -299,17 +273,6 @@
   }
 }
 
-.ctf-chat-sidebar .ctf-mode-switcher {
-  background: color-mix(in srgb, var(--sidebar-border) 30%, transparent);
-  backdrop-filter: blur(8px);
-  padding: 0.25rem;
-  border-radius: 0.5rem;
-  display: flex;
-  gap: 0.25rem;
-  margin: 0.5rem 0.75rem;
-  border: 1px solid var(--sidebar-border);
-}
-
 .ctf-chat-sidebar .ctf-mode-switcher button {
   flex: 1;
   border-radius: calc(0.5rem - 0.25rem);
@@ -341,26 +304,10 @@
   }
 }
 
-.ctf-drop-success {
-  animation: drop-success-pulse 2.5s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 10;
-}
-
 .ctf-drop-success span,
 .ctf-drop-success ng-icon {
   color: #22c55e !important;
   transition: color 0.3s ease;
-}
-
-.ctf-drop-success::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgba(34, 197, 94, 0.5);
-  border-radius: 4px;
-  pointer-events: none;
-  animation: fadeOut 2.5s forwards;
 }
 
 @keyframes fadeOut {
@@ -427,13 +374,8 @@
   pointer-events: none !important;
 }
 
-.ctf-folder-hovering {
-  background-color: var(--sidebar-accent) !important;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
-}
-
 .animate-folder-progress {
-  width: 0%;
+  width: 0;
   animation: folder-progress 450ms linear forwards;
   box-shadow: 0 0 8px var(--primary);
   border-radius: 0 99px 99px 0;
@@ -443,7 +385,7 @@
 
 @keyframes folder-progress {
   from {
-    width: 0%;
+    width: 0;
   }
   to {
     width: 100%;

@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { firstValueFrom, filter, timeout, TimeoutError } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
@@ -21,7 +21,7 @@ import {
   serializeWriteUpUpdate,
 } from './writeup.websocket.protocol';
 
-type PendingWriteUpResult = {
+interface PendingWriteUpResult {
   messageId: string;
   success?: boolean;
   writeUpId?: string;
@@ -29,16 +29,16 @@ type PendingWriteUpResult = {
   totalCount?: number;
   writeUp?: WriteUpData | null;
   error?: string;
-};
+}
 
 @Injectable({ providedIn: 'root' })
 export class WriteUpClientService {
+  private ws = inject(WebSocketService);
+  private zone = inject(NgZone);
+
   private pending = new Map<string, (result: PendingWriteUpResult) => void>();
 
-  constructor(
-    private ws: WebSocketService,
-    private zone: NgZone,
-  ) {
+  constructor() {
     this.ws.registerHandler(this.handleMessage.bind(this));
   }
 
@@ -180,9 +180,9 @@ export class WriteUpClientService {
 
   list(
     sessionId: string,
-    offset: number = 0,
-    limit: number = 50,
-    unassignedOnly: boolean = false,
+    offset = 0,
+    limit = 50,
+    unassignedOnly = false,
   ): Promise<{ writeUps: WriteUpMetadata[]; totalCount: number }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();

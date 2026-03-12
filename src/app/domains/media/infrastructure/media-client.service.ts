@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { firstValueFrom, filter, timeout, TimeoutError } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
@@ -27,12 +27,12 @@ interface PendingMediaResult {
 
 @Injectable({ providedIn: 'root' })
 export class MediaClientService {
+  private ws = inject(WebSocketService);
+  private zone = inject(NgZone);
+
   private pending = new Map<string, (result: PendingMediaResult) => void>();
 
-  constructor(
-    private ws: WebSocketService,
-    private zone: NgZone,
-  ) {
+  constructor() {
     this.ws.registerHandler(this.handleMessage.bind(this));
   }
 

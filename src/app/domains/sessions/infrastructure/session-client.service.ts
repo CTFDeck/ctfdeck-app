@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
@@ -30,39 +30,39 @@ import {
   serializeSessionUpdateTargets,
 } from './session.websocket.protocol';
 
-type SessionCreateResult = {
+interface SessionCreateResult {
   messageId: string;
   success: boolean;
   sessionId: string;
-};
+}
 
-type SessionBooleanResult = {
+interface SessionBooleanResult {
   messageId: string;
   success: boolean;
-};
+}
 
-type SessionLoadResult = {
+interface SessionLoadResult {
   messageId: string;
   success: boolean;
   session: SessionData | null;
-};
+}
 
-type SessionListResult = {
+interface SessionListResult {
   messageId: string;
   totalCount: number;
   sessions: SessionListResponse['sessions'];
-};
+}
 
-type SessionAddTargetResult = {
+interface SessionAddTargetResult {
   messageId: string;
   success: boolean;
   targetId: string;
-};
+}
 
-type SessionErrorResult = {
+interface SessionErrorResult {
   messageId: string;
   error: string;
-};
+}
 
 type SessionPendingResult =
   | SessionCreateResult
@@ -74,14 +74,14 @@ type SessionPendingResult =
 
 @Injectable({ providedIn: 'root' })
 export class SessionClientService {
+  private readonly ws = inject(WebSocketService);
+  private readonly zone = inject(NgZone);
+
   private readonly pending = new Map<string, (result: SessionPendingResult) => void>();
   private activeSessionId: string | null = null;
   private activeProjectId: string | null = null;
 
-  constructor(
-    private readonly ws: WebSocketService,
-    private readonly zone: NgZone,
-  ) {
+  constructor() {
     this.ws.registerHandler(this.handleMessage.bind(this));
   }
 

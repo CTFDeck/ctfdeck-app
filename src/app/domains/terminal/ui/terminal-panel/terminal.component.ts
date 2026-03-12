@@ -35,7 +35,7 @@ import {
   lucideX,
   lucideZap,
 } from '@ng-icons/lucide';
-import { BrnDialogContent, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
+import { BrnDialogClose, BrnDialogContent, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
 
 import { WebSocketService } from '../../../../infrastructure/transport/websocket/websocket.service';
@@ -72,6 +72,7 @@ import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
     ...HlmDialogImports,
     BrnDialogTrigger,
     BrnDialogContent,
+    BrnDialogClose,
   ],
   providers: [
     provideIcons({
@@ -93,6 +94,11 @@ import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
   styleUrls: ['./terminal.component.css'],
 })
 export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
+  private readonly wsService = inject(WebSocketService);
+  private readonly sessionStore = inject(SessionStore);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly sanitizer = inject(DomSanitizer);
+
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   @ViewChild('commandInput') private commandInput!: ElementRef<HTMLInputElement>;
   @ViewChild('selectionTrigger', { read: BrnMenuTrigger })
@@ -134,12 +140,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     },
   });
 
-  constructor(
-    private readonly wsService: WebSocketService,
-    private readonly sessionStore: SessionStore,
-    private readonly cdr: ChangeDetectorRef,
-    private readonly sanitizer: DomSanitizer,
-  ) {
+  constructor() {
     this.serverUrl = this.wsService.getUrl();
   }
 
@@ -476,7 +477,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    navigator.clipboard.writeText(this.selectedText);
+    navigator.clipboard.writeText(this.selectedText).then(() => {/* Ignore */});
     toast.success('Copied to clipboard');
     this.dismissSelection();
   }

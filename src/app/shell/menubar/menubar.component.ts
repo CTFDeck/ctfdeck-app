@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   HlmMenu,
@@ -20,6 +20,7 @@ import type { ToolCatalogItem } from '../../domains/tools/models/tool-catalog-it
 import { ToolCatalogStore } from '../../domains/tools/state/tool-catalog.store';
 import { ThemeToggle } from './theme-toggle';
 import type { MenubarCustomScript } from './menubar.models';
+import { HlmIcon } from '@ctfdeck/helm/icon';
 
 @Component({
   selector: 'spartan-menubar',
@@ -37,6 +38,7 @@ import type { MenubarCustomScript } from './menubar.models';
     HlmMenuGroup,
     ThemeToggle,
     NgIcon,
+    HlmIcon,
   ],
   providers: [
     provideIcons({
@@ -47,6 +49,10 @@ import type { MenubarCustomScript } from './menubar.models';
   styleUrls: ['./menubar.css'],
 })
 export class MenubarComponent implements OnInit, OnDestroy {
+  private readonly router = inject(Router);
+  private readonly scriptStore = inject(ScriptStore);
+  private readonly toolCatalogStore = inject(ToolCatalogStore);
+
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
   @Output() openCommandRunnerEvent = new EventEmitter<string | undefined>();
   @Output() openMissingToolsEvent = new EventEmitter<void>();
@@ -56,12 +62,6 @@ export class MenubarComponent implements OnInit, OnDestroy {
   tools: ToolCatalogItem[] = [];
 
   private readonly subscriptions = new Subscription();
-
-  constructor(
-    private readonly router: Router,
-    private readonly scriptStore: ScriptStore,
-    private readonly toolCatalogStore: ToolCatalogStore,
-  ) {}
 
   ngOnInit(): void {
     this.subscriptions.add(

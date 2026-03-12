@@ -83,7 +83,7 @@
     <div
       class="flex-1 h-full overflow-hidden transition-all duration-300 ease-in-out border-r border-border"
       [class.hidden]="mode() === 'preview'"
-      [class.w-1/2]="mode() === 'split'"
+      [ngClass]="{ 'w-1/2': mode() === 'split' }"
     >
     <textarea
       #editor
@@ -94,11 +94,10 @@
       placeholder="Start writing your report... (Support for Drag & Drop and Paste images)"
     ></textarea>
 </div>
-
 <div
   class="flex-1 h-full overflow-y-auto transition-all duration-300 ease-in-out bg-card/20 relative"
   [class.hidden]="mode() === 'edit'"
-  [class.w-1/2]="mode() === 'split'"
+  [ngClass]="{ 'w-1/2': mode() === 'split' }"
 >
 <span
   class="absolute top-3 right-4 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest rounded-full bg-card/80 text-primary border border-primary/30 backdrop-blur-sm shadow-sm pointer-events-none"

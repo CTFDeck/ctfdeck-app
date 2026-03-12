@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
@@ -25,6 +25,9 @@ type PendingResult =
 
 @Injectable({ providedIn: 'root' })
 export class ScriptStore {
+  private readonly ws = inject(WebSocketService);
+  private readonly zone = inject(NgZone);
+
   private static readonly LIST_TIMEOUT_MS = 5000;
 
   private readonly scriptsSubject = new BehaviorSubject<Script[]>([]);
@@ -37,10 +40,7 @@ export class ScriptStore {
   private listRequest: Promise<Script[]> | null = null;
   private isConnected = false;
 
-  constructor(
-    private readonly ws: WebSocketService,
-    private readonly zone: NgZone,
-  ) {
+  constructor() {
     this.ws.registerHandler(this.handleMessage.bind(this));
 
     this.ws.isConnected$.subscribe((connected) => {

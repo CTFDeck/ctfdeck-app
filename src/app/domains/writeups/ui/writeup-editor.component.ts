@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
@@ -9,7 +9,6 @@ import DOMPurify from 'dompurify';
 import JSZip from 'jszip';
 import morphdom from 'morphdom';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
-import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { BrnTooltipImports } from '@spartan-ng/brain/tooltip';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -40,7 +39,6 @@ import { MediaClientService } from '../../media/infrastructure/media-client.serv
     CommonModule,
     FormsModule,
     HlmButtonImports,
-    ...HlmInputImports,
     NgIcon,
     ...HlmTooltipImports,
     ...BrnTooltipImports,
@@ -67,6 +65,11 @@ import { MediaClientService } from '../../media/infrastructure/media-client.serv
   styleUrls: ['./writeup-editor.component.css'],
 })
 export class WriteUpEditorComponent implements OnInit, OnDestroy {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private writeUpStore = inject(WriteUpStore);
+  private mediaClient = inject(MediaClientService);
+
   @ViewChild('editor') editor!: ElementRef<HTMLTextAreaElement>;
   @ViewChild('previewBody') previewBody!: ElementRef<HTMLDivElement>;
 
@@ -92,12 +95,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private lastHoveredEl: HTMLElement | null = null;
   private mediaUpdateTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private writeUpStore: WriteUpStore,
-    private mediaClient: MediaClientService,
-  ) {
+  constructor() {
     this.markedInstance.use({
       renderer: {
         heading: (token: any) => {
@@ -158,7 +156,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         }
 
         this.writeUpId = id;
-        this.loadWriteUp(id);
+        this.loadWriteUp(id).then(() => {/* Ignore */});
       }),
     );
 
@@ -183,7 +181,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.autoSave$.pipe(debounceTime(1000)).subscribe(() => {
-        this.save(true);
+        this.save(true).then(() => {/* Ignore */});
       }),
     );
 
@@ -265,7 +263,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     }
 
     await this.writeUpStore.deleteWriteUp(this.writeUpId);
-    this.router.navigate(['/terminal']);
+    await this.router.navigate(['/terminal']);
   }
 
   async exportZip(): Promise<void> {
@@ -325,7 +323,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/terminal']);
+    this.router.navigate(['/terminal']).then(() => {/* Ignore */});
   }
 
   setMode(mode: 'edit' | 'preview' | 'split'): void {

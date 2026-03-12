@@ -1,10 +1,10 @@
-export type RenderScheduler = {
+export interface RenderScheduler {
   schedule: () => void;
-};
+}
 
 export function createRenderScheduler(
   render: () => void,
-  minRenderInterval: number = 16,
+  minRenderInterval = 16,
 ): RenderScheduler {
   let pendingRender = false;
   let lastRenderTime = 0;

@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Subscription, distinctUntilChanged } from 'rxjs';
 import { toast } from 'ngx-sonner';
 import { SessionStore } from '../../sessions/state/session.store';
@@ -9,6 +9,9 @@ const ALL_SESSIONS_ID = '00000000-0000-0000-0000-000000000000';
 
 @Injectable({ providedIn: 'root' })
 export class WriteUpStore implements OnDestroy {
+  private writeUpClient = inject(WriteUpClientService);
+  private sessionStore = inject(SessionStore);
+
   private writeUpsSubject = new BehaviorSubject<WriteUpMetadata[]>([]);
   readonly writeUps$ = this.writeUpsSubject.asObservable();
 
@@ -38,14 +41,11 @@ export class WriteUpStore implements OnDestroy {
 
   private subscriptions = new Subscription();
 
-  constructor(
-    private writeUpClient: WriteUpClientService,
-    private sessionStore: SessionStore,
-  ) {
+  constructor() {
     this.subscriptions.add(
       this.sessionStore.activeSessionId$.pipe(distinctUntilChanged()).subscribe((sessionId) => {
         if (sessionId) {
-          this.refreshWriteUps(sessionId);
+          this.refreshWriteUps(sessionId).then(() => {/* Ignore */});
           return;
         }
 
@@ -59,7 +59,7 @@ export class WriteUpStore implements OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  async refreshWriteUps(sessionId?: string, offset: number = 0, limit: number = 6): Promise<void> {
+  async refreshWriteUps(sessionId?: string, offset = 0, limit = 6): Promise<void> {
     const activeSessionId = sessionId || this.sessionStore.getActiveSessionId();
 
     if (offset === 0) {
@@ -94,9 +94,9 @@ export class WriteUpStore implements OnDestroy {
   }
 
   async refreshAllWriteUps(
-    offset: number = 0,
-    limit: number = 6,
-    unassignedOnly: boolean = false,
+    offset = 0,
+    limit = 6,
+    unassignedOnly = false,
   ): Promise<void> {
     try {
       const result = await this.writeUpClient.list(ALL_SESSIONS_ID, offset, limit, unassignedOnly);

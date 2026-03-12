@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Subject, Subscription } from 'rxjs';
 import { toast } from 'ngx-sonner';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
@@ -11,6 +11,9 @@ import { SessionClientService } from '../infrastructure/session-client.service';
 
 @Injectable({ providedIn: 'root' })
 export class SessionStore implements OnDestroy {
+  private readonly sessions = inject(SessionClientService);
+  private readonly ws = inject(WebSocketService);
+
   private readonly sessionsSubject = new BehaviorSubject<SessionMetadata[]>([]);
   readonly sessions$ = this.sessionsSubject.asObservable();
 
@@ -42,10 +45,7 @@ export class SessionStore implements OnDestroy {
   private creatingSessionPromise: Promise<string> | null = null;
   private readonly sessionsListPromises = new Map<boolean, Promise<void>>();
 
-  constructor(
-    private readonly sessions: SessionClientService,
-    private readonly ws: WebSocketService,
-  ) {
+  constructor() {
     this.subscriptions.add(
       this.ws.isConnected$.subscribe((connected) => {
         if (connected) {
@@ -359,7 +359,7 @@ export class SessionStore implements OnDestroy {
 
     const loadUnassigned = this.refreshSessions(false, 0, 6, true);
     const loadAll = this.refreshSessions(false, 0, 50, false);
-    const restoreLastSession = lastSession ? this.selectSession(lastSession) : Promise.resolve();
+    const restoreLastSession = lastSession ? await this.selectSession(lastSession) : await Promise.resolve();
 
     await Promise.all([loadUnassigned, loadAll, restoreLastSession]);
 

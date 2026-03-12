@@ -23,7 +23,7 @@ export class ThemeService {
         this.setTheme('light');
         return;
       }
-    } catch (e) {
+    } catch {
       // ignore localStorage errors
     }
 
@@ -49,7 +49,7 @@ export class ThemeService {
         document.documentElement.classList.remove('dark');
         localStorage.setItem('theme', 'light');
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }

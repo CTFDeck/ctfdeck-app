@@ -5,7 +5,7 @@ import { Component, ElementRef, HostBinding, ViewChild, inject, signal } from '@
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { BRN_TOOLTIP_SCROLL_STRATEGY } from '@spartan-ng/brain/tooltip';
-import { BrnDialogImports } from '@spartan-ng/brain/dialog';
+import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
@@ -63,6 +63,16 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
     ...HlmDialogImports,
     ...HlmTooltipImports,
     CdkScrollable,
+    BrnDialogContent,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
+    BrnDialogTrigger,
   ],
   providers: [
     {
@@ -98,6 +108,10 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
   styleUrls: ['./workspace-sidebar.component.css'],
 })
 export class WorkspaceSidebarComponent {
+  private sessionStore = inject(SessionStore);
+  private writeUpStore = inject(WriteUpStore);
+  private router = inject(Router);
+
   isCollapsed = signal(false);
 
   deletingSessionIds = signal<Set<string>>(new Set());
@@ -168,11 +182,7 @@ export class WorkspaceSidebarComponent {
 
   protected readonly projectStore = inject(ProjectStore);
 
-  constructor(
-    private sessionStore: SessionStore,
-    private writeUpStore: WriteUpStore,
-    private router: Router,
-  ) {
+  constructor() {
     this.hierarchy$ = this.projectStore.getHierarchy$();
     this.sessions$ = this.sessionStore.unassignedSessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
