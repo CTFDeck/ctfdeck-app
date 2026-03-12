@@ -10,6 +10,7 @@ import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmDialogClose } from './hlm-dialog-close';
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
 	selector: 'hlm-dialog-content',
 	imports: [NgComponentOutlet, HlmDialogClose, HlmIconImports],
 	providers: [provideIcons({ lucideX })],

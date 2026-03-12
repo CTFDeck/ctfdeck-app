@@ -1,0 +1,713 @@
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
+import { toast } from 'ngx-sonner';
+import AnsiToHtml from 'ansi-to-html';
+
+import { HlmButtonImports } from '@ctfdeck/helm/button';
+import { HlmDialogImports } from '@ctfdeck/helm/dialog';
+import { HlmInputImports } from '@ctfdeck/helm/input';
+import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { HlmMenuImports, HlmSubMenu } from '@ctfdeck/helm/menu';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import {
+  lucideCopy,
+  lucideFileText,
+  lucideGlobe,
+  lucideMoreHorizontal,
+  lucidePlus,
+  lucideSave,
+  lucideServer,
+  lucideSettings,
+  lucideTerminal,
+  lucideTrash2,
+  lucideX,
+  lucideZap,
+} from '@ng-icons/lucide';
+import { BrnDialogClose, BrnDialogContent, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
+import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
+
+import { WebSocketService } from '../../../../infrastructure/transport/websocket/websocket.service';
+import type { FilePrefix } from '../../models/file-prefix.type';
+import type { LsEntry } from '../../models/ls-entry.model';
+import type { TerminalLine } from '../../models/terminal-line.model';
+import { TerminalAutocomplete } from '../../utils/terminal-autocomplete.utils';
+import { TerminalHistory } from '../../utils/terminal-history.utils';
+import {
+  formatPromptFromPath,
+  formatPromptFromWorkingDirectory,
+  looksLikeDirectoryChange,
+  looksLikeDirectoryListing,
+} from '../../utils/terminal-path.utils';
+import { SessionStore } from '../../../sessions/state/session.store';
+import type { SessionData } from '../../../sessions/models/session-data.model';
+import { WriteUpStore } from '../../../writeups/state/writeup.store';
+import { WriteUpClientService } from '../../../writeups/infrastructure/writeup-client.service';
+import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
+
+interface MenuTriggerLike {
+  open(): void;
+  close?(): void;
+}
+
+interface BrnMenuTriggerInternals {
+  _cdkTrigger?: MenuTriggerLike;
+  menuTrigger?: MenuTriggerLike;
+  _menuTrigger?: MenuTriggerLike;
+  open?(): void;
+}
+
+@Component({
+  selector: 'app-terminal',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    NgIcon,
+    HlmButtonImports,
+    BrnMenuTrigger,
+    ...HlmMenuImports,
+    HlmSubMenu,
+    ...HlmInputImports,
+    ...HlmLabelImports,
+    ...HlmDialogImports,
+    BrnDialogTrigger,
+    BrnDialogContent,
+    BrnDialogClose,
+  ],
+  providers: [
+    provideIcons({
+      lucideServer,
+      lucidePlus,
+      lucideTrash2,
+      lucideFileText,
+      lucideSettings,
+      lucideX,
+      lucideSave,
+      lucideZap,
+      lucideGlobe,
+      lucideTerminal,
+      lucideCopy,
+      lucideMoreHorizontal,
+    }),
+  ],
+  templateUrl: './terminal.component.html',
+  styleUrls: ['./terminal.component.css'],
+})
+export class TerminalComponent implements OnInit, OnDestroy {
+  private readonly wsService = inject(WebSocketService);
+  private readonly sessionStore = inject(SessionStore);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly sanitizer = inject(DomSanitizer);
+
+  @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
+  @ViewChild('commandInput') private commandInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('selectionTrigger', { read: BrnMenuTrigger })
+  private selectionTrigger?: BrnMenuTrigger;
+
+  lines: TerminalLine[] = [];
+  currentCommand = '';
+  isConnected = false;
+
+  prompt = '$';
+  private lastPwd = '';
+
+  autocompleteSuggestions: LsEntry[] = [];
+
+  showServerSelection = false;
+  serverUrl = '';
+  savedServers: string[] = ['ws://localhost:42712', 'wss://echo.websocket.org'];
+  isSessionLoading = false;
+
+  selectedText = '';
+  selectionMenuPosition = { x: 0, y: 0 };
+
+  writeUps$ = inject(WriteUpStore).writeUps$;
+
+  private readonly subscriptions = new Subscription();
+  private readonly history = new TerminalHistory();
+  public readonly autocomplete = new TerminalAutocomplete();
+
+  private readonly writeUpStore = inject(WriteUpStore);
+  private readonly writeUpClientService = inject(WriteUpClientService);
+
+  private readonly ansiConverter = new AnsiToHtml({
+    fg: '#d4d4d4',
+    bg: '#1e1e1e',
+    newline: true,
+    colors: {
+      4: '#61afef',
+      34: '#61afef',
+    },
+  });
+
+  constructor() {
+    this.serverUrl = this.wsService.getUrl();
+  }
+
+  toggleServerSelection(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    this.showServerSelection = !this.showServerSelection;
+  }
+
+  ngOnInit(): void {
+    this.subscriptions.add(
+      this.wsService.isConnected$.subscribe((connected) => {
+        this.isConnected = connected;
+
+        if (!connected) {
+          this.addLine('info', 'Disconnected from server.');
+        }
+      }),
+    );
+
+    this.subscriptions.add(
+      this.sessionStore.activeSession$.subscribe((session) => {
+        this.loadSessionHistory(session);
+      }),
+    );
+
+    this.subscriptions.add(
+      this.sessionStore.terminalEvents$.subscribe((event) => {
+        this.addLine(event.type, event.content);
+      }),
+    );
+
+    this.subscriptions.add(
+      this.sessionStore.isLoading$.subscribe((loading) => {
+        this.isSessionLoading = loading;
+      }),
+    );
+
+    this.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  async executeCommand(): Promise<void> {
+    const cmd = this.currentCommand.trim();
+
+    if (!cmd) {
+      return;
+    }
+
+    this.history.add(cmd);
+    this.addLine('command', `${this.prompt} ${cmd}`);
+    this.currentCommand = '';
+    this.clearAutocompleteSuggestions();
+
+    if (cmd === 'clear' || cmd === 'cls') {
+      this.lines = [];
+      return;
+    }
+
+    if (cmd === 'connect') {
+      this.addLine('info', 'Connecting to server...');
+      this.connect();
+      return;
+    }
+
+    if (cmd === 'disconnect') {
+      this.addLine('info', 'Disconnecting from server...');
+      this.wsService.disconnect();
+      return;
+    }
+
+    if (!this.isConnected) {
+      this.addLine('error', 'Not connected to server.');
+      return;
+    }
+
+    if (this.isSessionLoading) {
+      this.addLine('info', 'Session is loading. Please wait...');
+      return;
+    }
+
+    try {
+      await this.sessionStore.ensureActiveSession();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.addLine('error', `Session error: ${message}`);
+      return;
+    }
+
+    let outputLineIndex = -1;
+    let outputBuffer = '';
+    let errorBuffer = '';
+    let pendingRender = false;
+    let lastRenderTime = 0;
+    const minRenderInterval = 16;
+
+    const scheduleRender = () => {
+      if (pendingRender) {
+        return;
+      }
+
+      const now = performance.now();
+
+      if (now - lastRenderTime < minRenderInterval) {
+        pendingRender = true;
+
+        requestAnimationFrame(() => {
+          pendingRender = false;
+          lastRenderTime = performance.now();
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
+        });
+
+        return;
+      }
+
+      lastRenderTime = now;
+      this.renderOutputBuffer(outputLineIndex, outputBuffer);
+    };
+
+    this.wsService
+      .executeCommandStreaming(
+        cmd,
+        (data: string) => {
+          outputBuffer += data;
+
+          if (outputLineIndex === -1) {
+            outputLineIndex = this.lines.length;
+            this.lines.push({
+              type: 'output',
+              content: '',
+              timestamp: new Date(),
+            });
+          }
+
+          scheduleRender();
+        },
+        (data: string) => {
+          errorBuffer += data;
+          this.appendToLastError(data);
+        },
+      )
+      .then((result) => {
+        if (outputLineIndex >= 0) {
+          this.renderOutputBuffer(outputLineIndex, outputBuffer);
+        }
+
+        if (looksLikeDirectoryListing(cmd)) {
+          this.updateLsCache(outputBuffer);
+        }
+
+        if (result.workingDirectory) {
+          this.updatePwd(result.workingDirectory);
+        }
+
+        if (result.exitCode !== 0 && !errorBuffer) {
+          this.addLine('error', `Program exited with code ${result.exitCode}`);
+        }
+
+        if (looksLikeDirectoryChange(cmd)) {
+          this.refreshAutocompleteCache();
+        }
+
+        this.scrollToBottom();
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.addLine('error', `Execution failed: ${message}`);
+      });
+  }
+
+  onTabAutocomplete(event: Event): void {
+    const keyboardEvent = event as KeyboardEvent;
+    keyboardEvent.preventDefault();
+
+    const result = this.autocomplete.handleTab(this.currentCommand);
+    this.currentCommand = result.newCommand;
+
+    if (result.suggestions.length > 0) {
+      this.showAutocompleteSuggestions(result.suggestions);
+      this.scrollToBottom();
+      return;
+    }
+
+    this.clearAutocompleteSuggestions();
+  }
+
+  onInput(): void {
+    this.autocompleteSuggestions = this.autocomplete.getSuggestions(this.currentCommand);
+    this.cdr.detectChanges();
+  }
+
+  clearAutocompleteSuggestions(): void {
+    if (this.autocompleteSuggestions.length > 0) {
+      this.autocompleteSuggestions = [];
+      this.cdr.detectChanges();
+    }
+  }
+
+  navigateHistory(direction: 'up' | 'down', event: Event): void {
+    event.preventDefault();
+    this.currentCommand = this.history.navigate(direction, this.currentCommand);
+  }
+
+  focusInput(event?: Event): void {
+    const selection = window.getSelection();
+
+    if (selection && selection.toString().length > 0) {
+      return;
+    }
+
+    if (event && event.target instanceof HTMLElement) {
+      const tag = event.target.tagName.toLowerCase();
+
+      if (tag === 'input' || tag === 'button' || tag === 'textarea') {
+        return;
+      }
+    }
+
+    this.commandInput?.nativeElement?.focus();
+  }
+
+  reconnect(): void {
+    this.wsService.disconnect();
+    this.wsService.setUrl(this.serverUrl);
+    this.connect();
+  }
+
+  saveServer(): void {
+    if (this.serverUrl && !this.savedServers.includes(this.serverUrl)) {
+      this.savedServers.push(this.serverUrl);
+    }
+  }
+
+  removeServer(url: string, event: Event): void {
+    event.stopPropagation();
+    this.savedServers = this.savedServers.filter((server) => server !== url);
+  }
+
+  selectServer(url: string): void {
+    this.serverUrl = url;
+    this.reconnect();
+  }
+
+  onMouseDown(event: MouseEvent): void {
+    if (event.button === 0) {
+      this.dismissSelection();
+    }
+  }
+
+  onMouseUp(event: MouseEvent): void {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const selection = window.getSelection();
+
+    if (!selection || selection.isCollapsed) {
+      if (this.selectedText) {
+        this.dismissSelection();
+      }
+
+      return;
+    }
+
+    const text = selection.toString().trim();
+
+    if (text.length >= 2) {
+      this.selectedText = text;
+    }
+  }
+
+  onContextMenu(event: MouseEvent): void {
+    const selection = window.getSelection();
+    const currentText = selection?.toString().trim();
+
+    if (currentText && currentText.length >= 2) {
+      this.selectedText = currentText;
+    }
+
+    if (this.selectedText && this.selectedText.length >= 2) {
+      event.preventDefault();
+
+      this.selectionMenuPosition = {
+        x: event.clientX,
+        y: event.clientY,
+      };
+
+      this.cdr.detectChanges();
+
+      setTimeout(() => {
+        if (!this.selectionTrigger) {
+          return;
+        }
+
+        try {
+          const internals = this.selectionTrigger as unknown as BrnMenuTriggerInternals;
+          const trigger =
+            internals._cdkTrigger || internals.menuTrigger || internals._menuTrigger;
+
+          if (trigger) {
+            trigger.open();
+            return;
+          }
+
+          if (typeof internals.open === 'function') {
+            internals.open();
+          }
+        } catch (error: unknown) {
+          console.error('Failed to open selection menu', error);
+        }
+      }, 5);
+    }
+  }
+
+  dismissSelection(): void {
+    this.selectedText = '';
+
+    const internals = this.selectionTrigger as unknown as BrnMenuTriggerInternals;
+    internals._cdkTrigger?.close?.();
+
+    try {
+      window.getSelection()?.removeAllRanges();
+    } catch { /* Ignore */ }
+  }
+
+  copySelection(): void {
+    if (!this.selectedText) {
+      return;
+    }
+
+    navigator.clipboard.writeText(this.selectedText).then(() => { /* Ignore */ });
+    toast.success('Copied to clipboard');
+    this.dismissSelection();
+  }
+
+  async appendToWriteUp(writeUp: WriteUpMetadata): Promise<void> {
+    if (!this.selectedText) {
+      return;
+    }
+
+    try {
+      const { success, writeUp: fullWriteUp } = await this.writeUpClientService.load(writeUp.id);
+
+      if (success && fullWriteUp) {
+        const appended = `\n\n\`\`\`bash\n${this.selectedText}\n\`\`\`\n`;
+        const newContent = fullWriteUp.content + appended;
+        const saveOk = await this.writeUpStore.saveActiveWriteUp(newContent, fullWriteUp.name);
+
+        if (!saveOk) {
+          await this.writeUpClientService.update(writeUp.id, fullWriteUp.name, newContent);
+        }
+
+        toast.success('Added to write-up!', {
+          description: `Content appended to "${writeUp.name}"`,
+        });
+
+        this.dismissSelection();
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+
+      toast.error('Failed to append to write-up', {
+        description: message,
+      });
+    } finally {
+      this.selectedText = '';
+    }
+  }
+
+  classForPrefix(prefix: FilePrefix): string {
+    return this.autocomplete.getClassForPrefix(prefix);
+  }
+
+  private connect(): void {
+    if (this.wsService.isConnected$.value) {
+      this.addLine('info', 'Connected to WebSocket server.');
+      this.addLine('info', 'Type "help" for a list of available commands or just type away!');
+      this.scrollToBottom();
+      this.initializeTerminalState();
+      return;
+    }
+
+    this.wsService
+      .connect()
+      .then(() => {
+        this.addLine('info', 'Connected to WebSocket server.');
+        this.addLine('info', 'Type "help" for a list of available commands or just type away!');
+        this.scrollToBottom();
+        this.initializeTerminalState();
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.addLine('error', `Connection failed: ${message}`);
+      });
+  }
+
+  private initializeTerminalState(): void {
+    this.wsService
+      .executeCommandStreaming(
+        'pwd',
+        () => { /* Ignore */ },
+        () => { /* Ignore */ },
+      )
+      .then((result) => {
+        if (result.workingDirectory) {
+          this.updatePwd(result.workingDirectory);
+        }
+
+        this.refreshAutocompleteCache();
+      })
+      .catch(() => { /* Ignore */ });
+  }
+
+  private renderOutputBuffer(lineIndex: number, buffer: string): void {
+    if (lineIndex < 0 || lineIndex >= this.lines.length) {
+      return;
+    }
+
+    const html = this.ansiConverter.toHtml(buffer);
+    this.lines[lineIndex].content = this.sanitizer.bypassSecurityTrustHtml(html);
+    this.cdr.detectChanges();
+    this.scrollToBottom();
+  }
+
+  private appendToLastError(data: string): void {
+    const lastLine = this.lines[this.lines.length - 1];
+
+    if (lastLine && lastLine.type === 'error') {
+      lastLine.content = `${lastLine.content || ''}${data}`;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.addLine('error', data);
+  }
+
+  private refreshAutocompleteCache(): void {
+    let output = '';
+
+    this.wsService
+      .executeCommandStreaming(
+        'ls',
+        (data) => {
+          output += data;
+        },
+        () => { /* Ignore */ },
+      )
+      .then(() => {
+        if (output) {
+          this.updateLsCache(output);
+        }
+      })
+      .catch(() => { /* Ignore */ });
+  }
+
+  private updatePwd(workingDirectory: string): void {
+    const pwd = (workingDirectory || '').trim();
+
+    if (!pwd) {
+      return;
+    }
+
+    this.lastPwd = pwd;
+    this.prompt = formatPromptFromWorkingDirectory(pwd);
+    this.cdr.detectChanges();
+  }
+
+  private updateLsCache(lsOutput: string): void {
+    this.autocomplete.updateCache(lsOutput);
+  }
+
+  private loadSessionHistory(session: SessionData | null): void {
+    if (!session) {
+      this.lines = [];
+      this.history.setHistory([]);
+      this.prompt = '$';
+      this.lastPwd = '';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const newLines: TerminalLine[] = [];
+    const commands: string[] = [];
+
+    for (const entry of session.history) {
+      const prompt = formatPromptFromPath(entry.workingDirectory);
+
+      newLines.push({
+        type: 'command',
+        content: `${prompt} ${entry.command}`,
+        timestamp: entry.timestamp,
+      });
+
+      commands.push(entry.command);
+
+      if (entry.output) {
+        const html = this.ansiConverter.toHtml(entry.output);
+
+        newLines.push({
+          type: 'output',
+          content: this.sanitizer.bypassSecurityTrustHtml(html),
+          timestamp: entry.timestamp,
+        });
+      }
+
+      if (entry.exitCode !== 0 && !entry.output) {
+        newLines.push({
+          type: 'error',
+          content: `Program exited with code ${entry.exitCode}`,
+          timestamp: entry.timestamp,
+        });
+      }
+    }
+
+    this.lines = newLines;
+    this.history.setHistory(commands);
+
+    if (session.history.length > 0) {
+      const last = session.history[session.history.length - 1];
+      this.updatePwd(last.workingDirectory);
+    }
+
+    this.cdr.detectChanges();
+    this.scrollToBottom();
+  }
+
+  private addLine(type: 'command' | 'output' | 'error' | 'info', content: string): void {
+    let renderedContent: SafeHtml | string = content;
+
+    if (type === 'output') {
+      const html = this.ansiConverter.toHtml(content);
+      renderedContent = this.sanitizer.bypassSecurityTrustHtml(html);
+    }
+
+    this.lines.push({
+      type,
+      content: renderedContent,
+      timestamp: new Date(),
+    });
+
+    this.cdr.detectChanges();
+  }
+
+  private showAutocompleteSuggestions(candidates: LsEntry[]): void {
+    this.autocompleteSuggestions = candidates;
+    this.cdr.detectChanges();
+  }
+
+  private scrollToBottom(): void {
+    try {
+      this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    } catch { /* Ignore */ }
+  }
+}

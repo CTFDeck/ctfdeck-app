@@ -21,6 +21,7 @@ export const buttonGroupVariants = cva(
 );
 
 @Directive({
+  // eslint-disable-next-line @angular-eslint/directive-selector
 	selector: '[hlmButtonGroup],hlm-button-group',
 	host: {
 		'data-slot': 'button-group',

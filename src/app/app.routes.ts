@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 
-import { TerminalComponent } from '../ui/terminal/terminal.component';
-import { WriteUpEditorComponent } from '../ui/writeup-editor/writeup-editor.component';
+import { TerminalComponent } from './domains/terminal/ui/terminal-panel/terminal.component';
+import { WriteUpEditorComponent } from './domains/writeups/ui/writeup-editor.component';
 
 export const routes: Routes = [
   { path: 'terminal', component: TerminalComponent },

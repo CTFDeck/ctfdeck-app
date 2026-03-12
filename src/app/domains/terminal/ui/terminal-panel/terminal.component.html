@@ -1,0 +1,253 @@
+<div
+  class="terminal-container flex flex-col h-full w-full bg-card text-card-foreground overflow-hidden font-mono"
+  (click)="focusInput()"
+  (keydown.enter)="focusInput()"
+  (keydown.space)="focusInput(); $event.preventDefault()"
+  tabindex="0"
+>
+  <div
+    class="terminal-header flex items-center px-4 h-14 border-b border-border/50"
+    (click)="$event.stopPropagation()"
+    (keydown.enter)="$event.stopPropagation()"
+    (keydown.space)="$event.stopPropagation(); $event.preventDefault()"
+    tabindex="0"
+  >
+    <div class="relative inline-block">
+      <hlm-dialog>
+        <button
+          brnDialogTrigger
+          hlmBtn
+          type="button"
+          [variant]="'outline'"
+          [class.border-red-400]="!isConnected"
+          [class.text-red-500]="!isConnected"
+          [class.bg-red-50]="!isConnected"
+          size="sm"
+          class="h-7 px-3 gap-2 text-xs font-medium"
+          (click)="toggleServerSelection($event)"
+        >
+          <div
+            class="status-indicator"
+            [class.bg-green-500]="isConnected"
+            [class.bg-red-500]="!isConnected"
+          ></div>
+          <span class="status-text text-xs text-muted-foreground">{{
+              isConnected ? 'Connected to ' + serverUrl : 'Disconnected'
+            }}</span>
+          <ng-icon name="lucideSettings" size="xs" class="ml-1 opacity-50" />
+        </button>
+
+        <hlm-dialog-content *brnDialogContent="let ctx" class="sm:max-w-[450px]">
+          <hlm-dialog-header>
+            <h3 hlmDialogTitle>Connection Settings</h3>
+            <p hlmDialogDescription>
+              Configure the WebSocket server URL to interact with your environment.
+            </p>
+          </hlm-dialog-header>
+
+          <div class="grid gap-4 py-4">
+            <div class="flex flex-col gap-2">
+              <label hlmLabel for="url">Server WebSocket URL</label>
+              <div class="flex gap-2">
+                <input
+                  id="url"
+                  hlmInput
+                  [(ngModel)]="serverUrl"
+                  placeholder="ws://localhost:42712"
+                  class="flex-1"
+                />
+                <button hlmBtn type="button" variant="secondary" aria-label="Save server" (click)="saveServer()">
+                  <ng-icon name="lucideSave" size="sm" />
+                  <span class="sr-only">Save server</span>
+                </button>
+              </div>
+            </div>
+
+            @if (savedServers.length > 0) {
+              <div class="space-y-2">
+                <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Saved Servers
+                </h4>
+                <div class="grid gap-1 max-h-40 overflow-y-auto pr-1">
+                  @for (server of savedServers; track server) {
+                    <div
+                      class="flex items-center justify-between p-2 rounded-md border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer group"
+                      (click)="selectServer(server)"
+                      (keydown.enter)="selectServer(server)"
+                      (keydown.space)="selectServer(server); $event.preventDefault()"
+                      tabindex="0"
+                      role="button"
+                    >
+                      <div class="flex items-center gap-2 overflow-hidden">
+                        <ng-icon name="lucideGlobe" size="xs" class="text-muted-foreground" />
+                        <span class="text-xs truncate">{{ server }}</span>
+                      </div>
+                      <button
+                        hlmBtn
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        class="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        aria-label="Remove saved server"
+                        (click)="removeServer(server, $event)"
+                      >
+                        <ng-icon name="lucideTrash2" size="xs" class="text-destructive" />
+                        <span class="sr-only">Remove saved server</span>
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <hlm-dialog-footer>
+            <button hlmBtn type="button" variant="outline" brnDialogClose>Cancel</button>
+            <button hlmBtn type="button" (click)="reconnect(); ctx.close()" class="gap-2">
+              <ng-icon name="lucideZap" size="sm" />
+              Connect
+            </button>
+          </hlm-dialog-footer>
+        </hlm-dialog-content>
+      </hlm-dialog>
+    </div>
+  </div>
+
+  <div
+    class="terminal-output flex-1 p-3 overflow-auto text-sm leading-relaxed relative"
+    #scrollContainer
+    (mouseup)="onMouseUp($event)"
+    (mousedown)="onMouseDown($event)"
+    (contextmenu)="onContextMenu($event)"
+  >
+    @for (line of lines; track line) {
+      <div
+        class="line mb-0.5 break-all"
+        [ngClass]="{
+          'font-bold text-foreground mt-2': line.type === 'command',
+          'text-muted-foreground': line.type === 'output',
+          'text-destructive': line.type === 'error',
+          'text-primary italic': line.type === 'info',
+          'line-animated': line.type === 'output' || line.type === 'ls',
+        }"
+      >
+        @if (line.type === 'ls' && line.lsEntries?.length) {
+          <div class="ls-grid">
+            @for (e of line.lsEntries; track e.name) {
+              <span class="ls-item" [ngClass]="classForPrefix(e.prefix)">
+                {{ e.name }}
+              </span>
+            }
+          </div>
+        } @else {
+          @if (line.type === 'output') {
+            <span class="content whitespace-pre-wrap" [innerHTML]="line.content"></span>
+          } @else {
+            <span class="content whitespace-pre-wrap">{{ line.content }}</span>
+          }
+        }
+      </div>
+    }
+
+    <button
+      #selectionTrigger
+      type="button"
+      [brnMenuTriggerFor]="selectionMenu"
+      class="fixed pointer-events-none w-1 h-1 opacity-0"
+      [style.left.px]="selectionMenuPosition.x"
+      [style.top.px]="selectionMenuPosition.y"
+      aria-label="Open selection menu"
+    >
+      <span class="sr-only">Open selection menu</span>
+    </button>
+
+    @if (autocompleteSuggestions.length > 0) {
+      <div class="autocomplete-suggestions mb-2">
+        <div class="autocomplete-grid">
+          @for (e of autocompleteSuggestions; track e.name) {
+            <span class="autocomplete-item" [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="input-line flex items-center mt-2">
+      <span class="prompt text-primary font-bold mr-2">{{ prompt }}</span>
+      <input
+        #commandInput
+        class="flex-1 bg-transparent border-none outline-none text-foreground font-inherit p-0 m-0"
+        type="text"
+        [(ngModel)]="currentCommand"
+        (keydown.enter)="executeCommand()"
+        (keydown.arrowup)="navigateHistory('up', $event)"
+        (keydown.arrowdown)="navigateHistory('down', $event)"
+        (keydown.tab)="onTabAutocomplete($event)"
+        (input)="onInput()"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+  </div>
+</div>
+
+<ng-template #selectionMenu>
+  <hlm-menu
+    class="w-56 shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 rounded-xl"
+  >
+    <hlm-menu-label class="flex items-center justify-between">
+      <span>Selection Actions</span>
+      <span class="text-[10px] opacity-40 font-mono">TEXT</span>
+    </hlm-menu-label>
+    <hlm-menu-separator />
+    <hlm-menu-group>
+      <button hlmMenuItem type="button" (click)="copySelection()">
+        <ng-icon name="lucideCopy" hlmMenuIcon class="mr-2" />
+        <span>Copy Selection</span>
+        <hlm-menu-shortcut>⌘C</hlm-menu-shortcut>
+      </button>
+
+      <button
+        hlmMenuItem
+        type="button"
+        align="start"
+        side="right"
+        [brnMenuTriggerFor]="writeupsSubMenu"
+      >
+        <ng-icon name="lucideFileText" hlmMenuIcon class="mr-2" />
+        <span>Add to Write-up</span>
+        <hlm-menu-item-sub-indicator />
+      </button>
+    </hlm-menu-group>
+
+    <hlm-menu-separator />
+    <hlm-menu-group>
+      <button hlmMenuItem type="button" class="text-muted-foreground" (click)="dismissSelection()">
+        <ng-icon name="lucideX" hlmMenuIcon class="mr-2" />
+        <span>Dismiss</span>
+      </button>
+    </hlm-menu-group>
+  </hlm-menu>
+</ng-template>
+
+<ng-template #writeupsSubMenu>
+  <hlm-sub-menu
+    class="w-64 max-h-80 overflow-y-auto shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in slide-in-from-right-1 rounded-xl"
+  >
+    <hlm-menu-label>Target Write-up</hlm-menu-label>
+    <hlm-menu-separator />
+    @if ((writeUps$ | async)?.length) {
+      <hlm-menu-group>
+        @for (writeUp of (writeUps$ | async)!; track writeUp.name) {
+          <button hlmMenuItem type="button" (click)="appendToWriteUp(writeUp)">
+            <ng-icon name="lucideFileText" size="sm" class="mr-2 opacity-50" />
+            <span class="truncate">{{ writeUp.name }}</span>
+          </button>
+        }
+      </hlm-menu-group>
+    } @else {
+      <div class="px-4 py-6 text-center text-xs text-muted-foreground italic">
+        No active write-ups found.
+      </div>
+    }
+  </hlm-sub-menu>
+</ng-template>

@@ -1,0 +1,64 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.terminal-header {
+  background-color: color-mix(in srgb, var(--popover) 85%, var(--background) 15%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.line-animated {
+  animation: fadeIn 0.1s ease-out forwards;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.ls-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: baseline;
+}
+
+.ls-item {
+  white-space: nowrap;
+}
+
+.autocomplete-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  padding: 0.25rem 0;
+}
+
+.autocomplete-item {
+  white-space: nowrap;
+}
+
+.autocomplete-suggestions {
+  border-left: 2px solid var(--primary, #60a5fa);
+  padding-left: 0.5rem;
+  margin-left: 0.25rem;
+}

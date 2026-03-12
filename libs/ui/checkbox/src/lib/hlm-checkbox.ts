@@ -26,6 +26,7 @@ export const HLM_CHECKBOX_VALUE_ACCESSOR = {
 };
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
 	selector: 'hlm-checkbox',
 	imports: [BrnCheckbox, NgIcon, HlmIcon],
 	providers: [HLM_CHECKBOX_VALUE_ACCESSOR],

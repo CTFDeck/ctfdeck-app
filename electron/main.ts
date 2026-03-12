@@ -20,7 +20,7 @@ function createWindow() {
   // For simplicity in this plan, we will try to load from dist first.
 
   Menu.setApplicationMenu(null);
-  
+
   const appPath = path.join(__dirname, '../dist/CTFDeck-app/browser/index.html');
 
   win.loadURL(
@@ -29,7 +29,7 @@ function createWindow() {
       protocol: 'file:',
       slashes: true,
     }),
-  );
+  ).then(() => { /*Ignore*/ });
 
   // Open the DevTools.
   // win.webContents.openDevTools();

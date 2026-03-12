@@ -1,0 +1,311 @@
+<div class="ctf-menu-wrapper">
+  <div class="ctf-menu-left flex items-center gap-4">
+    <div class="ctf-logo font-bold" role="img" aria-label="Hot beverage">☕</div>
+  </div>
+
+  <div class="ctf-menu-center">
+    <hlm-menu-bar class="w-fit border-none">
+      <button hlmMenuBarItem [brnMenuTriggerFor]="target">Target</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">Scripts</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">Documentation</button>
+    </hlm-menu-bar>
+
+    @if (hasMissingTools) {
+      <button
+        type="button"
+        class="flex items-center gap-2 rounded-md border border-orange-500/30 bg-orange-500/15 px-3 py-1.5 text-xs font-semibold text-orange-400 transition-colors hover:bg-orange-500/25"
+        (click)="openMissingTools()"
+      >
+        <ng-icon hlm name="lucideTriangleAlert" class="h-3.5 w-3.5" />
+        Warning some tools are missing and could not be used
+      </button>
+    }
+  </div>
+
+  <div class="ctf-menu-right">
+    <button themeToggle aria-label="Toggle theme"></button>
+  </div>
+
+  <ng-template #target>
+    <hlm-menu variant="menubar" class="w-56">
+      <hlm-menu-group>
+        <button hlmMenuItem (click)="openTargetManager('view')">Configuration</button>
+        <button hlmMenuItem (click)="openTargetManager('add')">Add Target</button>
+        <button hlmMenuItem (click)="openTargetManager('delete')">Remove Target</button>
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+
+  <ng-template #scripts>
+    <hlm-menu variant="menubar" class="w-56">
+      <hlm-menu-group>
+        @if (hasToolsInCategory('PORT_SCANNING')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="portScanning">
+            Port Scanning
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('WEB_DISCOVERY')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webDiscovery">
+            Web Discovery
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('WEB_VULN_SCAN')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webVuln">
+            Web Vulnerability Scan
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('REVERSE_SHELL')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="revshell">
+            Reverse Shell
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('EXPLOIT')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="exploit">
+            Exploit
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('RECON')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="recon">
+            Recon
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('HTTP_PROBING')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="httpProbing">
+            HTTP Probing
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('PASSWORD_ATTACK')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="passwordAttack">
+            Password Attack
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('LATERAL_MOVEMENT')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="lateralMovement">
+            Lateral Movement
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('TUNNELING')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="tunneling">
+            Tunneling
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+      </hlm-menu-group>
+
+      <hlm-menu-separator />
+
+      <hlm-menu-group>
+        <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="customscripts">
+          Custom Scripts
+          <hlm-menu-item-sub-indicator />
+        </button>
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+
+  <ng-template #portScanning>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('PORT_SCANNING'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #webDiscovery>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('WEB_DISCOVERY'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #webVuln>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('WEB_VULN_SCAN'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #revshell>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('REVERSE_SHELL'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #exploit>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('EXPLOIT'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #recon>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('RECON'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #httpProbing>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('HTTP_PROBING'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #passwordAttack>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('PASSWORD_ATTACK'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #lateralMovement>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('LATERAL_MOVEMENT'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #tunneling>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('TUNNELING'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #customscripts>
+    <hlm-sub-menu>
+      @if (customScriptsLoading && customScripts.length === 0) {
+        <div class="px-2 py-2 space-y-1">
+          <div class="h-6 w-36 rounded bg-muted/70 animate-pulse"></div>
+          <div class="h-6 w-32 rounded bg-muted/70 animate-pulse"></div>
+        </div>
+      }
+
+      @for (script of recentCustomScripts; track script.id) {
+        <button hlmMenuItem (click)="openCommandRunner(script.id)">
+          {{ script.name }}
+        </button>
+      }
+
+      @if (!customScriptsLoading && recentCustomScripts.length === 0) {
+        <div class="px-3 py-2 text-sm text-muted-foreground">
+          No custom scripts yet
+        </div>
+      }
+
+      @if (recentCustomScripts.length > 0) {
+        <hlm-menu-separator />
+      }
+
+      <button hlmMenuItem (click)="manageCustomScripts()">Manage Scripts</button>
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template>
+    <hlm-menu variant="menubar" class="w-56">
+      <hlm-menu-group>
+        @if (hasToolsInCategory('UTILS')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="utilsSub">
+            Utilities
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('DOCUMENTATION')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="docsSub">
+            Documentation
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('WEB_PROXY')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="proxySub">
+            Web Proxy
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+
+        @if (hasToolsInCategory('NETWORK_ANALYSIS')) {
+          <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="networkSub">
+            Network Analysis
+            <hlm-menu-item-sub-indicator />
+          </button>
+        }
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+
+  <ng-template #utilsSub>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('UTILS'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #docsSub>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('DOCUMENTATION'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #proxySub>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('WEB_PROXY'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #networkSub>
+    <hlm-sub-menu>
+      @for (tool of getToolsByCategory('NETWORK_ANALYSIS'); track tool.id) {
+        <button hlmMenuItem (click)="openTool(tool)">{{ tool.displayName }}</button>
+      }
+    </hlm-sub-menu>
+  </ng-template>
+
+  <ng-template #documentation>
+    <hlm-menu variant="menubar" class="w-56">
+      <hlm-menu-group>
+        <button hlmMenuItem (click)="openUrl('https://github.com/CTFDeck/ctfdeck-app/wiki')">
+          Developer Documentation
+        </button>
+        <button hlmMenuItem (click)="openUrl('https://github.com/CTFDeck/ctfdeck-app/wiki/USER')">
+          User Documentation
+        </button>
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+</div>

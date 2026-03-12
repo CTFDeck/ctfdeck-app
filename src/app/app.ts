@@ -1,13 +1,13 @@
 import { Component, signal, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Menubar } from '../ui/menubar/menubar';
-import { ChatSidebar } from '../ui/sidebar/chat-sidebar';
-import { TargetManagerComponent } from '../ui/target-manager/target-manager.component';
-import { CommandRunnerComponent } from '../ui/command-runner/command-runner.component';
+import { MenubarComponent } from './shell/menubar/menubar.component';
+import { WorkspaceSidebarComponent } from './shell/sidebar/workspace-sidebar.component';
+import { TargetManagerComponent } from './domains/targets/ui/target-manager.component';
+import { CommandRunnerComponent } from './domains/command-runner/ui/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
-import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-modal.component';
-import { ToolInstallModalComponent } from '../ui/tool-install-modal/tool-install-modal.component';
+import { SudoPasswordModalComponent } from './shell/sudo-password-modal/sudo-password-modal.component';
+import { ToolInstallModalComponent } from './domains/tools/ui/tool-install-modal/tool-install-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -15,8 +15,8 @@ import { ToolInstallModalComponent } from '../ui/tool-install-modal/tool-install
   imports: [
     CommonModule,
     RouterOutlet,
-    Menubar,
-    ChatSidebar,
+    MenubarComponent,
+    WorkspaceSidebarComponent,
     TargetManagerComponent,
     CommandRunnerComponent,
     HlmToaster,
@@ -32,7 +32,7 @@ export class App {
   targetManagerVisible = false;
   targetManagerMode: 'view' | 'add' | 'delete' = 'view';
   commandRunnerVisible = false;
-  selectedToolId: string = '';
+  selectedToolId = '';
 
   @ViewChild('targetManager', { static: false }) targetManager?: TargetManagerComponent;
 
@@ -58,8 +58,5 @@ export class App {
 
   closeCommandRunner() {
     this.commandRunnerVisible = false;
-  }
-
-  saveTargets() {
   }
 }
