@@ -1,12 +1,13 @@
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
-import {
-  bytesToUuid,
-  uuidToBytes,
-} from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import type { Script } from '../models/script.model';
-
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
+import {
+  BinaryReader,
+  BinaryWriter,
+  binarySizeOfString,
+  deserializeMessageIdError,
+  deserializeMessageIdSuccess,
+  deserializeMessageIdSuccessUuid,
+} from '../../../infrastructure/transport/websocket/websocket-protocol.utils';
 
 export function isCustomScriptResponse(type: number): boolean {
   return (
@@ -18,97 +19,40 @@ export function isCustomScriptResponse(type: number): boolean {
   );
 }
 
-export function serializeCustomScriptCreate(
-  name: string,
-  category: number,
-  template: string,
-  messageId: string,
-): Uint8Array {
-  const nameBytes = encoder.encode(name);
-  const templateBytes = encoder.encode(template);
-
-  const buffer = new Uint8Array(1 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length);
-  const view = new DataView(buffer.buffer);
-
-  let offset = 0;
-
-  buffer[offset] = MessageType.CustomScriptCreate;
-  offset += 1;
-
-  buffer.set(uuidToBytes(messageId), offset);
-  offset += 16;
-
-  view.setInt32(offset, nameBytes.length, true);
-  offset += 4;
-  buffer.set(nameBytes, offset);
-  offset += nameBytes.length;
-
-  view.setInt32(offset, category, true);
-  offset += 4;
-
-  view.setInt32(offset, templateBytes.length, true);
-  offset += 4;
-  buffer.set(templateBytes, offset);
-
-  return buffer;
+export function serializeCustomScriptCreate(name: string, category: number, template: string, messageId: string): Uint8Array {
+  return new BinaryWriter(1 + 16 + binarySizeOfString(name) + 4 + binarySizeOfString(template))
+    .writeByte(MessageType.CustomScriptCreate)
+    .writeUuid(messageId)
+    .writeString(name)
+    .writeInt32(category)
+    .writeString(template)
+    .buffer;
 }
 
-export function serializeCustomScriptUpdate(
-  scriptId: string,
-  name: string,
-  category: number,
-  template: string,
-  messageId: string,
-): Uint8Array {
-  const nameBytes = encoder.encode(name);
-  const templateBytes = encoder.encode(template);
-
-  const buffer = new Uint8Array(1 + 16 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length);
-  const view = new DataView(buffer.buffer);
-
-  let offset = 0;
-
-  buffer[offset] = MessageType.CustomScriptUpdate;
-  offset += 1;
-
-  buffer.set(uuidToBytes(messageId), offset);
-  offset += 16;
-
-  buffer.set(uuidToBytes(scriptId), offset);
-  offset += 16;
-
-  view.setInt32(offset, nameBytes.length, true);
-  offset += 4;
-  buffer.set(nameBytes, offset);
-  offset += nameBytes.length;
-
-  view.setInt32(offset, category, true);
-  offset += 4;
-
-  view.setInt32(offset, templateBytes.length, true);
-  offset += 4;
-  buffer.set(templateBytes, offset);
-
-  return buffer;
+export function serializeCustomScriptUpdate(scriptId: string, name: string, category: number, template: string, messageId: string): Uint8Array {
+  return new BinaryWriter(1 + 16 + 16 + binarySizeOfString(name) + 4 + binarySizeOfString(template))
+    .writeByte(MessageType.CustomScriptUpdate)
+    .writeUuid(messageId)
+    .writeUuid(scriptId)
+    .writeString(name)
+    .writeInt32(category)
+    .writeString(template)
+    .buffer;
 }
 
 export function serializeCustomScriptDelete(scriptId: string, messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16 + 16);
-
-  buffer[0] = MessageType.CustomScriptDelete;
-  buffer.set(uuidToBytes(messageId), 1);
-  buffer.set(uuidToBytes(scriptId), 17);
-
-  return buffer;
+  return new BinaryWriter(1 + 16 + 16)
+    .writeByte(MessageType.CustomScriptDelete)
+    .writeUuid(messageId)
+    .writeUuid(scriptId)
+    .buffer;
 }
 
 export function serializeCustomScriptList(messageId: string): Uint8Array {
-  const buffer = new Uint8Array(1 + 16);
-
-  buffer[0] = MessageType.CustomScriptList;
-  buffer.set(uuidToBytes(messageId), 1);
-
-  return buffer;
+  return new BinaryWriter(1 + 16)
+    .writeByte(MessageType.CustomScriptList)
+    .writeUuid(messageId)
+    .buffer;
 }
 
 export function deserializeCustomScriptCreateResult(data: Uint8Array): {
@@ -116,10 +60,7 @@ export function deserializeCustomScriptCreateResult(data: Uint8Array): {
   success: boolean;
   scriptId: string;
 } {
-  const messageId = bytesToUuid(data.subarray(1, 17));
-  const success = data[17] === 1;
-  const scriptId = bytesToUuid(data.subarray(18, 34));
-
+  const { messageId, success, entityId: scriptId } = deserializeMessageIdSuccessUuid(data);
   return { messageId, success, scriptId };
 }
 
@@ -127,62 +68,31 @@ export function deserializeCustomScriptUpdateResult(data: Uint8Array): {
   messageId: string;
   success: boolean;
 } {
-  const messageId = bytesToUuid(data.subarray(1, 17));
-  const success = data[17] === 1;
-
-  return { messageId, success };
+  return deserializeMessageIdSuccess(data);
 }
 
 export function deserializeCustomScriptDeleteResult(data: Uint8Array): {
   messageId: string;
   success: boolean;
 } {
-  const messageId = bytesToUuid(data.subarray(1, 17));
-  const success = data[17] === 1;
-
-  return { messageId, success };
+  return deserializeMessageIdSuccess(data);
 }
 
 export function deserializeCustomScriptListResult(data: Uint8Array): {
   messageId: string;
   scripts: Script[];
 } {
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-
-  let offset = 0;
-
-  offset += 1;
-  const messageId = bytesToUuid(data.subarray(offset, offset + 16));
-  offset += 16;
-
-  const count = view.getInt32(offset, true);
-  offset += 4;
-
+  const reader = new BinaryReader(data, 1);
+  const messageId = reader.readUuid();
+  const count = reader.readInt32();
   const scripts: Script[] = [];
 
   for (let i = 0; i < count; i++) {
-    const scriptId = bytesToUuid(data.subarray(offset, offset + 16));
-    offset += 16;
-
-    const nameLength = view.getInt32(offset, true);
-    offset += 4;
-    const name = decoder.decode(data.subarray(offset, offset + nameLength));
-    offset += nameLength;
-
-    const category = view.getInt32(offset, true);
-    offset += 4;
-
-    const templateLength = view.getInt32(offset, true);
-    offset += 4;
-    const template = decoder.decode(data.subarray(offset, offset + templateLength));
-    offset += templateLength;
-
-    scripts.push({
-      id: scriptId,
-      name,
-      category,
-      template,
-    });
+    const id = reader.readUuid();
+    const name = reader.readString();
+    const category = reader.readInt32();
+    const template = reader.readString();
+    scripts.push({ id, name, category, template });
   }
 
   return { messageId, scripts };
@@ -192,11 +102,5 @@ export function deserializeCustomScriptOperationError(data: Uint8Array): {
   messageId: string;
   error: string;
 } {
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-
-  const messageId = bytesToUuid(data.subarray(1, 17));
-  const errorLength = view.getInt32(17, true);
-  const error = decoder.decode(data.subarray(21, 21 + errorLength));
-
-  return { messageId, error };
+  return deserializeMessageIdError(data);
 }

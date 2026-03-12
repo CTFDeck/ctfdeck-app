@@ -1,8 +1,13 @@
+// writeup-client.service.ts
 import { Injectable, NgZone, inject } from '@angular/core';
-import { firstValueFrom, filter, timeout, TimeoutError } from 'rxjs';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
 import { generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import {
+  PendingMap,
+  createWebSocketRequest,
+  resolvePendingWebSocketResult,
+} from '../../../infrastructure/transport/websocket/websocket-clients.utils';
 import { WriteUpData, WriteUpMetadata } from '../models/writeup.model';
 import {
   deserializeWriteUpCreateResult,
@@ -35,36 +40,15 @@ interface PendingWriteUpResult {
 export class WriteUpClientService {
   private ws = inject(WebSocketService);
   private zone = inject(NgZone);
-
-  private pending = new Map<string, (result: PendingWriteUpResult) => void>();
+  private pending: PendingMap<PendingWriteUpResult> = new Map();
 
   constructor() {
     this.ws.registerHandler(this.handleMessage.bind(this));
   }
 
-  private async sendWhenReady(buffer: Uint8Array): Promise<void> {
-    if (!this.ws.isConnected$.value) {
-      await firstValueFrom(
-        this.ws.isConnected$.pipe(
-          filter((connected) => connected),
-          timeout(10_000),
-        ),
-      ).catch((err) => {
-        if (err instanceof TimeoutError) {
-          throw new Error('WebSocket connection timeout after 10s');
-        }
-        throw err;
-      });
-    }
-
-    this.ws.sendBinary(buffer);
-  }
-
   private handleMessage(data: Uint8Array): boolean {
     const type = data[0];
-    if (!isWriteUpResponse(type)) {
-      return false;
-    }
+    if (!isWriteUpResponse(type)) return false;
 
     let result: PendingWriteUpResult;
 
@@ -99,156 +83,37 @@ export class WriteUpClientService {
       return true;
     }
 
-    const callback = this.pending.get(result.messageId);
-    if (!callback) {
-      return true;
-    }
-
-    this.zone.run(() => {
-      this.pending.delete(result.messageId);
-      callback(result);
-    });
-
+    resolvePendingWebSocketResult(this.pending, result, this.zone);
     return true;
   }
 
   create(sessionId: string, name: string): Promise<{ success: boolean; writeUpId: string }> {
-    return new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      const buffer = serializeWriteUpCreate(sessionId, name, messageId);
-
-      this.pending.set(messageId, (result) => {
-        if (result.error) {
-          reject(new Error(result.error));
-          return;
-        }
-
-        resolve({
-          success: Boolean(result.success),
-          writeUpId: result.writeUpId ?? '',
-        });
-      });
-
-      this.sendWhenReady(buffer).catch((error) => {
-        this.pending.delete(messageId);
-        reject(error);
-      });
-    });
+    const messageId = generateUUID();
+    return createWebSocketRequest(this.pending, this.ws, messageId, serializeWriteUpCreate(sessionId, name, messageId), (r) => ({ success: Boolean(r.success), writeUpId: r.writeUpId ?? '' }), Promise.reject.bind(Promise));
   }
 
   update(writeUpId: string, name: string, content: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      const buffer = serializeWriteUpUpdate(writeUpId, name, content, messageId);
-
-      this.pending.set(messageId, (result) => {
-        if (result.error) {
-          reject(new Error(result.error));
-          return;
-        }
-
-        resolve(Boolean(result.success));
-      });
-
-      this.sendWhenReady(buffer).catch((error) => {
-        this.pending.delete(messageId);
-        reject(error);
-      });
-    });
+    const messageId = generateUUID();
+    return createWebSocketRequest(this.pending, this.ws, messageId, serializeWriteUpUpdate(writeUpId, name, content, messageId), (r) => Boolean(r.success), Promise.reject.bind(Promise));
   }
 
   delete(writeUpId: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      const buffer = serializeWriteUpDelete(writeUpId, messageId);
-
-      this.pending.set(messageId, (result) => {
-        if (result.error) {
-          reject(new Error(result.error));
-          return;
-        }
-
-        resolve(Boolean(result.success));
-      });
-
-      this.sendWhenReady(buffer).catch((error) => {
-        this.pending.delete(messageId);
-        reject(error);
-      });
-    });
+    const messageId = generateUUID();
+    return createWebSocketRequest(this.pending, this.ws, messageId, serializeWriteUpDelete(writeUpId, messageId), (r) => Boolean(r.success), Promise.reject.bind(Promise));
   }
 
-  list(
-    sessionId: string,
-    offset = 0,
-    limit = 50,
-    unassignedOnly = false,
-  ): Promise<{ writeUps: WriteUpMetadata[]; totalCount: number }> {
-    return new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      const buffer = serializeWriteUpList(sessionId, offset, limit, messageId, unassignedOnly);
-
-      this.pending.set(messageId, (result) => {
-        if (result.error) {
-          reject(new Error(result.error));
-          return;
-        }
-
-        resolve({
-          writeUps: result.writeUps ?? [],
-          totalCount: result.totalCount ?? 0,
-        });
-      });
-
-      this.sendWhenReady(buffer).catch((error) => {
-        this.pending.delete(messageId);
-        reject(error);
-      });
-    });
+  list(sessionId: string, offset = 0, limit = 50, unassignedOnly = false): Promise<{ writeUps: WriteUpMetadata[]; totalCount: number }> {
+    const messageId = generateUUID();
+    return createWebSocketRequest(this.pending, this.ws, messageId, serializeWriteUpList(sessionId, offset, limit, messageId, unassignedOnly), (r) => ({ writeUps: r.writeUps ?? [], totalCount: r.totalCount ?? 0 }), Promise.reject.bind(Promise));
   }
 
   load(writeUpId: string): Promise<{ success: boolean; writeUp: WriteUpData | null }> {
-    return new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      const buffer = serializeWriteUpLoad(writeUpId, messageId);
-
-      this.pending.set(messageId, (result) => {
-        if (result.error) {
-          reject(new Error(result.error));
-          return;
-        }
-
-        resolve({
-          success: Boolean(result.success),
-          writeUp: result.writeUp ?? null,
-        });
-      });
-
-      this.sendWhenReady(buffer).catch((error) => {
-        this.pending.delete(messageId);
-        reject(error);
-      });
-    });
+    const messageId = generateUUID();
+    return createWebSocketRequest(this.pending, this.ws, messageId, serializeWriteUpLoad(writeUpId, messageId), (r) => ({ success: Boolean(r.success), writeUp: r.writeUp ?? null }), Promise.reject.bind(Promise));
   }
 
   move(writeUpId: string, projectId: string | null, folderId: string | null): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const messageId = generateUUID();
-      const buffer = serializeWriteUpMove(writeUpId, projectId, folderId, messageId);
-
-      this.pending.set(messageId, (result) => {
-        if (result.error) {
-          reject(new Error(result.error));
-          return;
-        }
-
-        resolve(Boolean(result.success));
-      });
-
-      this.sendWhenReady(buffer).catch((error) => {
-        this.pending.delete(messageId);
-        reject(error);
-      });
-    });
+    const messageId = generateUUID();
+    return createWebSocketRequest(this.pending, this.ws, messageId, serializeWriteUpMove(writeUpId, projectId, folderId, messageId), (r) => Boolean(r.success), Promise.reject.bind(Promise));
   }
 }
