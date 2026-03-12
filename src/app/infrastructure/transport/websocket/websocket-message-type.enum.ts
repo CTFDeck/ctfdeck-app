@@ -14,7 +14,6 @@ export enum MessageType {
   SessionLoad = 12,
   SessionList = 13,
   SessionDelete = 14,
-  SessionUpdateTargets = 15,
   SessionUpdate = 16,
   SessionAddTarget = 17,
   SessionDeleteTarget = 18,

@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import {
   HlmMenu,
   HlmMenuBar,
