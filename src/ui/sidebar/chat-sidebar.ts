@@ -44,7 +44,8 @@ import { WriteUpStore } from '../../app/domains/writeups/state/writeup.store';
 import { WriteUpMetadata } from '../../app/domains/writeups/models/writeup.model';
 import { Observable, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
-import { ProjectStoreService, ProjectHierarchy } from '../../app/core/services/project-store.service';
+import { ProjectStore } from '../../app/domains/projects/state/project.store';
+import { ProjectHierarchy } from '../../app/domains/projects/models/project-hierarchy.model'
 
 export enum SidebarMode {
   Chats = 'chats',
@@ -181,7 +182,7 @@ export class ChatSidebar {
   hierarchy$: Observable<ProjectHierarchy[]>;
   expandedProjectIds = signal<Set<string>>(new Set());
   expandedFolderIds = signal<Set<string>>(new Set());
-  protected readonly projectStore = inject(ProjectStoreService);
+  protected readonly projectStore = inject(ProjectStore);
   constructor(
     private sessionStore: SessionStore,
     private writeUpStore: WriteUpStore,
