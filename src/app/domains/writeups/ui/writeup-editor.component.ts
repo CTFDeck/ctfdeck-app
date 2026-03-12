@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-import { Marked } from 'marked';
+import { Marked, type Tokens, type RendererObject } from 'marked';
 import DOMPurify from 'dompurify';
 import JSZip from 'jszip';
 import morphdom from 'morphdom';
@@ -96,55 +96,55 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private mediaUpdateTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    this.markedInstance.use({
-      renderer: {
-        heading: (token: any) => {
-          const tag = `h${token.depth}`;
-          const content = this.markedInstance.parseInline(token.text) as string;
-          return `<${tag} title="Type: ${tag.toUpperCase()}">${content}</${tag}>`;
-        },
-        paragraph: (token: any) => {
-          const content = this.markedInstance.parseInline(token.text) as string;
-          return `<p title="Type: Paragraph">${content}</p>`;
-        },
-        blockquote: (token: any) => {
-          const content = this.markedInstance.parse(token.text) as string;
-          return `<blockquote title="Type: Blockquote">${content}</blockquote>`;
-        },
-        link: ({ href, title, text }) => {
-          return `<a href="${href}" title="Type: Link${title ? ' - ' + title : ''}">${text}</a>`;
-        },
-        codespan: ({ text }) => {
-          return `<code title="Type: Inline Code">${text}</code>`;
-        },
-        image: (token: any) => {
-          const { href, title, text } = token;
-          const resolvedHref = this.resolveMedia(href);
-          return `<img src="${resolvedHref}" alt="${text}" title="Type: Image${title ? ' - ' + title : ''}">`;
-        },
-        table: (token: any) => {
-          let headerHtml = '<thead><tr>';
-          token.header.forEach((cell: any) => {
-            const style = cell.align ? `style="text-align: ${cell.align}"` : '';
-            headerHtml += `<th title="Type: Table Header" ${style}>${this.markedInstance.parseInline(cell.text)}</th>`;
-          });
-          headerHtml += '</tr></thead>';
-
-          let bodyHtml = '<tbody>';
-          token.rows.forEach((row: any) => {
-            bodyHtml += '<tr>';
-            row.forEach((cell: any) => {
-              const style = cell.align ? `style="text-align: ${cell.align}"` : '';
-              bodyHtml += `<td title="Type: Table Cell" ${style}>${this.markedInstance.parseInline(cell.text)}</td>`;
-            });
-            bodyHtml += '</tr>';
-          });
-          bodyHtml += '</tbody>';
-
-          return `<div class="table-wrapper" title="Type: Table"><table title="Type: Table">${headerHtml}${bodyHtml}</table></div>`;
-        },
+    const renderer: RendererObject = {
+      heading: (token: Tokens.Heading) => {
+        const tag = `h${token.depth}`;
+        const content = this.markedInstance.parseInline(token.text) as string;
+        return `<${tag} title="Type: ${tag.toUpperCase()}">${content}</${tag}>`;
       },
-    });
+      paragraph: (token: Tokens.Paragraph) => {
+        const content = this.markedInstance.parseInline(token.text) as string;
+        return `<p title="Type: Paragraph">${content}</p>`;
+      },
+      blockquote: (token: Tokens.Blockquote) => {
+        const content = this.markedInstance.parse(token.text) as string;
+        return `<blockquote title="Type: Blockquote">${content}</blockquote>`;
+      },
+      link: ({ href, title, text }: Tokens.Link) => {
+        return `<a href="${href}" title="Type: Link${title ? ' - ' + title : ''}">${text}</a>`;
+      },
+      codespan: ({ text }: Tokens.Codespan) => {
+        return `<code title="Type: Inline Code">${text}</code>`;
+      },
+      image: (token: Tokens.Image) => {
+        const { href, title, text } = token;
+        const resolvedHref = this.resolveMedia(href);
+        return `<img src="${resolvedHref}" alt="${text}" title="Type: Image${title ? ' - ' + title : ''}">`;
+      },
+      table: (token: Tokens.Table) => {
+        let headerHtml = '<thead><tr>';
+
+        token.header.forEach((cell) => {
+          const style = cell.align ? `style="text-align: ${cell.align}"` : '';
+          headerHtml += `<th title="Type: Table Header" ${style}>${this.markedInstance.parseInline(cell.text) as string}</th>`;
+        });
+        headerHtml += '</tr></thead>';
+
+        let bodyHtml = '<tbody>';
+
+        token.rows.forEach((row) => {
+          bodyHtml += '<tr>';
+          row.forEach((cell) => {
+            const style = cell.align ? `style="text-align: ${cell.align}"` : '';
+            bodyHtml += `<td title="Type: Table Cell" ${style}>${this.markedInstance.parseInline(cell.text) as string}</td>`;
+          });
+          bodyHtml += '</tr>';
+        });
+        bodyHtml += '</tbody>';
+        return `<div class="table-wrapper" title="Type: Table"><table title="Type: Table">${headerHtml}${bodyHtml}</table></div>`;
+      },
+    };
+    this.markedInstance.use({ renderer });
   }
 
   ngOnInit(): void {
@@ -454,7 +454,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         .load(cleanId)
         .then((result) => {
           if (result.success && result.media) {
-            const blob = new Blob([result.media.data as any], { type: result.media.mimeType });
+            const blob = new Blob([result.media.data as never], { type: result.media.mimeType });
             const url = window.URL.createObjectURL(blob);
             this.mediaUrls.set(cleanId, url);
 
@@ -532,7 +532,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       this.insertAtCursor(markdown);
       toast.success('Media uploaded and inserted');
       this.autoSave$.next();
-    } catch (error: unknown) {
+    } catch {
       toast.error('Media upload failed');
     }
   }
