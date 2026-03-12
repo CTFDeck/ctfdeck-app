@@ -1,4 +1,4 @@
-import { ScriptCategory } from '../../../core/services/session.protocol';
+import { ScriptCategory } from '../../scripts/models/script-category.enum';
 
 export interface ScriptForm {
   name: string;

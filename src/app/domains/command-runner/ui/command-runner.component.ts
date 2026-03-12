@@ -38,18 +38,16 @@ import { HlmLabelImports } from '@ctfdeck/helm/label';
 
 import { TargetCommandStoreService } from '../../targets/infrastructure/target-command-store.service';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
-import { ScriptService } from '../../../core/services/script.service';
+import { SessionStore } from '../../sessions/state/session.store';
+import { ScriptStore } from '../../scripts/state/script.store';
 import { ToolCatalogStore } from '../../tools/state/tool-catalog.store';
+import type { SessionTarget } from '../../sessions/models/session-target.model';
+import { ScriptCategory } from '../../scripts/models/script-category.enum';
+import { scriptCategoryName } from '../../scripts/models/script-category-name';
 import type { ToolCatalogItem } from '../../tools/models/tool-catalog-item.model';
 import type { CommandOption } from '../models/command-option.model';
 import type { CustomScript } from '../models/custom-script.model';
 import type { ScriptForm } from '../models/script-form.model';
-import { SessionStore } from '../../sessions/state/session.store';
-import type { SessionTarget } from '../../sessions/models/session-target.model';
-import {
-  ScriptCategory,
-  scriptCategoryName,
-} from '../../../core/services/session.protocol';
 import {
   applyPendingSelection,
   buildCommandFromTemplate,
@@ -102,10 +100,10 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
   @ViewChild('outputContainer') private outputContainer!: ElementRef;
 
-  private readonly targetCommandStoreService = inject(TargetCommandStoreService);
+  private readonly targetCommandStore = inject(TargetCommandStoreService);
   private readonly wsService = inject(WebSocketService);
   private readonly sessionStore = inject(SessionStore);
-  private readonly scriptService = inject(ScriptService);
+  private readonly scriptStore = inject(ScriptStore);
   private readonly toolCatalogStore = inject(ToolCatalogStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly sanitizer = inject(DomSanitizer);
@@ -131,7 +129,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   editingScriptId: string | null = null;
   scriptForm: ScriptForm = {
     name: '',
-    category: ScriptCategory.Other,
+    category: ScriptCategory.Misc,
     template: '',
   };
 
@@ -140,11 +138,13 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   private readonly ansiConverter = createAnsiConverter();
 
   readonly scriptCategoryOptions = [
-    { value: ScriptCategory.Discovery, label: scriptCategoryName(ScriptCategory.Discovery) },
+    { value: ScriptCategory.Recon, label: scriptCategoryName(ScriptCategory.Recon) },
     { value: ScriptCategory.Web, label: scriptCategoryName(ScriptCategory.Web) },
-    { value: ScriptCategory.ReverseShell, label: scriptCategoryName(ScriptCategory.ReverseShell) },
-    { value: ScriptCategory.Exploit, label: scriptCategoryName(ScriptCategory.Exploit) },
-    { value: ScriptCategory.Other, label: scriptCategoryName(ScriptCategory.Other) },
+    { value: ScriptCategory.Crypto, label: scriptCategoryName(ScriptCategory.Crypto) },
+    { value: ScriptCategory.Pwn, label: scriptCategoryName(ScriptCategory.Pwn) },
+    { value: ScriptCategory.Forensics, label: scriptCategoryName(ScriptCategory.Forensics) },
+    { value: ScriptCategory.Reverse, label: scriptCategoryName(ScriptCategory.Reverse) },
+    { value: ScriptCategory.Misc, label: scriptCategoryName(ScriptCategory.Misc) },
   ];
 
   ngOnInit(): void {
@@ -171,7 +171,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     );
 
     this.subscriptions.add(
-      this.scriptService.scripts$.subscribe((scripts) => {
+      this.scriptStore.scripts$.subscribe((scripts) => {
         this.customScripts = scripts;
         this.rebuildCommandOptions();
         this.applyPendingSelection();
@@ -181,13 +181,13 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     );
 
     this.subscriptions.add(
-      this.scriptService.isLoading$.subscribe((loading) => {
+      this.scriptStore.isLoading$.subscribe((loading) => {
         this.customScriptsLoading = loading;
       }),
     );
 
     this.rebuildCommandOptions();
-    void this.scriptService.list();
+    void this.scriptStore.list();
 
     if (this.initialToolId) {
       this.pendingInitialSelection = this.initialToolId;
@@ -262,7 +262,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     const selectedId = getSelectedCommandId(this.selectedToolId, this.selectedScriptId);
-    const savedCommand = this.targetCommandStoreService.getSavedCommand(target.id, selectedId);
+    const savedCommand = this.targetCommandStore.getSavedCommand(target.id, selectedId);
 
     if (savedCommand) {
       this.currentCommand = savedCommand;
@@ -285,7 +285,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     const selectedId = getSelectedCommandId(this.selectedToolId, this.selectedScriptId);
 
     if (this.selectedTargetId && selectedId && this.currentCommand) {
-      this.targetCommandStoreService.saveCommand(
+      this.targetCommandStore.saveCommand(
         this.selectedTargetId,
         selectedId,
         this.currentCommand,
@@ -309,7 +309,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
     let outputLineIndex = -1;
     let outputBuffer = '';
-    let errorBuffer = '';
     let pendingRender = false;
     let lastRenderTime = 0;
     const minRenderInterval = 16;
@@ -357,7 +356,6 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
           scheduleRender();
         },
         (data: string) => {
-          errorBuffer += data;
           this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
           this.appendToLastError(data);
         },
@@ -486,7 +484,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
     try {
       if (this.editingScriptId) {
-        await this.scriptService.update(
+        await this.scriptStore.update(
           this.editingScriptId,
           name,
           this.scriptForm.category,
@@ -494,7 +492,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
         );
         toast.success('Script updated');
       } else {
-        await this.scriptService.create(
+        await this.scriptStore.create(
           name,
           this.scriptForm.category,
           template,
@@ -512,7 +510,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
   async deleteScript(scriptId: string): Promise<void> {
     try {
-      await this.scriptService.delete(scriptId);
+      await this.scriptStore.delete(scriptId);
       toast.success('Script deleted');
 
       if (this.selectedScriptId === scriptId) {
@@ -534,7 +532,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     this.editingScriptId = null;
     this.scriptForm = {
       name: '',
-      category: ScriptCategory.Other,
+      category: ScriptCategory.Misc,
       template: '',
     };
   }

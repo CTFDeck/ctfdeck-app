@@ -6,7 +6,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideTriangleAlert } from '@ng-icons/lucide';
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
 import { Subscription } from 'rxjs';
-import { ScriptService } from '../../core/services/script.service';
+import { ScriptStore } from '../../domains/scripts/state/script.store';
 import type { ToolCatalogItem } from '../../domains/tools/models/tool-catalog-item.model';
 import { ToolCatalogStore } from '../../domains/tools/state/tool-catalog.store';
 import { ThemeToggle } from './theme-toggle';
@@ -50,19 +50,19 @@ export class MenubarComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly router: Router,
-    private readonly scriptService: ScriptService,
+    private readonly scriptStore: ScriptStore,
     private readonly toolCatalogStore: ToolCatalogStore,
   ) {}
 
   ngOnInit(): void {
     this.subscriptions.add(
-      this.scriptService.scripts$.subscribe((scripts) => {
+      this.scriptStore.scripts$.subscribe((scripts) => {
         this.customScripts = scripts;
       }),
     );
 
     this.subscriptions.add(
-      this.scriptService.isLoading$.subscribe((loading) => {
+      this.scriptStore.isLoading$.subscribe((loading) => {
         this.customScriptsLoading = loading;
       }),
     );
@@ -73,7 +73,7 @@ export class MenubarComponent implements OnInit, OnDestroy {
       }),
     );
 
-    void this.scriptService.list();
+    void this.scriptStore.list();
   }
 
   ngOnDestroy(): void {

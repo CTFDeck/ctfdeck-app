@@ -39,7 +39,7 @@ import {
   lucideFilePlus,
 } from '@ng-icons/lucide';
 import { SessionStore } from '../../app/domains/sessions/state/session.store';
-import { SessionMetadata } from '../../app/core/services/session.protocol';
+import { SessionMetadata } from '../../app/domains/sessions/models/session-metadata.model';
 import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
 import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
 import { Observable, firstValueFrom } from 'rxjs';

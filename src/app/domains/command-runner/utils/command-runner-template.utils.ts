@@ -1,4 +1,4 @@
-import type { SessionTarget } from '../../../core/services/session.protocol';
+import type { SessionTarget } from '../../sessions/models/session-target.model';
 import type { CommandOption } from '../models/command-option.model';
 import type { CustomScript } from '../models/custom-script.model';
 import type { ToolCatalogItem } from '../../tools/models/tool-catalog-item.model';
