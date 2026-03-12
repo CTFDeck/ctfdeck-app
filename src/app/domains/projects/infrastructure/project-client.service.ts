@@ -164,7 +164,10 @@ export class ProjectClientService {
     });
   }
 
-  list(offset: number = 0, limit: number = 50): Promise<{ projects: ProjectMetadata[]; totalCount: number }> {
+  list(
+    offset: number = 0,
+    limit: number = 50,
+  ): Promise<{ projects: ProjectMetadata[]; totalCount: number }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
       const buffer = serializeProjectList(offset, limit, messageId);
@@ -230,7 +233,11 @@ export class ProjectClientService {
     });
   }
 
-  addFolder(projectId: string, name: string, parentId: string | null = null): Promise<{ success: boolean; folderId: string }> {
+  addFolder(
+    projectId: string,
+    name: string,
+    parentId: string | null = null,
+  ): Promise<{ success: boolean; folderId: string }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
       const buffer = serializeProjectAddFolder(projectId, name, parentId, messageId);

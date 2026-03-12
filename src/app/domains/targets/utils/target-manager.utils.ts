@@ -1,5 +1,5 @@
 import { TargetType } from '../../sessions/models/target-type.enum';
-import type { SessionTarget } from '../../sessions/models/session-target.model'
+import type { SessionTarget } from '../../sessions/models/session-target.model';
 import type { AddTargetForm, EditTargetForm } from '../models/target-form.model';
 import type { TargetTypeOption } from '../models/target-type-option.model';
 
@@ -45,10 +45,7 @@ export function getTargetKey(target: { address: string; port?: number | null }):
   return `${target.address}${target.port ? ':' + target.port : ''}`;
 }
 
-export function getTargetTypeLabel(
-  type: number,
-  targetTypes: TargetTypeOption[],
-): string {
+export function getTargetTypeLabel(type: number, targetTypes: TargetTypeOption[]): string {
   return targetTypes.find((item) => item.value === type)?.label || 'Unknown';
 }
 

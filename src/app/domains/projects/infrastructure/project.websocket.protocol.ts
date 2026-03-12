@@ -1,4 +1,7 @@
-import { uuidToBytes, bytesToUuid } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import {
+  uuidToBytes,
+  bytesToUuid,
+} from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
 import { ProjectData, ProjectFolderMetadata, ProjectMetadata } from '../models/project.model';
 
@@ -9,7 +12,11 @@ export function isProjectResponse(type: number): boolean {
   return type >= MessageType.ProjectCreateResult && type <= MessageType.ProjectOperationError;
 }
 
-export function serializeProjectCreate(name: string, description: string, messageId: string): Uint8Array {
+export function serializeProjectCreate(
+  name: string,
+  description: string,
+  messageId: string,
+): Uint8Array {
   const nameBytes = encoder.encode(name);
   const descBytes = encoder.encode(description);
   const buffer = new Uint8Array(1 + 16 + 4 + nameBytes.length + 4 + descBytes.length);
@@ -112,7 +119,11 @@ export function serializeProjectAddFolder(
   return buffer;
 }
 
-export function serializeProjectDeleteFolder(projectId: string, folderId: string, messageId: string): Uint8Array {
+export function serializeProjectDeleteFolder(
+  projectId: string,
+  folderId: string,
+  messageId: string,
+): Uint8Array {
   const buffer = new Uint8Array(1 + 16 + 16 + 16);
   buffer[0] = MessageType.ProjectDeleteFolder;
   buffer.set(uuidToBytes(messageId), 1);

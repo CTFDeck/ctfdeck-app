@@ -1,4 +1,4 @@
-import type { ToolKind} from './tool-kind.type';
+import type { ToolKind } from './tool-kind.type';
 
 export interface ToolCatalogItem {
   id: string;

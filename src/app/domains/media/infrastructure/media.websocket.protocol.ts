@@ -1,4 +1,7 @@
-import { bytesToUuid, uuidToBytes } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import {
+  bytesToUuid,
+  uuidToBytes,
+} from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
 import { MediaData, MediaMetadata } from '../models/media.model';
 

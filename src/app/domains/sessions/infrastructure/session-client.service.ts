@@ -446,7 +446,12 @@ export class SessionClientService {
   }
 
   private isBooleanResult(result: SessionPendingResult): result is SessionBooleanResult {
-    return 'success' in result && !('sessionId' in result) && !('session' in result) && !('targetId' in result);
+    return (
+      'success' in result &&
+      !('sessionId' in result) &&
+      !('session' in result) &&
+      !('targetId' in result)
+    );
   }
 
   private isLoadResult(result: SessionPendingResult): result is SessionLoadResult {

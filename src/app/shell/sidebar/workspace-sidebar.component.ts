@@ -184,7 +184,9 @@ export class WorkspaceSidebarComponent {
     this.totalSessions$ = this.sessionStore.unassignedTotal$;
     this.totalWriteUps$ = this.writeUpStore.unassignedTotal$;
     this.activeWriteUpId$ = new Observable((subscriber) => {
-      this.writeUpStore.activeWriteUp$.subscribe((activeWriteUp) => subscriber.next(activeWriteUp?.id || null));
+      this.writeUpStore.activeWriteUp$.subscribe((activeWriteUp) =>
+        subscriber.next(activeWriteUp?.id || null),
+      );
     });
   }
 
@@ -574,7 +576,10 @@ export class WorkspaceSidebarComponent {
       return;
     }
 
-    if (fromBottom < threshold && container.scrollTop + container.clientHeight < container.scrollHeight) {
+    if (
+      fromBottom < threshold &&
+      container.scrollTop + container.clientHeight < container.scrollHeight
+    ) {
       this.dragScrollInterval = setInterval(() => {
         container.scrollTop += speed;
         if (container.scrollTop + container.clientHeight >= container.scrollHeight) {
@@ -596,7 +601,10 @@ export class WorkspaceSidebarComponent {
     this.clearDragScroll();
     this.clearFolderExpandTimer();
 
-    const type = event.dataTransfer?.getData('application/ctf-type') as 'session' | 'writeup' | null;
+    const type = event.dataTransfer?.getData('application/ctf-type') as
+      | 'session'
+      | 'writeup'
+      | null;
     const id = event.dataTransfer?.getData('application/ctf-id');
 
     if (!type || !id) {
@@ -653,7 +661,10 @@ export class WorkspaceSidebarComponent {
 
     const limit = this.sessionsDisplayLimit();
 
-    if (filtered.length < limit && sessions.length < (this.sessionStore.getTotalSessions(true) || 0)) {
+    if (
+      filtered.length < limit &&
+      sessions.length < (this.sessionStore.getTotalSessions(true) || 0)
+    ) {
       void this.sessionStore.refreshSessions(true, sessions.length, 12, true);
     }
 
@@ -669,7 +680,10 @@ export class WorkspaceSidebarComponent {
 
     const limit = this.writeUpsDisplayLimit();
 
-    if (filtered.length < limit && writeUps.length < (this.writeUpStore.getTotalWriteUps(true) || 0)) {
+    if (
+      filtered.length < limit &&
+      writeUps.length < (this.writeUpStore.getTotalWriteUps(true) || 0)
+    ) {
       void this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
     }
 

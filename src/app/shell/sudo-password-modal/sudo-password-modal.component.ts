@@ -1,10 +1,9 @@
-import { Component, signal, inject } from '@angular/core';
 import { AsyncPipe, NgIf } from '@angular/common';
-import { SudoPasswordModalService } from '../../app/core/services/sudo-password-modal.service';
-
+import { Component, inject, signal } from '@angular/core';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { SudoPasswordModalStore } from './sudo-password-modal.store';
 
 @Component({
   selector: 'ctfdeck-sudo-password-modal',
@@ -14,16 +13,16 @@ import { HlmLabelImports } from '@ctfdeck/helm/label';
   styleUrls: ['./sudo-password-modal.component.css'],
 })
 export class SudoPasswordModalComponent {
-  password = signal('');
-  readonly modal = inject(SudoPasswordModalService);
+  readonly password = signal('');
+  readonly modal = inject(SudoPasswordModalStore);
 
-  submit() {
-    const pwd = this.password();
+  submit(): void {
+    const password = this.password();
     this.password.set('');
-    this.modal.submit(pwd);
+    this.modal.submit(password);
   }
 
-  cancel() {
+  cancel(): void {
     this.password.set('');
     this.modal.cancel();
   }

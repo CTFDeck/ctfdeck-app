@@ -38,9 +38,7 @@ export class ToolCatalogStore implements OnDestroy {
           return;
         }
 
-        const inventoryById = new Map(
-          inventory.map((tool) => [tool.id.toLowerCase(), tool]),
-        );
+        const inventoryById = new Map(inventory.map((tool) => [tool.id.toLowerCase(), tool]));
 
         const merged = current.map((tool) => {
           const status = inventoryById.get(tool.id.toLowerCase());

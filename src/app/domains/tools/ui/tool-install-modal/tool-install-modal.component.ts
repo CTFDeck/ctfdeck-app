@@ -109,8 +109,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
         }
 
         const wasVisible = this.visible;
-        const isDismissed =
-          localStorage.getItem(TOOL_INSTALL_DISMISSED_STORAGE_KEY) === 'true';
+        const isDismissed = localStorage.getItem(TOOL_INSTALL_DISMISSED_STORAGE_KEY) === 'true';
 
         this.visible = !isDismissed && hasMissingInstallableTools(tools);
 

@@ -319,7 +319,9 @@
   background: var(--background);
   color: var(--primary);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--sidebar-border);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 0 1px var(--sidebar-border);
 }
 
 .ctf-chat-sidebar button[hlmBtn] {

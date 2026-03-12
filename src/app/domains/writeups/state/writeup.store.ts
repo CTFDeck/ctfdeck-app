@@ -43,17 +43,15 @@ export class WriteUpStore implements OnDestroy {
     private sessionStore: SessionStore,
   ) {
     this.subscriptions.add(
-      this.sessionStore.activeSessionId$
-        .pipe(distinctUntilChanged())
-        .subscribe((sessionId) => {
-          if (sessionId) {
-            this.refreshWriteUps(sessionId);
-            return;
-          }
+      this.sessionStore.activeSessionId$.pipe(distinctUntilChanged()).subscribe((sessionId) => {
+        if (sessionId) {
+          this.refreshWriteUps(sessionId);
+          return;
+        }
 
-          this.writeUpsSubject.next([]);
-          this.activeWriteUpSubject.next(null);
-        }),
+        this.writeUpsSubject.next([]);
+        this.activeWriteUpSubject.next(null);
+      }),
     );
   }
 
@@ -111,7 +109,10 @@ export class WriteUpStore implements OnDestroy {
           return;
         }
 
-        this.unassignedWriteUpsSubject.next([...this.unassignedWriteUpsSubject.value, ...result.writeUps]);
+        this.unassignedWriteUpsSubject.next([
+          ...this.unassignedWriteUpsSubject.value,
+          ...result.writeUps,
+        ]);
         return;
       }
 
@@ -233,7 +234,11 @@ export class WriteUpStore implements OnDestroy {
         throw new Error('Failed to load writeup for renaming');
       }
 
-      const success = await this.writeUpClient.update(writeUpId, newName, loadResult.writeUp.content);
+      const success = await this.writeUpClient.update(
+        writeUpId,
+        newName,
+        loadResult.writeUp.content,
+      );
 
       if (!success) {
         return;
@@ -256,7 +261,11 @@ export class WriteUpStore implements OnDestroy {
     this.activeWriteUpSubject.next(null);
   }
 
-  async moveWriteUp(writeUpId: string, projectId: string | null, folderId: string | null): Promise<boolean> {
+  async moveWriteUp(
+    writeUpId: string,
+    projectId: string | null,
+    folderId: string | null,
+  ): Promise<boolean> {
     try {
       const success = await this.writeUpClient.move(writeUpId, projectId, folderId);
 

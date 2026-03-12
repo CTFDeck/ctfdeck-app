@@ -81,21 +81,10 @@ export class ScriptStore {
     });
   }
 
-  update(
-    scriptId: string,
-    name: string,
-    category: number,
-    template: string,
-  ): Promise<boolean> {
+  update(scriptId: string, name: string, category: number, template: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
-      const buffer = serializeCustomScriptUpdate(
-        scriptId,
-        name,
-        category,
-        template,
-        messageId,
-      );
+      const buffer = serializeCustomScriptUpdate(scriptId, name, category, template, messageId);
 
       this.sendRequest(
         messageId,

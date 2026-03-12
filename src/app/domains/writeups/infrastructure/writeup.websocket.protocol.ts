@@ -1,4 +1,7 @@
-import { bytesToUuid, uuidToBytes } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import {
+  bytesToUuid,
+  uuidToBytes,
+} from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
 import { WriteUpData, WriteUpMetadata } from '../models/writeup.model';
 
@@ -13,7 +16,11 @@ export function isWriteUpResponse(type: number): boolean {
   );
 }
 
-export function serializeWriteUpCreate(sessionId: string, name: string, messageId: string): Uint8Array {
+export function serializeWriteUpCreate(
+  sessionId: string,
+  name: string,
+  messageId: string,
+): Uint8Array {
   const nameBytes = encoder.encode(name);
   const buffer = new Uint8Array(1 + 16 + 16 + 4 + nameBytes.length);
   const view = new DataView(buffer.buffer);
@@ -196,7 +203,9 @@ export function deserializeWriteUpListResult(data: Uint8Array): {
     offset += nameLen;
 
     if (offset + 16 > data.byteLength) {
-      throw new Error(`WriteUpListResult too short for timestamps at item ${i}, offset=${offset}, length=${data.byteLength}`);
+      throw new Error(
+        `WriteUpListResult too short for timestamps at item ${i}, offset=${offset}, length=${data.byteLength}`,
+      );
     }
 
     const createdAtTicks = view.getBigInt64(offset, true);
@@ -254,7 +263,9 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
   offset += contentLen;
 
   if (offset + 16 > data.byteLength) {
-    throw new Error(`WriteUpLoadResult too short for timestamps, offset=${offset}, length=${data.byteLength}`);
+    throw new Error(
+      `WriteUpLoadResult too short for timestamps, offset=${offset}, length=${data.byteLength}`,
+    );
   }
 
   const createdAtTicks = view.getBigInt64(offset, true);

@@ -22,10 +22,7 @@ export function buildCommandOptions(
   return [...toolOptions, ...scriptOptions];
 }
 
-export function buildCommandFromTemplate(
-  target: SessionTarget,
-  template: string,
-): string {
+export function buildCommandFromTemplate(target: SessionTarget, template: string): string {
   let command = template;
   command = command.replace(/{host}/g, target.address);
 
@@ -35,10 +32,7 @@ export function buildCommandFromTemplate(
   return command;
 }
 
-export function findToolTemplate(
-  tools: ToolCatalogItem[],
-  selectedToolId: string,
-): string | null {
+export function findToolTemplate(tools: ToolCatalogItem[], selectedToolId: string): string | null {
   return tools.find((tool) => tool.id === selectedToolId)?.commandTemplate ?? null;
 }
 
@@ -49,17 +43,11 @@ export function findScriptTemplate(
   return scripts.find((script) => script.id === selectedScriptId)?.template ?? null;
 }
 
-export function hasSelectedCommand(
-  selectedToolId: string,
-  selectedScriptId: string,
-): boolean {
+export function hasSelectedCommand(selectedToolId: string, selectedScriptId: string): boolean {
   return !!selectedToolId || !!selectedScriptId;
 }
 
-export function getSelectedCommandId(
-  selectedToolId: string,
-  selectedScriptId: string,
-): string {
+export function getSelectedCommandId(selectedToolId: string, selectedScriptId: string): string {
   return selectedToolId || selectedScriptId;
 }
 

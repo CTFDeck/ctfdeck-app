@@ -20,10 +20,14 @@ export function getInstallableVisibleTools(
 }
 
 export function buildVisibleToolIds(tools: ToolStatus[]): Set<string> {
-  return new Set(tools.filter((tool) => tool.kind === 'binary' && !tool.isInstalled).map((tool) => tool.id));
+  return new Set(
+    tools.filter((tool) => tool.kind === 'binary' && !tool.isInstalled).map((tool) => tool.id),
+  );
 }
 
-export function computeInstallingState(progressByToolId: Record<string, ToolInstallProgress>): boolean {
+export function computeInstallingState(
+  progressByToolId: Record<string, ToolInstallProgress>,
+): boolean {
   return Object.values(progressByToolId).some(
     (progress) =>
       progress.state !== ToolInstallState.Success && progress.state !== ToolInstallState.Failed,

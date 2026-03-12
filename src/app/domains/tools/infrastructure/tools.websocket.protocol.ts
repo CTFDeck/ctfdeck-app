@@ -41,18 +41,12 @@ export function serializeToolInventoryRequest(messageId: string): Uint8Array {
   return buffer;
 }
 
-export function serializeToolInstallRequest(
-  toolIds: string[],
-  messageId: string,
-): Uint8Array {
+export function serializeToolInstallRequest(toolIds: string[], messageId: string): Uint8Array {
   const encoder = new TextEncoder();
   const id = uuidToBytes(messageId);
 
   const encodedToolIds = toolIds.map((toolId) => encoder.encode(toolId));
-  const totalToolIdsSize = encodedToolIds.reduce(
-    (sum, bytes) => sum + 4 + bytes.length,
-    0,
-  );
+  const totalToolIdsSize = encodedToolIds.reduce((sum, bytes) => sum + 4 + bytes.length, 0);
 
   const buffer = new Uint8Array(1 + 16 + 4 + totalToolIdsSize);
   const view = new DataView(buffer.buffer);
@@ -296,9 +290,7 @@ export function deserializeToolInstallProgress(
   };
 }
 
-export function deserializeToolOperationError(
-  data: ArrayBuffer | Uint8Array,
-): ToolOperationError {
+export function deserializeToolOperationError(data: ArrayBuffer | Uint8Array): ToolOperationError {
   const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
   const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   const decoder = new TextDecoder();

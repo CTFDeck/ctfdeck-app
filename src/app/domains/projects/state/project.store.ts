@@ -119,8 +119,12 @@ export class ProjectStore implements OnDestroy {
             roots.push(currentFolder);
           });
 
-          const rootSessions = allSessions.filter((session) => session.projectId === project.id && !session.folderId);
-          const rootWriteups = allWriteups.filter((writeup) => writeup.projectId === project.id && !writeup.folderId);
+          const rootSessions = allSessions.filter(
+            (session) => session.projectId === project.id && !session.folderId,
+          );
+          const rootWriteups = allWriteups.filter(
+            (writeup) => writeup.projectId === project.id && !writeup.folderId,
+          );
 
           if (rootSessions.length > 0 || rootWriteups.length > 0) {
             roots.unshift({
@@ -144,7 +148,10 @@ export class ProjectStore implements OnDestroy {
     );
   }
 
-  async createProject(name: string, description = ''): Promise<{ success: boolean; projectId: string }> {
+  async createProject(
+    name: string,
+    description = '',
+  ): Promise<{ success: boolean; projectId: string }> {
     const result = await this.projectClient.create(name, description);
 
     if (result.success) {
@@ -154,7 +161,11 @@ export class ProjectStore implements OnDestroy {
     return result;
   }
 
-  async addFolder(projectId: string, name: string, parentId: string | null = null): Promise<{ success: boolean; folderId: string }> {
+  async addFolder(
+    projectId: string,
+    name: string,
+    parentId: string | null = null,
+  ): Promise<{ success: boolean; folderId: string }> {
     const result = await this.projectClient.addFolder(projectId, name, parentId);
 
     if (result.success) {
@@ -184,7 +195,11 @@ export class ProjectStore implements OnDestroy {
     return result;
   }
 
-  async assignSession(projectId: string, sessionId: string, folderId: string | null): Promise<boolean> {
+  async assignSession(
+    projectId: string,
+    sessionId: string,
+    folderId: string | null,
+  ): Promise<boolean> {
     const result = await this.projectClient.assignSession(projectId, sessionId, folderId);
 
     if (result) {

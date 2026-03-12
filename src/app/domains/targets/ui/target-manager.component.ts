@@ -229,10 +229,7 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   }
 
   startEditing(target: SessionTarget): void {
-    this.editForm = createEditTargetForm(
-      target,
-      this.sessionStore.getActiveSessionId() || '',
-    );
+    this.editForm = createEditTargetForm(target, this.sessionStore.getActiveSessionId() || '');
 
     setTimeout(() => {
       this.editTrigger.nativeElement.click();

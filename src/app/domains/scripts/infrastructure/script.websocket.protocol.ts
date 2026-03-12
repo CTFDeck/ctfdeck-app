@@ -27,9 +27,7 @@ export function serializeCustomScriptCreate(
   const nameBytes = encoder.encode(name);
   const templateBytes = encoder.encode(template);
 
-  const buffer = new Uint8Array(
-    1 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length,
-  );
+  const buffer = new Uint8Array(1 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length);
   const view = new DataView(buffer.buffer);
 
   let offset = 0;
@@ -65,9 +63,7 @@ export function serializeCustomScriptUpdate(
   const nameBytes = encoder.encode(name);
   const templateBytes = encoder.encode(template);
 
-  const buffer = new Uint8Array(
-    1 + 16 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length,
-  );
+  const buffer = new Uint8Array(1 + 16 + 16 + 4 + nameBytes.length + 4 + 4 + templateBytes.length);
   const view = new DataView(buffer.buffer);
 
   let offset = 0;
@@ -96,10 +92,7 @@ export function serializeCustomScriptUpdate(
   return buffer;
 }
 
-export function serializeCustomScriptDelete(
-  scriptId: string,
-  messageId: string,
-): Uint8Array {
+export function serializeCustomScriptDelete(scriptId: string, messageId: string): Uint8Array {
   const buffer = new Uint8Array(1 + 16 + 16);
 
   buffer[0] = MessageType.CustomScriptDelete;

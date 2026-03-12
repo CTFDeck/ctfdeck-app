@@ -95,7 +95,8 @@ import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
 export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   @ViewChild('commandInput') private commandInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('selectionTrigger', { read: BrnMenuTrigger }) private selectionTrigger?: BrnMenuTrigger;
+  @ViewChild('selectionTrigger', { read: BrnMenuTrigger })
+  private selectionTrigger?: BrnMenuTrigger;
 
   lines: TerminalLine[] = [];
   currentCommand = '';
@@ -467,8 +468,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     try {
       window.getSelection()?.removeAllRanges();
-    } catch {
-    }
+    } catch {}
   }
 
   copySelection(): void {
@@ -672,10 +672,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.scrollToBottom();
   }
 
-  private addLine(
-    type: 'command' | 'output' | 'error' | 'info',
-    content: string,
-  ): void {
+  private addLine(type: 'command' | 'output' | 'error' | 'info', content: string): void {
     let renderedContent: SafeHtml | string = content;
 
     if (type === 'output') {
@@ -700,6 +697,8 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   private scrollToBottom(): void {
     try {
       this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } catch { /* Ignore */ }
+    } catch {
+      /* Ignore */
+    }
   }
 }

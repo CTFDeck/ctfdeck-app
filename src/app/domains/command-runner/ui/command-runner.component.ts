@@ -152,7 +152,10 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
       this.sessionStore.activeSession$.subscribe((session) => {
         this.targets = session?.targets || [];
 
-        if (this.selectedTargetId && !this.targets.find((target) => target.id === this.selectedTargetId)) {
+        if (
+          this.selectedTargetId &&
+          !this.targets.find((target) => target.id === this.selectedTargetId)
+        ) {
           this.selectedTargetId = '';
         }
 
@@ -285,11 +288,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     const selectedId = getSelectedCommandId(this.selectedToolId, this.selectedScriptId);
 
     if (this.selectedTargetId && selectedId && this.currentCommand) {
-      this.targetCommandStore.saveCommand(
-        this.selectedTargetId,
-        selectedId,
-        this.currentCommand,
-      );
+      this.targetCommandStore.saveCommand(this.selectedTargetId, selectedId, this.currentCommand);
     }
   }
 
@@ -492,11 +491,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
         );
         toast.success('Script updated');
       } else {
-        await this.scriptStore.create(
-          name,
-          this.scriptForm.category,
-          template,
-        );
+        await this.scriptStore.create(name, this.scriptForm.category, template);
         toast.success('Script created');
       }
 
@@ -525,7 +520,9 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   getScriptCategoryLabel(category: number): string {
-    return this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown';
+    return (
+      this.scriptCategoryOptions.find((option) => option.value === category)?.label || 'Unknown'
+    );
   }
 
   resetScriptForm(): void {
@@ -573,9 +570,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
       await this.sessionStore.ensureActiveSession();
       return true;
     } catch (error: unknown) {
-      this.addLine(
-        `<span class="text-red-500">Session error: ${errorMessageOf(error)}</span>`,
-      );
+      this.addLine(`<span class="text-red-500">Session error: ${errorMessageOf(error)}</span>`);
       return false;
     } finally {
       this.isSessionEnsuring = false;
@@ -588,32 +583,20 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
 
-    this.outputLines[lineIndex] = ansiToSafeHtml(
-      this.ansiConverter,
-      this.sanitizer,
-      buffer,
-    );
+    this.outputLines[lineIndex] = ansiToSafeHtml(this.ansiConverter, this.sanitizer, buffer);
 
     this.cdr.detectChanges();
     this.scrollToBottom();
   }
 
   private renderHelpOutput(buffer: string): void {
-    this.helpOutput = ansiToSafeHtml(
-      this.ansiConverter,
-      this.sanitizer,
-      buffer,
-    );
+    this.helpOutput = ansiToSafeHtml(this.ansiConverter, this.sanitizer, buffer);
 
     this.cdr.detectChanges();
   }
 
   private appendToLastError(data: string): void {
-    this.outputLines = appendErrorToLastOutput(
-      this.outputLines,
-      this.sanitizer,
-      data,
-    );
+    this.outputLines = appendErrorToLastOutput(this.outputLines, this.sanitizer, data);
 
     this.cdr.detectChanges();
   }

@@ -14,10 +14,7 @@ export function createAnsiConverter(): AnsiToHtml {
   });
 }
 
-export function toSafeHtml(
-  sanitizer: DomSanitizer,
-  content: string,
-): SafeHtml {
+export function toSafeHtml(sanitizer: DomSanitizer, content: string): SafeHtml {
   return sanitizer.bypassSecurityTrustHtml(content);
 }
 
@@ -36,9 +33,7 @@ export function appendErrorToLastOutput(
   data: string,
 ): SafeHtml[] {
   if (outputLines.length === 0) {
-    return [
-      sanitizer.bypassSecurityTrustHtml(`<span class="text-red-500">${data}</span>`),
-    ];
+    return [sanitizer.bypassSecurityTrustHtml(`<span class="text-red-500">${data}</span>`)];
   }
 
   const updated = [...outputLines];

@@ -182,19 +182,15 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     );
 
     this.subscriptions.add(
-      this.autoSave$
-        .pipe(debounceTime(1000))
-        .subscribe(() => {
-          this.save(true);
-        }),
+      this.autoSave$.pipe(debounceTime(1000)).subscribe(() => {
+        this.save(true);
+      }),
     );
 
     this.subscriptions.add(
-      this.render$
-        .pipe(debounceTime(32))
-        .subscribe(() => {
-          this.executePreviewUpdate();
-        }),
+      this.render$.pipe(debounceTime(32)).subscribe(() => {
+        this.executePreviewUpdate();
+      }),
     );
   }
 
@@ -297,7 +293,10 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     for (const [id, file] of mediaFiles) {
       const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      exportedContent = exportedContent.replace(new RegExp(id.replace(/-/g, '\\-'), 'g'), `./media/${safeName}`);
+      exportedContent = exportedContent.replace(
+        new RegExp(id.replace(/-/g, '\\-'), 'g'),
+        `./media/${safeName}`,
+      );
     }
 
     const zip = new JSZip();
@@ -418,14 +417,18 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     const rawHtml = this.markedInstance.parse(contentWithPrefixes) as string;
 
-    const processedHtml = rawHtml.replace(/<(video|source)[^>]+src="([^"]+)"/g, (match, _tag, mediaId) => {
-      return match.replace(mediaId, this.resolveMedia(mediaId));
-    });
+    const processedHtml = rawHtml.replace(
+      /<(video|source)[^>]+src="([^"]+)"/g,
+      (match, _tag, mediaId) => {
+        return match.replace(mediaId, this.resolveMedia(mediaId));
+      },
+    );
 
     const sanitized = DOMPurify.sanitize(processedHtml, {
       ADD_TAGS: ['video', 'source', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
       ADD_ATTR: ['controls', 'autoplay', 'loop', 'muted', 'playsinline', 'src', 'type', 'style'],
-      ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data|blob|media):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
+      ALLOWED_URI_REGEXP:
+        /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data|blob|media):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
     });
 
     const temp = document.createElement('div');
@@ -452,11 +455,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   private resolveMedia(mediaId: string): string {
-    if (
-      mediaId.startsWith('http') ||
-      mediaId.startsWith('data:') ||
-      mediaId.startsWith('blob:')
-    ) {
+    if (mediaId.startsWith('http') || mediaId.startsWith('data:') || mediaId.startsWith('blob:')) {
       return mediaId;
     }
 
@@ -470,7 +469,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     if (!this.loadingMedia.has(cleanId)) {
       this.loadingMedia.add(cleanId);
 
-      this.mediaClient.load(cleanId)
+      this.mediaClient
+        .load(cleanId)
         .then((result) => {
           if (result.success && result.media) {
             const blob = new Blob([result.media.data as any], { type: result.media.mimeType });

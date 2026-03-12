@@ -1,6 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { SudoPasswordModalService } from '../../../core/services/sudo-password-modal.service';
+import { SudoPasswordModalStore } from '../../../shell/sudo-password-modal/sudo-password-modal.store';
 import {
   CommandResponse,
   deserializeMessage,
@@ -51,7 +51,7 @@ export class WebSocketService {
 
   constructor(
     private readonly zone: NgZone,
-    private readonly sudoModal: SudoPasswordModalService,
+    private readonly sudoModal: SudoPasswordModalStore,
   ) {
     this.connectWithRetry();
   }
@@ -134,8 +134,7 @@ export class WebSocketService {
     if (this.ws) {
       try {
         this.ws.close();
-      } catch {
-      }
+      } catch {}
 
       this.ws = null;
     }
@@ -223,7 +222,11 @@ export class WebSocketService {
 
   executeCommand(command: string): Promise<CommandResponse> {
     return new Promise<CommandResponse>((resolve, reject) => {
-      this.executeCommandStreaming(command, () => {}, () => {})
+      this.executeCommandStreaming(
+        command,
+        () => {},
+        () => {},
+      )
         .then((result) => {
           resolve({
             type: MessageType.CompleteResponse,
@@ -271,8 +274,7 @@ export class WebSocketService {
         this.handleMessage(event.data as ArrayBuffer);
       };
 
-      ws.onerror = () => {
-      };
+      ws.onerror = () => {};
 
       ws.onclose = () => {
         this.zone.run(() => {
@@ -300,8 +302,7 @@ export class WebSocketService {
       this.ws.onerror = null;
       this.ws.onmessage = null;
       this.ws.close();
-    } catch {
-    }
+    } catch {}
 
     this.ws = null;
   }
@@ -312,9 +313,7 @@ export class WebSocketService {
     }
 
     const delay =
-      this.retryCount === 0
-        ? 0
-        : Math.min(500 * Math.pow(2, this.retryCount - 1), 10_000);
+      this.retryCount === 0 ? 0 : Math.min(500 * Math.pow(2, this.retryCount - 1), 10_000);
 
     this.retryCount++;
 
@@ -372,10 +371,7 @@ export class WebSocketService {
     }
 
     this.zone.run(async () => {
-      const password = await this.sudoModal.requestPassword(
-        message.messageId,
-        message.prompt,
-      );
+      const password = await this.sudoModal.requestPassword(message.messageId, message.prompt);
 
       const payload = serializePasswordProvide(message.messageId, password ?? '');
       this.sendBinary(payload);
@@ -459,8 +455,7 @@ export class WebSocketService {
 
       try {
         pendingRequest.reject(error);
-      } catch {
-      }
+      } catch {}
     }
 
     this.pending.clear();

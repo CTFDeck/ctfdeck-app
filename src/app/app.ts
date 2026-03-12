@@ -2,11 +2,11 @@ import { Component, signal, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MenubarComponent } from './shell/menubar/menubar.component';
-import { WorkspaceSidebarComponent} from './shell/sidebar/workspace-sidebar.component';
+import { WorkspaceSidebarComponent } from './shell/sidebar/workspace-sidebar.component';
 import { TargetManagerComponent } from './domains/targets/ui/target-manager.component';
 import { CommandRunnerComponent } from './domains/command-runner/ui/command-runner.component';
 import { HlmToaster } from '@ctfdeck/helm/sonner';
-import { SudoPasswordModalComponent } from '../ui/password-modal/sudo-password-modal.component';
+import { SudoPasswordModalComponent } from './shell/sudo-password-modal/sudo-password-modal.component';
 import { ToolInstallModalComponent } from './domains/tools/ui/tool-install-modal/tool-install-modal.component';
 
 @Component({
@@ -60,6 +60,5 @@ export class App {
     this.commandRunnerVisible = false;
   }
 
-  saveTargets() {
-  }
+  saveTargets() {}
 }

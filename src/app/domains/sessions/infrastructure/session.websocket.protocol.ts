@@ -82,16 +82,7 @@ export function serializeSessionUpdateTargets(
     const nameBytes = encoder.encode(target.name);
     const descBytes = encoder.encode(target.description || '');
 
-    size +=
-      16 +
-      4 +
-      addrBytes.length +
-      4 +
-      4 +
-      nameBytes.length +
-      4 +
-      descBytes.length +
-      4;
+    size += 16 + 4 + addrBytes.length + 4 + 4 + nameBytes.length + 4 + descBytes.length + 4;
   }
 
   const buffer = new Uint8Array(size);
@@ -447,13 +438,11 @@ export function deserializeSessionListResult(data: Uint8Array): {
     offset += 4;
 
     const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
-    const projectId =
-      projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+    const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
     offset += 16;
 
     const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
-    const folderId =
-      folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
+    const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
     offset += 16;
 
     sessions.push({
@@ -507,13 +496,11 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
   offset += 8;
 
   const projectIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
-  const projectId =
-    projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
+  const projectId = projectIdRaw === '00000000-0000-0000-0000-000000000000' ? null : projectIdRaw;
   offset += 16;
 
   const folderIdRaw = bytesToUuid(data.subarray(offset, offset + 16));
-  const folderId =
-    folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
+  const folderId = folderIdRaw === '00000000-0000-0000-0000-000000000000' ? null : folderIdRaw;
   offset += 16;
 
   const historyCount = view.getInt32(offset, true);
@@ -578,9 +565,7 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
 
     const targetDescLen = view.getInt32(offset, true);
     offset += 4;
-    const targetDescription = decoder.decode(
-      data.subarray(offset, offset + targetDescLen),
-    );
+    const targetDescription = decoder.decode(data.subarray(offset, offset + targetDescLen));
     offset += targetDescLen;
 
     const type = view.getInt32(offset, true);

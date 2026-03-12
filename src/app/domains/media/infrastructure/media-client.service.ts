@@ -92,7 +92,11 @@ export class MediaClientService {
     return true;
   }
 
-  upload(fileName: string, mimeType: string, fileData: Uint8Array): Promise<{ success: boolean; mediaId: string }> {
+  upload(
+    fileName: string,
+    mimeType: string,
+    fileData: Uint8Array,
+  ): Promise<{ success: boolean; mediaId: string }> {
     return new Promise((resolve, reject) => {
       const messageId = generateUUID();
       const buffer = serializeMediaUpload(fileName, mimeType, fileData, messageId);

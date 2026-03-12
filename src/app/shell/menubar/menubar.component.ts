@@ -1,7 +1,16 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
-import { HlmMenu, HlmMenuBar, HlmMenuBarItem, HlmMenuGroup, HlmMenuItem, HlmMenuItemSubIndicator, HlmMenuSeparator, HlmSubMenu } from '@ctfdeck/helm/menu';
+import {
+  HlmMenu,
+  HlmMenuBar,
+  HlmMenuBarItem,
+  HlmMenuGroup,
+  HlmMenuItem,
+  HlmMenuItemSubIndicator,
+  HlmMenuSeparator,
+  HlmSubMenu,
+} from '@ctfdeck/helm/menu';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideTriangleAlert } from '@ng-icons/lucide';
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';

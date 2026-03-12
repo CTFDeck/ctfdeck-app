@@ -31,11 +31,7 @@ export interface PasswordRequest {
   prompt: string;
 }
 
-export type StreamMessage =
-  | CommandResponse
-  | StreamChunk
-  | StreamEnd
-  | PasswordRequest;
+export type StreamMessage = CommandResponse | StreamChunk | StreamEnd | PasswordRequest;
 
 export function serializeCommand(command: string, messageId: string): Uint8Array {
   const encoder = new TextEncoder();
@@ -159,11 +155,7 @@ function deserializeStreamChunk(
   };
 }
 
-function deserializeStreamEnd(
-  u8: Uint8Array,
-  view: DataView,
-  decoder: TextDecoder,
-): StreamEnd {
+function deserializeStreamEnd(u8: Uint8Array, view: DataView, decoder: TextDecoder): StreamEnd {
   let offset = 1;
 
   const messageId = bytesToUuid(u8.slice(offset, offset + 16));
@@ -175,9 +167,7 @@ function deserializeStreamEnd(
   const workingDirectoryLength = view.getInt32(offset, true);
   offset += 4;
 
-  const workingDirectory = decoder.decode(
-    u8.slice(offset, offset + workingDirectoryLength),
-  );
+  const workingDirectory = decoder.decode(u8.slice(offset, offset + workingDirectoryLength));
 
   return {
     type: MessageType.StreamEnd,
