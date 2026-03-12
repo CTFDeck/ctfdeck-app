@@ -42,7 +42,9 @@ export class MediaClientService {
 
   private handleMessage(data: Uint8Array): boolean {
     const type = data[0];
-    if (!isMediaResponse(type)) return false;
+    if (!isMediaResponse(type)) {
+      return false;
+    }
 
     let result: PendingMediaResult;
 
@@ -67,43 +69,51 @@ export class MediaClientService {
     return true;
   }
 
-  upload(fileName: string, mimeType: string, fileData: Uint8Array): Promise<{ success: boolean; mediaId: string }> {
+  upload(
+    fileName: string,
+    mimeType: string,
+    fileData: Uint8Array,
+  ): Promise<{ success: boolean; mediaId: string }> {
     const messageId = generateUUID();
     return createWebSocketRequest(
-      this.pending, this.ws, messageId,
+      this.pending,
+      this.ws,
+      messageId,
       serializeMediaUpload(fileName, mimeType, fileData, messageId),
       (r) => ({ success: Boolean(r.success), mediaId: r.mediaId ?? '' }),
-      (e) => { throw e; },
     );
   }
 
   load(mediaId: string): Promise<{ success: boolean; media: MediaData | null }> {
     const messageId = generateUUID();
     return createWebSocketRequest(
-      this.pending, this.ws, messageId,
+      this.pending,
+      this.ws,
+      messageId,
       serializeMediaLoad(mediaId, messageId),
       (r) => ({ success: Boolean(r.success), media: r.media ?? null }),
-      (e) => { throw e; },
     );
   }
 
   delete(mediaId: string): Promise<boolean> {
     const messageId = generateUUID();
     return createWebSocketRequest(
-      this.pending, this.ws, messageId,
+      this.pending,
+      this.ws,
+      messageId,
       serializeMediaDelete(mediaId, messageId),
       (r) => Boolean(r.success),
-      (e) => { throw e; },
     );
   }
 
   list(): Promise<MediaMetadata[]> {
     const messageId = generateUUID();
     return createWebSocketRequest(
-      this.pending, this.ws, messageId,
+      this.pending,
+      this.ws,
+      messageId,
       serializeMediaList(messageId),
       (r) => r.mediaList ?? [],
-      (e) => { throw e; },
     );
   }
 
@@ -114,6 +124,7 @@ export class MediaClientService {
       reader.onerror = reject;
       reader.readAsArrayBuffer(file);
     });
+
     return this.upload(file.name, file.type, new Uint8Array(result));
   }
 }

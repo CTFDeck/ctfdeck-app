@@ -36,7 +36,9 @@ export function resolvePendingWebSocketResult<T extends PendingWebSocketResult>(
   zone: NgZone,
 ): void {
   const callback = pending.get(result.messageId);
-  if (!callback) return;
+  if (!callback) {
+    return;
+  }
 
   zone.run(() => {
     pending.delete(result.messageId);
@@ -57,7 +59,12 @@ export function createWebSocketRequest<T extends PendingWebSocketResult, R>(
         rej(new Error(result.error));
         return;
       }
-      res(resolve(result));
+
+      try {
+        res(resolve(result));
+      } catch (error) {
+        rej(error);
+      }
     });
 
     sendWhenWebSocketReady(ws, buffer).catch((error) => {
