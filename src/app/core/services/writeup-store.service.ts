@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subscription, distinctUntilChanged } from 'rxjs';
 import { WriteUpService } from './writeup.service';
-import { SessionStoreService } from './session-store.service';
+import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpMetadata, WriteUpData } from './writeup.protocol';
 import { toast } from 'ngx-sonner';
 
@@ -38,7 +38,7 @@ export class WriteUpStoreService implements OnDestroy {
 
   constructor(
     private writeUpService: WriteUpService,
-    private sessionStore: SessionStoreService,
+    private sessionStore: SessionStore,
   ) {
     this.subscriptions.add(
       this.sessionStore.activeSessionId$
@@ -60,7 +60,7 @@ export class WriteUpStoreService implements OnDestroy {
 
   async refreshWriteUps(sessionId?: string, offset: number = 0, limit: number = 6): Promise<void> {
     const sid = sessionId || this.sessionStore.getActiveSessionId();
-    
+
     // Refresh ALL writeups (unassigned for sidebar, all for hierarchy)
     if (offset === 0) {
       await Promise.all([

@@ -38,18 +38,18 @@ import { HlmLabelImports } from '@ctfdeck/helm/label';
 
 import { TargetCommandStoreService } from '../../targets/infrastructure/target-command-store.service';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
-import { SessionStoreService } from '../../../core/services/session-store.service';
 import { ScriptService } from '../../../core/services/script.service';
 import { ToolCatalogStore } from '../../tools/state/tool-catalog.store';
-import {
-  ScriptCategory,
-  scriptCategoryName,
-  type SessionTarget,
-} from '../../../core/services/session.protocol';
 import type { ToolCatalogItem } from '../../tools/models/tool-catalog-item.model';
 import type { CommandOption } from '../models/command-option.model';
 import type { CustomScript } from '../models/custom-script.model';
 import type { ScriptForm } from '../models/script-form.model';
+import { SessionStore } from '../../sessions/state/session.store';
+import type { SessionTarget } from '../../sessions/models/session-target.model';
+import {
+  ScriptCategory,
+  scriptCategoryName,
+} from '../../../core/services/session.protocol';
 import {
   applyPendingSelection,
   buildCommandFromTemplate,
@@ -104,7 +104,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
   private readonly targetCommandStoreService = inject(TargetCommandStoreService);
   private readonly wsService = inject(WebSocketService);
-  private readonly sessionStore = inject(SessionStoreService);
+  private readonly sessionStore = inject(SessionStore);
   private readonly scriptService = inject(ScriptService);
   private readonly toolCatalogStore = inject(ToolCatalogStore);
   private readonly cdr = inject(ChangeDetectorRef);

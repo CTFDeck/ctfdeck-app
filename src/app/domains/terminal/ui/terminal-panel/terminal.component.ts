@@ -50,8 +50,8 @@ import {
   looksLikeDirectoryChange,
   looksLikeDirectoryListing,
 } from '../../utils/terminal-path.utils';
-import { SessionStoreService } from '../../../../core/services/session-store.service';
-import type { SessionData } from '../../../../core/services/session.protocol';
+import { SessionStore } from '../../../sessions/state/session.store';
+import type { SessionData } from '../../../sessions/models/session-data.model';
 import { WriteUpStoreService } from '../../../../core/services/writeup-store.service';
 import { WriteUpService } from '../../../../core/services/writeup.service';
 import type { WriteUpMetadata } from '../../../../core/services/writeup.protocol';
@@ -135,7 +135,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   constructor(
     private readonly wsService: WebSocketService,
-    private readonly sessionStore: SessionStoreService,
+    private readonly sessionStore: SessionStore,
     private readonly cdr: ChangeDetectorRef,
     private readonly sanitizer: DomSanitizer,
   ) {

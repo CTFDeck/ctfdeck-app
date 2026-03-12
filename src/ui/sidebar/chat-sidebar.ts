@@ -38,7 +38,7 @@ import {
   lucideChevronUp,
   lucideFilePlus,
 } from '@ng-icons/lucide';
-import { SessionStoreService } from '../../app/core/services/session-store.service';
+import { SessionStore } from '../../app/domains/sessions/state/session.store';
 import { SessionMetadata } from '../../app/core/services/session.protocol';
 import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
 import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
@@ -171,7 +171,7 @@ export class ChatSidebar {
   successfullyDroppedId = signal<string | null>(null);
   isDragging = signal(false);
   isScrolling = signal(false);
-  
+
   hoveredFolderId = signal<string | null>(null);
   private folderExpandTimeout?: any;
   private scrollTimeout: any;
@@ -183,7 +183,7 @@ export class ChatSidebar {
   expandedFolderIds = signal<Set<string>>(new Set());
   protected readonly projectStore = inject(ProjectStoreService);
   constructor(
-    private sessionStore: SessionStoreService,
+    private sessionStore: SessionStore,
     private writeUpStore: WriteUpStoreService,
     private router: Router,
   ) {
@@ -246,9 +246,9 @@ export class ChatSidebar {
   async confirmCreateItem(ctx: { close: () => void }) {
     const defaultName = this.newItemDraft.type === 'session' ? 'New chat' : 'New writeup';
     const name = this.newItemDraft.name.trim() || defaultName;
-    
+
     ctx.close();
-    
+
     if (this.newItemDraft.type === 'session') {
       await this.sessionStore.createSession(name);
       void this.router.navigate(['/terminal']);
@@ -405,7 +405,7 @@ export class ChatSidebar {
     const { projectId, parentId, name } = this.createFolderDraft;
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    
+
     ctx.close();
     await this.projectStore.addFolder(projectId, trimmedName, parentId);
     if (parentId) {
@@ -422,7 +422,7 @@ export class ChatSidebar {
     const { projectId, folderId, name } = this.folderToRenameDraft;
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    
+
     ctx.close();
     await this.projectStore.renameFolder(projectId, folderId, trimmedName);
   }
@@ -479,7 +479,7 @@ export class ChatSidebar {
     if (this.hoveredFolderId() !== id) {
       this.clearFolderExpandTimer();
       this.hoveredFolderId.set(id);
-      
+
       this.folderExpandTimeout = setTimeout(() => {
         if (this.hoveredFolderId() === id) {
           if (type === 'project') {
@@ -577,11 +577,11 @@ export class ChatSidebar {
         // Move writeup (this service handles the folderId and projectId)
         success = await this.writeUpStore.moveWriteUp(id, projectId, folderId);
       }
-      
+
       if (success) {
         // Force refresh project hierarchy to show the moved item
         await this.projectStore.loadProjectDetails(projectId);
-        
+
         // Success animation
         this.successfullyDroppedId.set(id);
         setTimeout(() => this.successfullyDroppedId.set(null), 2500);
@@ -611,26 +611,26 @@ export class ChatSidebar {
   // Robust filtering with backend-supported unassigned filtering
   filteredChats(sessions: SessionMetadata[]) {
     const term = this.search?.toLowerCase().trim();
-    
-    const filtered = term 
+
+    const filtered = term
       ? sessions.filter((s) => s.name.toLowerCase().includes(term))
       : sessions;
 
     const limit = this.sessionsDisplayLimit();
 
-    // If we have fewer items than we want to display, 
+    // If we have fewer items than we want to display,
     // and the server has more total unassigned items to check, fetch more.
     if (filtered.length < limit && sessions.length < (this.sessionStore.getTotalSessions(true) || 0)) {
        void this.sessionStore.refreshSessions(true, sessions.length, 12, true);
     }
-    
+
     return filtered.slice(0, limit);
   }
 
   filteredWriteUps(writeUps: WriteUpMetadata[]) {
     const term = this.search?.toLowerCase().trim();
-    
-    const filtered = term 
+
+    const filtered = term
       ? writeUps.filter((w) => w.name.toLowerCase().includes(term))
       : writeUps;
 

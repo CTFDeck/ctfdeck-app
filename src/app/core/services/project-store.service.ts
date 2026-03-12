@@ -1,11 +1,9 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, Subscription } from 'rxjs';
 import { ProjectService } from './project.service';
-import { ProjectMetadata, ProjectFolderMetadata, ProjectData } from './project.protocol';
-import { SessionStoreService } from './session-store.service';
-import { SessionMetadata } from './session.protocol';
+import { ProjectMetadata, ProjectData } from './project.protocol';
+import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpStoreService } from './writeup-store.service';
-import { WriteUpMetadata } from './writeup.protocol';
 import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
 
 export interface ProjectHierarchy {
@@ -30,12 +28,9 @@ export class ProjectStoreService implements OnDestroy {
   public projects$ = this._projects.asObservable();
 
   private _loading = new BehaviorSubject<boolean>(false);
-  public loading$ = this._loading.asObservable();
-
   private _totalProjectsCount = new BehaviorSubject<number>(0);
   public totalProjectsCount$ = this._totalProjectsCount.asObservable();
 
-  // Cache ProjectData by ID to support multiple expanded projects
   private _projectDataCache = new BehaviorSubject<Map<string, ProjectData>>(new Map());
   public projectDataCache$ = this._projectDataCache.asObservable();
 
@@ -43,14 +38,14 @@ export class ProjectStoreService implements OnDestroy {
 
   constructor(
     private projectService: ProjectService,
-    private sessionStore: SessionStoreService,
+    private sessionStore: SessionStore,
     private writeupStore: WriteUpStoreService,
     private ws: WebSocketService,
   ) {
     this._subscriptions.add(
       this.ws.isConnected$.subscribe((connected) => {
         if (connected) {
-          this.loadProjects();
+          this.loadProjects().then(r => { /* Ignore */ } );
         } else {
           this._projects.next([]);
           this._projectDataCache.next(new Map());
@@ -81,9 +76,6 @@ export class ProjectStoreService implements OnDestroy {
     }
   }
 
-  /**
-   * Loads full project data (including folders) into the cache.
-   */
   async loadProjectDetails(projectId: string) {
     try {
       const res = await this.projectService.load(projectId);
@@ -97,10 +89,6 @@ export class ProjectStoreService implements OnDestroy {
     }
   }
 
-  /**
-   * Returns an observable of the projects hierarchy.
-   * Recursive folders are supported.
-   */
   getHierarchy$(): Observable<ProjectHierarchy[]> {
     return combineLatest([
       this.projects$,
@@ -113,11 +101,10 @@ export class ProjectStoreService implements OnDestroy {
           const cached = dataCache.get(p.id);
           const flatFolders = cached?.folders || [];
 
-          // Build tree from flat list
+
           const folderMap = new Map<string, FolderHierarchy>();
           const roots: FolderHierarchy[] = [];
 
-          // 1. Create all folder objects
           flatFolders.forEach(f => {
             folderMap.set(f.id, {
                id: f.id,
@@ -129,7 +116,6 @@ export class ProjectStoreService implements OnDestroy {
             });
           });
 
-          // 2. Build tree
           flatFolders.forEach(f => {
             const folder = folderMap.get(f.id)!;
             if (f.parentId && folderMap.has(f.parentId)) {
@@ -139,7 +125,6 @@ export class ProjectStoreService implements OnDestroy {
             }
           });
 
-          // Handle items in project root (no folder)
           const rootSessions = allSessions.filter(s => s.projectId === p.id && !s.folderId);
           const rootWriteups = allWriteups.filter(w => w.projectId === p.id && !w.folderId);
 
@@ -201,7 +186,6 @@ export class ProjectStoreService implements OnDestroy {
     const res = await this.projectService.assignSession(projectId, sessionId, folderId);
     if (res) {
       await this.loadProjectDetails(projectId);
-      // Refresh both unassigned and all sessions to update sidebar and hierarchy
       await Promise.all([
         this.sessionStore.refreshSessions(true, 0, 12, true),
         this.sessionStore.refreshSessions(true, 0, 50, false)

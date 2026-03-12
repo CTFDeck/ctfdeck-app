@@ -1,4 +1,5 @@
-import { TargetType, type SessionTarget } from '../../../core/services/session.protocol';
+import { TargetType } from '../../sessions/models/target-type.enum';
+import type { SessionTarget } from '../../sessions/models/session-target.model'
 import type { AddTargetForm, EditTargetForm } from '../models/target-form.model';
 import type { TargetTypeOption } from '../models/target-type-option.model';
 

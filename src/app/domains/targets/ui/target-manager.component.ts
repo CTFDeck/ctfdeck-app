@@ -49,8 +49,8 @@ import {
   lucideTrash2,
 } from '@ng-icons/lucide';
 
-import { SessionStoreService } from '../../../core/services/session-store.service';
-import { type SessionTarget } from '../../../core/services/session.protocol';
+import { SessionStore } from '../../sessions/state/session.store';
+import type { SessionTarget } from '../../sessions/models/session-target.model';
 import type { AddTargetForm, EditTargetForm } from '../models/target-form.model';
 import type { TargetTypeOption } from '../models/target-type-option.model';
 import {
@@ -107,7 +107,7 @@ import {
   styleUrl: './target-manager.component.css',
 })
 export class TargetManagerComponent implements OnInit, OnDestroy {
-  private readonly sessionStore = inject(SessionStoreService);
+  private readonly sessionStore = inject(SessionStore);
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('editTrigger') editTrigger!: ElementRef;

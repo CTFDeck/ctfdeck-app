@@ -1,4 +1,4 @@
-import { TargetType } from '../../../core/services/session.protocol';
+import { TargetType } from '../../sessions/models/target-type.enum'
 
 export interface TargetTypeOption {
   label: string;
