@@ -13,7 +13,6 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Figma-like Auto-resizing Title */
 .title-auto-resizer {
   display: inline-grid;
   align-items: center;
@@ -27,9 +26,9 @@
   grid-area: 1 / 1 / 2 / 2;
   visibility: hidden;
   white-space: pre;
-  font-size: 1.125rem; /* text-lg */
-  font-weight: 700;    /* font-bold */
-  padding: 4px 6px;    /* Match input padding */
+  font-size: 1.125rem;
+  font-weight: 700;
+  padding: 4px 6px;
 }
 
 .title-auto-resizer input {
@@ -64,7 +63,6 @@ textarea {
   tab-size: 4;
 }
 
-/* Custom scrollbar for preview */
 .overflow-y-auto::-webkit-scrollbar {
   width: 6px;
 }
@@ -82,7 +80,6 @@ textarea {
   background: color-mix(in srgb, var(--muted-foreground), transparent 70%);
 }
 
-/* Markdown Styles (Prose) */
 :host ::ng-deep .markdown-body {
   color: var(--foreground);
   line-height: 1.6;
@@ -95,7 +92,7 @@ textarea {
   font-size: 2.25rem;
   font-weight: 800;
   margin-top: 1rem;
-  margin-bottom: 0.5rem; /* Reduced spacing */
+  margin-bottom: 0.5rem;
   border-bottom: 1px solid color-mix(in srgb, var(--border), transparent 50%);
   padding-bottom: 0.5rem;
   color: var(--primary);
@@ -104,16 +101,16 @@ textarea {
 :host ::ng-deep .markdown-body h2 {
   font-size: 1.85rem;
   font-weight: 700;
-  margin-top: 1.5rem; /* Reduced spacing */
-  margin-bottom: 0.5rem; /* Reduced spacing */
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
   color: var(--foreground);
 }
 
 :host ::ng-deep .markdown-body h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  margin-top: 1rem; /* Reduced spacing */
-  margin-bottom: 0.4rem; /* Reduced spacing */
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
   color: var(--foreground);
 }
 
@@ -181,7 +178,8 @@ textarea {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-:host ::ng-deep .markdown-body ul, :host ::ng-deep .markdown-body ol {
+:host ::ng-deep .markdown-body ul,
+:host ::ng-deep .markdown-body ol {
   padding-left: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -190,7 +188,6 @@ textarea {
   margin-bottom: 0.5rem;
 }
 
-/* Tables */
 :host ::ng-deep .markdown-body .table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -213,7 +210,7 @@ textarea {
 :host ::ng-deep .markdown-body td {
   border: 1px solid var(--border) !important;
   padding: 12px 16px !important;
-  min-width: 100px; 
+  min-width: 100px;
   height: 3rem;
   box-sizing: border-box;
 }
@@ -234,10 +231,16 @@ textarea {
   background-color: color-mix(in srgb, var(--primary), transparent 95%) !important;
 }
 
-/* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 :host ::ng-deep .markdown-body > * {

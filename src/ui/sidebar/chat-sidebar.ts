@@ -40,8 +40,8 @@ import {
 } from '@ng-icons/lucide';
 import { SessionStore } from '../../app/domains/sessions/state/session.store';
 import { SessionMetadata } from '../../app/domains/sessions/models/session-metadata.model';
-import { WriteUpStoreService } from '../../app/core/services/writeup-store.service';
-import { WriteUpMetadata } from '../../app/core/services/writeup.protocol';
+import { WriteUpStore } from '../../app/domains/writeups/state/writeup.store';
+import { WriteUpMetadata } from '../../app/domains/writeups/models/writeup.model';
 import { Observable, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { ProjectStoreService, ProjectHierarchy } from '../../app/core/services/project-store.service';
@@ -184,7 +184,7 @@ export class ChatSidebar {
   protected readonly projectStore = inject(ProjectStoreService);
   constructor(
     private sessionStore: SessionStore,
-    private writeUpStore: WriteUpStoreService,
+    private writeUpStore: WriteUpStore,
     private router: Router,
   ) {
     this.hierarchy$ = this.projectStore.getHierarchy$();

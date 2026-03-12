@@ -1,0 +1,169 @@
+<div class="editor-container flex flex-col h-full bg-background text-foreground overflow-hidden">
+  <header class="editor-header flex items-center justify-between px-6 h-14 border-b border-border/50 sticky top-0 z-10 transition-colors">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3 h-14">
+        <div class="title-auto-resizer">
+          <span>{{ name || 'Untitled Writeup' }}</span>
+          <input
+            [(ngModel)]="name"
+            (ngModelChange)="onContentChange()"
+            class="h-full"
+            placeholder="Untitled Writeup"
+            maxlength="32"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <div class="flex items-center bg-muted/40 rounded-lg border border-border/40 backdrop-blur-sm h-9 p-1 gap-1">
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="mode() === 'edit' ? 'secondary' : 'ghost'"
+          (click)="setMode('edit')"
+          class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
+          hlmTooltipTrigger="Switch to Writing mode"
+        >
+          <ng-icon name="lucideEdit" class="mr-2" />
+          Write
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="mode() === 'split' ? 'secondary' : 'ghost'"
+          (click)="setMode('split')"
+          class="h-7 text-xs px-3 hidden lg:flex rounded-md transition-all active:scale-95"
+          hlmTooltipTrigger="Parallel Edit & Preview"
+        >
+          <ng-icon name="lucideColumns2" class="mr-2" />
+          Split
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="mode() === 'preview' ? 'secondary' : 'ghost'"
+          (click)="setMode('preview')"
+          class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
+          hlmTooltipTrigger="Switch to Preview mode"
+        >
+          <ng-icon name="lucideEye" class="mr-2" />
+          Preview
+        </button>
+        <div class="w-[1px] h-4 bg-border/40 mx-0.5 opacity-50"></div>
+        <button
+          hlmBtn
+          size="sm"
+          variant="ghost"
+          (click)="exportZip()"
+          class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
+          hlmTooltipTrigger="Download as .zip (with media)"
+        >
+          <ng-icon name="lucideDownload" class="mr-2" />
+          Export
+        </button>
+      </div>
+
+      <div class="w-2"></div>
+
+      <button hlmBtn variant="outline" size="sm" (click)="delete()" class="h-9 w-9 p-0 text-destructive border-border/40 hover:bg-destructive/10 hover:border-destructive/30" hlmTooltipTrigger="Delete this WriteUp">
+        <ng-icon name="lucideTrash2" />
+      </button>
+
+      <button hlmBtn size="sm" (click)="save()" [disabled]="isSaving()" class="h-9 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium" hlmTooltipTrigger="Save changes manually">
+        <ng-icon *ngIf="syncState() !== 'saving'" name="lucideSave" class="text-base" />
+        <div *ngIf="syncState() === 'saving'" class="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
+        <span>Save</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 flex overflow-hidden relative" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+    <div
+      class="flex-1 h-full overflow-hidden transition-all duration-300 ease-in-out border-r border-border"
+      [class.hidden]="mode() === 'preview'"
+      [class.w-1/2]="mode() === 'split'"
+    >
+    <textarea
+      #editor
+      class="w-full h-full p-8 bg-transparent text-foreground resize-none focus:outline-none font-mono text-sm leading-relaxed"
+      [(ngModel)]="content"
+      (ngModelChange)="onContentChange()"
+      (paste)="onPaste($event)"
+      placeholder="Start writing your report... (Support for Drag & Drop and Paste images)"
+    ></textarea>
+</div>
+
+<div
+  class="flex-1 h-full overflow-y-auto transition-all duration-300 ease-in-out bg-card/20 relative"
+  [class.hidden]="mode() === 'edit'"
+  [class.w-1/2]="mode() === 'split'"
+>
+<span
+  class="absolute top-3 right-4 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest rounded-full bg-card/80 text-primary border border-primary/30 backdrop-blur-sm shadow-sm pointer-events-none"
+  [style.opacity]="hoveredTag() ? '1' : '0'"
+  [style.transform]="hoveredTag() ? 'scale(1) translateY(0)' : 'scale(0.85) translateY(-4px)'"
+  style="transition: opacity 0.18s cubic-bezier(0.4,0,0.2,1), transform 0.18s cubic-bezier(0.4,0,0.2,1);"
+>
+        <span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
+  {{ displayedTag() ?? '' }}
+      </span>
+
+<div
+  #previewBody
+  class="markdown-body p-8 prose prose-invert prose-blue max-w-none"
+  (mouseover)="onPreviewMouseOver($event)"
+  (mouseout)="onPreviewMouseOut()"
+></div>
+
+<div *ngIf="!content" class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
+  <ng-icon name="lucideFileText" class="text-64 mb-4" />
+  <p>Preview will appear here</p>
+</div>
+</div>
+
+<div
+  class="absolute bottom-6 right-8 z-30 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/40 bg-card/80 backdrop-blur-md shadow-lg transition-all duration-500 group cursor-help"
+  [hlmTooltipTrigger]="syncTooltip"
+>
+  <ng-container [ngSwitch]="syncState()">
+    <div *ngSwitchCase="'saving'" class="flex items-center gap-2 text-primary">
+      <ng-icon name="lucideCloudUpload" class="text-base animate-bounce" />
+      <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">Saving</span>
+    </div>
+    <div *ngSwitchCase="'saved'" class="flex items-center gap-2 text-green-500">
+      <ng-icon name="lucideCheckCircle2" class="text-base" />
+      <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">Synced</span>
+    </div>
+    <div *ngSwitchCase="'unsaved'" class="flex items-center gap-2 text-muted-foreground">
+      <ng-icon name="lucideCloud" class="text-base opacity-40" />
+      <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Draft</span>
+    </div>
+    <div *ngSwitchCase="'error'" class="flex items-center gap-2 text-destructive">
+      <ng-icon name="lucideAlertCircle" class="text-base" />
+      <span class="text-[10px] font-bold uppercase tracking-widest">Error</span>
+    </div>
+  </ng-container>
+
+  <ng-template #syncTooltip>
+    <div class="flex flex-col gap-1 p-1">
+      <span class="font-bold border-b border-border/40 pb-1 mb-1">{{ syncState() === 'saved' ? 'Synchronized' : 'Sync Status' }}</span>
+      <span class="text-xs opacity-70">
+            {{ syncState() === 'saved' ? 'All changes are permanently saved.' :
+        syncState() === 'saving' ? 'Uploading your content now...' :
+          syncState() === 'unsaved' ? 'Local changes not yet saved.' :
+            'Could not connect to server.' }}
+          </span>
+    </div>
+  </ng-template>
+</div>
+
+<div *ngIf="isLoading() && isInitialLoad()" class="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-20 transition-all duration-300">
+  <div class="flex flex-col items-center gap-4">
+    <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+    <span class="text-sm font-medium">Loading writeup...</span>
+  </div>
+</div>
+</main>
+</div>

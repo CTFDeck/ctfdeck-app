@@ -1,24 +1,33 @@
 import { Injectable, NgZone } from '@angular/core';
-import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
-import { MessageType } from '../../infrastructure/transport/websocket/websocket-message-type.enum';
-import { generateUUID } from '../../infrastructure/transport/websocket/websocket-uuid.utils';
+import { firstValueFrom, filter, timeout, TimeoutError } from 'rxjs';
+import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
+import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
+import { generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import { MediaData, MediaMetadata } from '../models/media.model';
 import {
-  MediaMetadata,
-  MediaData,
+  deserializeMediaListResult,
+  deserializeMediaLoadResult,
+  deserializeMediaOperationError,
+  deserializeMediaUploadResult,
   isMediaResponse,
-  serializeMediaUpload,
-  serializeMediaLoad,
   serializeMediaDelete,
   serializeMediaList,
-  deserializeMediaUploadResult,
-  deserializeMediaLoadResult,
-  deserializeMediaListResult,
-  deserializeMediaOperationError,
-} from './writeup.protocol';
+  serializeMediaLoad,
+  serializeMediaUpload,
+} from './media.websocket.protocol';
+
+type PendingMediaResult = {
+  messageId: string;
+  success?: boolean;
+  mediaId?: string;
+  media?: MediaData | null;
+  mediaList?: MediaMetadata[];
+  error?: string;
+};
 
 @Injectable({ providedIn: 'root' })
-export class MediaService {
-  private pending = new Map<string, (result: any) => void>();
+export class MediaClientService {
+  private pending = new Map<string, (result: PendingMediaResult) => void>();
 
   constructor(
     private ws: WebSocketService,
@@ -27,11 +36,32 @@ export class MediaService {
     this.ws.registerHandler(this.handleMessage.bind(this));
   }
 
+  private async sendWhenReady(buffer: Uint8Array): Promise<void> {
+    if (!this.ws.isConnected$.value) {
+      await firstValueFrom(
+        this.ws.isConnected$.pipe(
+          filter((connected) => connected),
+          timeout(10_000),
+        ),
+      ).catch((err) => {
+        if (err instanceof TimeoutError) {
+          throw new Error('WebSocket connection timeout after 10s');
+        }
+        throw err;
+      });
+    }
+
+    this.ws.sendBinary(buffer);
+  }
+
   private handleMessage(data: Uint8Array): boolean {
     const type = data[0];
-    if (!isMediaResponse(type)) return false;
+    if (!isMediaResponse(type)) {
+      return false;
+    }
 
-    let result: any;
+    let result: PendingMediaResult;
+
     switch (type) {
       case MessageType.MediaUploadResult:
         result = deserializeMediaUploadResult(data);
@@ -50,12 +80,14 @@ export class MediaService {
     }
 
     const callback = this.pending.get(result.messageId);
-    if (callback) {
-      this.zone.run(() => {
-        this.pending.delete(result.messageId);
-        callback(result);
-      });
+    if (!callback) {
+      return true;
     }
+
+    this.zone.run(() => {
+      this.pending.delete(result.messageId);
+      callback(result);
+    });
 
     return true;
   }
@@ -68,12 +100,19 @@ export class MediaService {
       this.pending.set(messageId, (result) => {
         if (result.error) {
           reject(new Error(result.error));
-        } else {
-          resolve({ success: result.success, mediaId: result.mediaId });
+          return;
         }
+
+        resolve({
+          success: Boolean(result.success),
+          mediaId: result.mediaId ?? '',
+        });
       });
 
-      this.ws.sendBinary(buffer);
+      this.sendWhenReady(buffer).catch((error) => {
+        this.pending.delete(messageId);
+        reject(error);
+      });
     });
   }
 
@@ -85,12 +124,19 @@ export class MediaService {
       this.pending.set(messageId, (result) => {
         if (result.error) {
           reject(new Error(result.error));
-        } else {
-          resolve({ success: result.success, media: result.media });
+          return;
         }
+
+        resolve({
+          success: Boolean(result.success),
+          media: result.media ?? null,
+        });
       });
 
-      this.ws.sendBinary(buffer);
+      this.sendWhenReady(buffer).catch((error) => {
+        this.pending.delete(messageId);
+        reject(error);
+      });
     });
   }
 
@@ -102,12 +148,16 @@ export class MediaService {
       this.pending.set(messageId, (result) => {
         if (result.error) {
           reject(new Error(result.error));
-        } else {
-          resolve(result.success);
+          return;
         }
+
+        resolve(Boolean(result.success));
       });
 
-      this.ws.sendBinary(buffer);
+      this.sendWhenReady(buffer).catch((error) => {
+        this.pending.delete(messageId);
+        reject(error);
+      });
     });
   }
 
@@ -119,17 +169,22 @@ export class MediaService {
       this.pending.set(messageId, (result) => {
         if (result.error) {
           reject(new Error(result.error));
-        } else {
-          resolve(result.mediaList);
+          return;
         }
+
+        resolve(result.mediaList ?? []);
       });
 
-      this.ws.sendBinary(buffer);
+      this.sendWhenReady(buffer).catch((error) => {
+        this.pending.delete(messageId);
+        reject(error);
+      });
     });
   }
 
   async uploadFile(file: File): Promise<{ success: boolean; mediaId: string }> {
     const reader = new FileReader();
+
     const result = await new Promise<ArrayBuffer>((resolve, reject) => {
       reader.onload = () => resolve(reader.result as ArrayBuffer);
       reader.onerror = reject;

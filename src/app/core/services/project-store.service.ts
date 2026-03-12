@@ -3,7 +3,7 @@ import { BehaviorSubject, combineLatest, map, Observable, Subscription } from 'r
 import { ProjectService } from './project.service';
 import { ProjectMetadata, ProjectData } from './project.protocol';
 import { SessionStore } from '../../domains/sessions/state/session.store';
-import { WriteUpStoreService } from './writeup-store.service';
+import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
 import { WebSocketService } from '../../infrastructure/transport/websocket/websocket.service';
 
 export interface ProjectHierarchy {
@@ -39,7 +39,7 @@ export class ProjectStoreService implements OnDestroy {
   constructor(
     private projectService: ProjectService,
     private sessionStore: SessionStore,
-    private writeupStore: WriteUpStoreService,
+    private writeupStore: WriteUpStore,
     private ws: WebSocketService,
   ) {
     this._subscriptions.add(

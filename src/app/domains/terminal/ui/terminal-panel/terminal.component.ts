@@ -52,9 +52,9 @@ import {
 } from '../../utils/terminal-path.utils';
 import { SessionStore } from '../../../sessions/state/session.store';
 import type { SessionData } from '../../../sessions/models/session-data.model';
-import { WriteUpStoreService } from '../../../../core/services/writeup-store.service';
-import { WriteUpService } from '../../../../core/services/writeup.service';
-import type { WriteUpMetadata } from '../../../../core/services/writeup.protocol';
+import { WriteUpStore } from '../../../writeups/state/writeup.store';
+import { WriteUpClientService } from '../../../writeups/infrastructure/writeup-client.service';
+import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
 
 @Component({
   selector: 'app-terminal',
@@ -114,14 +114,14 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectedText = '';
   selectionMenuPosition = { x: 0, y: 0 };
 
-  writeUps$ = inject(WriteUpStoreService).writeUps$;
+  writeUps$ = inject(WriteUpStore).writeUps$;
 
   private readonly subscriptions = new Subscription();
   private readonly history = new TerminalHistory();
   public readonly autocomplete = new TerminalAutocomplete();
 
-  private readonly writeUpStore = inject(WriteUpStoreService);
-  private readonly writeUpService = inject(WriteUpService);
+  private readonly writeUpStore = inject(WriteUpStore);
+  private readonly writeUpClientService = inject(WriteUpClientService);
 
   private readonly ansiConverter = new AnsiToHtml({
     fg: '#d4d4d4',
@@ -487,7 +487,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
 
     try {
-      const { success, writeUp: fullWriteUp } = await this.writeUpService.load(writeUp.id);
+      const { success, writeUp: fullWriteUp } = await this.writeUpClientService.load(writeUp.id);
 
       if (success && fullWriteUp) {
         const appended = `\n\n\`\`\`bash\n${this.selectedText}\n\`\`\`\n`;
@@ -495,7 +495,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewChecked {
         const saveOk = await this.writeUpStore.saveActiveWriteUp(newContent, fullWriteUp.name);
 
         if (!saveOk) {
-          await this.writeUpService.update(writeUp.id, fullWriteUp.name, newContent);
+          await this.writeUpClientService.update(writeUp.id, fullWriteUp.name, newContent);
         }
 
         toast.success('Added to write-up!', {
