@@ -9,6 +9,8 @@ import DOMPurify from 'dompurify';
 import JSZip from 'jszip';
 import morphdom from 'morphdom';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
+import { HlmInputImports } from '@ctfdeck/helm/input';
+import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { BrnTooltipImports } from '@spartan-ng/brain/tooltip';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -27,6 +29,16 @@ import {
   lucideVideo,
   lucideX,
   lucideChevronLeft,
+  lucideHeading1,
+  lucideHeading2,
+  lucideHeading3,
+  lucideBold,
+  lucideItalic,
+  lucideLink,
+  lucideList,
+  lucideListOrdered,
+  lucideQuote,
+  lucideCode,
 } from '@ng-icons/lucide';
 import { toast } from 'ngx-sonner';
 import { WriteUpStore } from '../state/writeup.store';
@@ -39,6 +51,8 @@ import { MediaClientService } from '../../media/infrastructure/media-client.serv
     CommonModule,
     FormsModule,
     HlmButtonImports,
+    HlmInputImports,
+    ...HlmLabelImports,
     NgIcon,
     ...HlmTooltipImports,
     ...BrnTooltipImports,
@@ -59,6 +73,16 @@ import { MediaClientService } from '../../media/infrastructure/media-client.serv
       lucideAlertCircle,
       lucideX,
       lucideColumns2,
+      lucideHeading1,
+      lucideHeading2,
+      lucideHeading3,
+      lucideBold,
+      lucideItalic,
+      lucideLink,
+      lucideList,
+      lucideListOrdered,
+      lucideQuote,
+      lucideCode,
     }),
   ],
   templateUrl: './writeup-editor.component.html',
@@ -83,6 +107,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   readonly syncState = signal<'saved' | 'saving' | 'unsaved' | 'error'>('saved');
   readonly hoveredTag = signal<string | null>(null);
   readonly displayedTag = signal<string | null>(null);
+  readonly showLinkDialog = signal(false);
+  linkText = '';
+  linkUrl = '';
 
   private clearTagTimer: ReturnType<typeof setTimeout> | null = null;
   private mediaUrls = new Map<string, string>();
@@ -91,7 +118,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private render$ = new Subject<void>();
   private subscriptions = new Subscription();
   private writeUpId: string | null = null;
-  private markedInstance = new Marked();
+  private markedInstance = new Marked({ breaks: true });
   private lastHoveredEl: HTMLElement | null = null;
   private mediaUpdateTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -120,6 +147,10 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         const { href, title, text } = token;
         const resolvedHref = this.resolveMedia(href);
         return `<img src="${resolvedHref}" alt="${text}" title="Type: Image${title ? ' - ' + title : ''}">`;
+      },
+      listitem: (token: Tokens.ListItem) => {
+        const content = this.markedInstance.parse(token.text) as string;
+        return `<li title="Type: List Item">${content}</li>`;
       },
       table: (token: Tokens.Table) => {
         let headerHtml = '<thead><tr>';
@@ -156,7 +187,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         }
 
         this.writeUpId = id;
-        this.loadWriteUp(id).then(() => {/* Ignore */});
+        this.loadWriteUp(id).then(() => {
+          /* Ignore */
+        });
       }),
     );
 
@@ -181,7 +214,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.autoSave$.pipe(debounceTime(1000)).subscribe(() => {
-        this.save(true).then(() => {/* Ignore */});
+        this.save(true).then(() => {
+          /* Ignore */
+        });
       }),
     );
 
@@ -356,6 +391,50 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
   onPreviewMouseOut(): void {
     this.restoreLastHovered();
+  }
+
+  onEditorKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+      event.preventDefault();
+      this.save().then(() => {
+        /* Ignore */
+      });
+      return;
+    }
+
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    const textarea = this.editor.nativeElement;
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = this.content.substring(0, cursorPos);
+    const lineStart = textBeforeCursor.lastIndexOf('\n') + 1;
+    const currentLine = textBeforeCursor.substring(lineStart);
+
+    const bulletMatch = currentLine.match(/^(\s*)([-*+]|\d+\.?)(\s*)/);
+    if (bulletMatch) {
+      event.preventDefault();
+      const [, indent, marker] = bulletMatch;
+      let newMarker: string;
+
+      if (/^\d+\.?$/.test(marker)) {
+        const num = parseInt(marker.replace('.', ''), 10);
+        newMarker = `${num + 1}.`;
+      } else {
+        newMarker = marker;
+      }
+
+      const insertText = `\n${indent}${newMarker} `;
+      this.content = textBeforeCursor + insertText + this.content.substring(cursorPos);
+
+      setTimeout(() => {
+        const newPos = cursorPos + insertText.length;
+        textarea.selectionStart = newPos;
+        textarea.selectionEnd = newPos;
+        this.onContentChange();
+      });
+    }
   }
 
   async onPaste(event: ClipboardEvent): Promise<void> {
@@ -539,16 +618,187 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
   private insertAtCursor(text: string): void {
     const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
 
     this.content = this.content.substring(0, start) + text + this.content.substring(end);
 
     setTimeout(() => {
-      textarea.focus();
+      textarea.scrollTop = scrollTop;
       textarea.selectionStart = start + text.length;
       textarea.selectionEnd = start + text.length;
       this.updatePreview();
     });
+  }
+
+  toggleBold(): void {
+    const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    if (start !== end) {
+      const selectedText = this.content.substring(start, end);
+      const wrapped = `**${selectedText}**`;
+      this.content = this.content.substring(0, start) + wrapped + this.content.substring(end);
+      setTimeout(() => {
+        textarea.scrollTop = scrollTop;
+        textarea.selectionStart = start + 2;
+        textarea.selectionEnd = start + 2 + selectedText.length;
+        this.updatePreview();
+      });
+    } else {
+      this.insertAtCursor('****');
+      setTimeout(() => {
+        textarea.scrollTop = scrollTop;
+        textarea.selectionStart = start + 2;
+        textarea.selectionEnd = start + 2;
+      });
+    }
+  }
+
+  toggleItalic(): void {
+    const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    if (start !== end) {
+      const selectedText = this.content.substring(start, end);
+      const wrapped = `*${selectedText}*`;
+      this.content = this.content.substring(0, start) + wrapped + this.content.substring(end);
+      setTimeout(() => {
+        textarea.scrollTop = scrollTop;
+        textarea.selectionStart = start + 1;
+        textarea.selectionEnd = start + 1 + selectedText.length;
+        this.updatePreview();
+      });
+    } else {
+      this.insertAtCursor('**');
+      setTimeout(() => {
+        textarea.scrollTop = scrollTop;
+        textarea.selectionStart = start + 1;
+        textarea.selectionEnd = start + 1;
+      });
+    }
+  }
+
+  addHeading(level: number): void {
+    const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const lineStart = this.content.lastIndexOf('\n', start - 1) + 1;
+    const prefix = '#'.repeat(level) + ' ';
+
+    this.content =
+      this.content.substring(0, lineStart) + prefix + this.content.substring(lineStart);
+    setTimeout(() => {
+      textarea.scrollTop = scrollTop;
+      textarea.selectionStart = start + prefix.length;
+      textarea.selectionEnd = start + prefix.length;
+      this.updatePreview();
+    });
+  }
+
+  openLinkDialog(): void {
+    const textarea = this.editor.nativeElement;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = this.content.substring(start, end);
+    this.linkText = selectedText;
+    this.linkUrl = '';
+    this.showLinkDialog.set(true);
+  }
+
+  closeLinkDialog(): void {
+    this.showLinkDialog.set(false);
+    this.linkText = '';
+    this.linkUrl = '';
+  }
+
+  insertLink(): void {
+    if (!this.linkText || !this.linkUrl) {
+      return;
+    }
+
+    const markdown = `[${this.linkText}](${this.linkUrl})`;
+    this.insertAtCursor(markdown);
+    this.closeLinkDialog();
+  }
+
+  addList(ordered = false): void {
+    const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const lineStart = this.content.lastIndexOf('\n', start - 1) + 1;
+    const prefix = ordered ? '1. ' : '- ';
+
+    this.content =
+      this.content.substring(0, lineStart) + prefix + this.content.substring(lineStart);
+    setTimeout(() => {
+      textarea.scrollTop = scrollTop;
+      textarea.selectionStart = start + prefix.length;
+      textarea.selectionEnd = start + prefix.length;
+      this.updatePreview();
+    });
+  }
+
+  addQuote(): void {
+    const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const lineStart = this.content.lastIndexOf('\n', start - 1) + 1;
+    const prefix = '> ';
+
+    this.content =
+      this.content.substring(0, lineStart) + prefix + this.content.substring(lineStart);
+    setTimeout(() => {
+      textarea.scrollTop = scrollTop;
+      textarea.selectionStart = start + prefix.length;
+      textarea.selectionEnd = start + prefix.length;
+      this.updatePreview();
+    });
+  }
+
+  addCode(): void {
+    const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = this.content.substring(start, end);
+
+    if (selectedText.includes('\n')) {
+      const wrapped = `\`\`\`\n${selectedText}\n\`\`\``;
+      this.content = this.content.substring(0, start) + wrapped + this.content.substring(end);
+      setTimeout(() => {
+        textarea.scrollTop = scrollTop;
+        textarea.selectionStart = start + 4;
+        textarea.selectionEnd = start + 4 + selectedText.length;
+        this.updatePreview();
+      });
+    } else {
+      const wrapped = `\`${selectedText}\``;
+      this.content = this.content.substring(0, start) + wrapped + this.content.substring(end);
+      setTimeout(() => {
+        textarea.scrollTop = scrollTop;
+        textarea.selectionStart = start + 1;
+        textarea.selectionEnd = start + 1 + selectedText.length;
+        this.updatePreview();
+      });
+    }
+  }
+
+  triggerImageUpload(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,video/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        await this.uploadAndInsertMedia(file);
+      }
+    };
+    input.click();
   }
 }

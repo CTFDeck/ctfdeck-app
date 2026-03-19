@@ -67,6 +67,19 @@ textarea {
   tab-size: 4;
 }
 
+.toolbar button {
+  transition: all 0.15s ease;
+}
+
+.toolbar button:hover {
+  background-color: color-mix(in srgb, var(--primary), transparent 90%);
+  color: var(--primary);
+}
+
+.toolbar button:active {
+  transform: scale(0.95);
+}
+
 .overflow-y-auto::-webkit-scrollbar {
   width: 6px;
 }
@@ -117,6 +130,19 @@ textarea {
 :host ::ng-deep .markdown-body strong {
   font-weight: 700;
   color: color-mix(in srgb, var(--primary), transparent 10%);
+}
+
+:host ::ng-deep .markdown-body a {
+  color: color-mix(in srgb, var(--primary), var(--foreground) 20%);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary), transparent 50%);
+  text-underline-offset: 2px;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .markdown-body a:hover {
+  color: var(--primary);
+  text-decoration-color: var(--primary);
 }
 
 :host ::ng-deep .markdown-body code {
@@ -178,10 +204,25 @@ textarea {
 :host ::ng-deep .markdown-body ol {
   padding-left: 1.5rem;
   margin-bottom: 1.5rem;
+  display: block;
+}
+
+:host ::ng-deep .markdown-body ul {
+  list-style-type: disc;
+}
+
+:host ::ng-deep .markdown-body ol {
+  list-style-type: decimal;
 }
 
 :host ::ng-deep .markdown-body li {
   margin-bottom: 0.5rem;
+  display: list-item !important;
+}
+
+:host ::ng-deep .markdown-body li > p {
+  display: block;
+  margin: 0;
 }
 
 :host ::ng-deep .markdown-body table {
