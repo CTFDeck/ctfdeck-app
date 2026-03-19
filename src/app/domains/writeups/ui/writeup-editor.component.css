@@ -81,7 +81,7 @@ textarea {
 }
 
 .overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
+  width: 10px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
@@ -89,12 +89,16 @@ textarea {
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--muted-foreground), transparent 80%);
+  background: color-mix(in srgb, var(--muted-foreground), transparent 40%);
   border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--muted-foreground), transparent 70%);
+  background: color-mix(in srgb, var(--muted-foreground), transparent 20%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 :host ::ng-deep .markdown-body h1 {

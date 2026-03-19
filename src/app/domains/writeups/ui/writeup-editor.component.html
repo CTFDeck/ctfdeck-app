@@ -108,7 +108,7 @@
     (drop)="onDrop($event)"
   >
     <div
-      class="flex-1 h-full overflow-hidden transition-all duration-300 ease-in-out border-r border-border"
+      class="flex-1 h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out border-r border-border"
       [class.hidden]="mode() === 'preview'"
       [ngClass]="{ 'w-1/2': mode() === 'split' }"
     >
@@ -261,10 +261,10 @@
         </div>
       </div>
 
-      <div class="overflow-y-auto h-full">
+      <div class="flex-1 min-h-0">
         <textarea
           #editor
-          class="w-full p-8 bg-transparent text-foreground resize-none focus:outline-none font-mono text-sm leading-relaxed"
+          class="w-full h-full p-8 bg-transparent text-foreground resize-none focus:outline-none font-mono text-sm leading-relaxed overflow-y-auto shadow-none border-none"
           [(ngModel)]="content"
           (ngModelChange)="onContentChange()"
           (paste)="onPaste($event)"
