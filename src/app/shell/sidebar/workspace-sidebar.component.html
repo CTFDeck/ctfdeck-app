@@ -869,12 +869,12 @@
 
       <div class="grid gap-6 py-4">
         <div class="grid gap-2">
-          <label hlmLabel for="exportPath">Export Path (on server)</label>
+          <label hlmLabel for="exportPath">Filename</label>
           <input
             hlmInput
             id="exportPath"
-            [(ngModel)]="exportDraft.path"
-            placeholder="exports/my_project.json"
+            [(ngModel)]="exportDraft.filename"
+            placeholder="my_project_export"
           />
         </div>
 
@@ -931,24 +931,60 @@
     <button #importProjectTrigger brnDialogTrigger class="hidden" type="button">
       Open import dialog
     </button>
-    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[500px]">
+    <hlm-dialog-content class="max-w-[700px]" *brnDialogContent="let ctx">
       <hlm-dialog-header>
-        <h2 hlmDialogTitle class="flex items-center gap-2">
-          <ng-icon name="lucideUpload" class="text-primary h-5 w-5" />
-          <span>Import Project</span>
-        </h2>
-        <p hlmDialogDescription>Import a project from a file on the server.</p>
+        <h3 hlmDialogTitle>Import Project</h3>
+        <p hlmDialogDescription>Import projects from the server export directory.</p>
       </hlm-dialog-header>
 
-      <div class="grid gap-4 py-4">
-        <div class="grid gap-2">
-          <label hlmLabel for="importPath">File Path (on server)</label>
-          <input
-            hlmInput
-            id="importPath"
-            [(ngModel)]="importDraft.path"
-            placeholder="exports/my_project.json"
-          />
+      <div class="grid gap-4 py-4 w-full">
+        <label hlmLabel>Available Exports</label>
+        <div class="max-h-[400px] overflow-y-auto border rounded-md bg-muted/20">
+          @if (availableExports$ | async; as exports) {
+            @if (exports.length > 0) {
+              <table hlmTable class="w-full">
+                <thead hlmTHead>
+                  <tr hlmTr>
+                    <th hlmTh class="w-10 px-2">
+                      <hlm-checkbox 
+                        [checked]="selectedExportPaths.size === exports.length && exports.length > 0" 
+                        (changed)="toggleAllExports(exports)" 
+                      />
+                    </th>
+                    <th hlmTh class="flex-1">Name</th>
+                    <th hlmTh class="w-20">Size</th>
+                    <th hlmTh class="w-16">Chats</th>
+                    <th hlmTh class="w-16">Reports</th>
+                    <th hlmTh class="w-32">Date</th>
+                  </tr>
+                </thead>
+
+                <tbody hlmTBody>
+                  @for (export of exports; track export.filename) {
+                    <tr hlmTr (click)="toggleExportSelection(export.filename)" class="cursor-pointer hover:bg-muted/50 transition-colors">
+                      <td hlmTd class="w-10 px-2" (click)="$event.stopPropagation()">
+                        <hlm-checkbox [checked]="selectedExportPaths.has(export.filename)" (changed)="toggleExportSelection(export.filename)" />
+                      </td>
+                      <td hlmTd class="flex-1 font-medium truncate">{{ export.filename.replace('.json', '') }}</td>
+                      <td hlmTd class="w-20 text-xs text-muted-foreground">{{ formatSize(export.sizeBytes) }}</td>
+                      <td hlmTd class="w-16 text-center text-xs text-muted-foreground">{{ export.sessionCount }}</td>
+                      <td hlmTd class="w-16 text-center text-xs text-muted-foreground">{{ export.writeUpCount }}</td>
+                      <td hlmTd class="w-32 text-[10px] text-muted-foreground">{{ export.exportedAt | date:'short' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <div class="py-10 text-center text-muted-foreground text-sm">
+                No exports found on the server.
+              </div>
+            }
+          } @else {
+            <div class="py-10 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
+              <div class="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+              Loading exports...
+            </div>
+          }
         </div>
       </div>
 

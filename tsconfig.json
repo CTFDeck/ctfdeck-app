@@ -76,6 +76,9 @@
       ],
       "@ctfdeck/helm/checkbox": [
         "./libs/ui/checkbox/src/index.ts"
+      ],
+      "@ctfdeck/helm/table": [
+        "./libs/ui/table/src/index.ts"
       ]
     }
   },

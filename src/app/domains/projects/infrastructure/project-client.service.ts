@@ -14,6 +14,8 @@ import {
   deserializeProjectExportResult,
   deserializeProjectImportResult,
   deserializeProjectListResult,
+  deserializeProjectListExportsResult,
+  ProjectExportMetadata,
   deserializeProjectLoadResult,
   deserializeProjectOperationError,
   deserializeProjectOperationResult,
@@ -26,6 +28,7 @@ import {
   serializeProjectExport,
   serializeProjectImport,
   serializeProjectList,
+  serializeProjectListExports,
   serializeProjectLoad,
   serializeProjectRenameFolder,
   serializeProjectUpdate,
@@ -40,6 +43,7 @@ interface PendingProjectResult {
   project?: ProjectData | null;
   folderId?: string;
   error?: string;
+  exports?: ProjectExportMetadata[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -85,6 +89,9 @@ export class ProjectClientService {
           break;
         case MessageType.ProjectImportResult:
           result = deserializeProjectImportResult(data);
+          break;
+        case MessageType.ProjectListExportsResult:
+          result = deserializeProjectListExportsResult(data);
           break;
         case MessageType.ProjectOperationError:
           result = deserializeProjectOperationError(data);
@@ -230,6 +237,17 @@ export class ProjectClientService {
       messageId,
       serializeProjectImport(path, messageId),
       (r) => ({ success: Boolean(r.success), projectId: r.projectId ?? '' }),
+    );
+  }
+
+  listExports(): Promise<ProjectExportMetadata[]> {
+    const messageId = generateUUID();
+    return createWebSocketRequest(
+      this.pending,
+      this.ws,
+      messageId,
+      serializeProjectListExports(messageId),
+      (r) => r.exports ?? [],
     );
   }
 }

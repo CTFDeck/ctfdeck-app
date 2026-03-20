@@ -45,8 +45,10 @@ import {
   lucideUpload,
 } from '@ng-icons/lucide';
 import { Observable, firstValueFrom } from 'rxjs';
+import { ProjectExportMetadata } from '../../domains/projects/infrastructure/project.websocket.protocol';
 import { ProjectHierarchy } from '../../domains/projects/models/project-hierarchy.model';
 import { ProjectStore } from '../../domains/projects/state/project.store';
+import { HlmTableImports } from '@ctfdeck/helm/table';
 import { SessionMetadata } from '../../domains/sessions/models/session-metadata.model';
 import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpMetadata } from '../../domains/writeups/models/writeup.model';
@@ -68,21 +70,13 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
     ...HlmLabelImports,
     ...BrnDialogImports,
     ...HlmDialogImports,
-    ...HlmDialogImports,
     ...HlmTooltipImports,
     ...HlmMenuImports,
     BrnContextMenuTrigger,
     ...HlmCheckboxImports,
+    ...HlmTableImports,
     CdkScrollable,
     BrnDialogContent,
-    BrnDialogTrigger,
-    BrnDialogTrigger,
-    BrnDialogTrigger,
-    BrnDialogTrigger,
-    BrnDialogTrigger,
-    BrnDialogTrigger,
-    BrnDialogTrigger,
-    BrnDialogTrigger,
     BrnDialogTrigger,
   ],
   providers: [
@@ -124,6 +118,7 @@ export class WorkspaceSidebarComponent {
   private sessionStore = inject(SessionStore);
   private writeUpStore = inject(WriteUpStore);
   private router = inject(Router);
+  private readonly FILENAME_SANITIZATION_REGEX = /[^a-zA-Z0-9\-_]/g;
 
   isCollapsed = signal(false);
 
@@ -157,6 +152,8 @@ export class WorkspaceSidebarComponent {
   totalProjectsCount$: Observable<number>;
   totalSessions$: Observable<number>;
   totalWriteUps$: Observable<number>;
+  availableExports$: Observable<ProjectExportMetadata[]>;
+  selectedExportPaths = new Set<string>();
 
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
@@ -183,7 +180,7 @@ export class WorkspaceSidebarComponent {
   newItemDraft = { name: '', type: 'session' as 'session' | 'writeup' };
   exportDraft = {
     projectId: '',
-    path: '',
+    filename: '',
     options: { history: true, targets: true, writeups: true, media: true, scripts: true },
   };
   importDraft = { path: '' };
@@ -214,6 +211,7 @@ export class WorkspaceSidebarComponent {
     this.totalProjectsCount$ = this.projectStore.totalProjectsCount$;
     this.totalSessions$ = this.sessionStore.unassignedTotal$;
     this.totalWriteUps$ = this.writeUpStore.unassignedTotal$;
+    this.availableExports$ = this.projectStore.availableExports$;
     this.activeWriteUpId$ = new Observable((subscriber) => {
       this.writeUpStore.activeWriteUp$.subscribe((activeWriteUp) =>
         subscriber.next(activeWriteUp?.id || null),
@@ -239,41 +237,67 @@ export class WorkspaceSidebarComponent {
   openExportDialog(projectId: string, name: string): void {
     this.exportDraft = {
       projectId,
-      path: `exports/${name.replace(/\s+/g, '_')}_export.json`,
+      filename: `${name.replace(this.FILENAME_SANITIZATION_REGEX, '_')}_export`,
       options: { history: true, targets: true, writeups: true, media: true, scripts: true },
     };
     setTimeout(() => this.exportProjectTrigger.nativeElement.click());
   }
 
   async confirmExport(ctx: { close: () => void }): Promise<void> {
-    const { projectId, path, options } = this.exportDraft;
-    console.log('[WorkspaceSidebar] Confirming export:', { projectId, path, options });
-    if (!path.trim()) {
-      toast.warning('Export path required', { description: 'Please enter a path for the export file.' });
+    const { projectId, filename, options } = this.exportDraft;
+    const sanitizedName = filename.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_');
+    if (!sanitizedName) {
+      toast.warning('Export filename required');
       return;
     }
 
     ctx.close();
     try {
-      await this.projectStore.exportProject(projectId, path.trim(), options);
+      await this.projectStore.exportProject(projectId, `${sanitizedName}.json`, options);
     } catch (error) {
       console.error('[WorkspaceSidebar] Export failed:', error);
     }
   }
 
   openImportDialog(): void {
-    this.importDraft = { path: '' };
+    this.selectedExportPaths.clear();
+    void this.projectStore.loadAvailableExports();
     setTimeout(() => this.importProjectTrigger.nativeElement.click());
   }
 
   async confirmImport(ctx: { close: () => void }): Promise<void> {
-    const { path } = this.importDraft;
-    if (!path.trim()) {
+    const paths = Array.from(this.selectedExportPaths);
+    if (paths.length === 0) {
+      toast.warning('Import selection required');
       return;
     }
 
     ctx.close();
-    await this.projectStore.importProject(path.trim());
+    await this.projectStore.importProjects(paths);
+  }
+
+  toggleExportSelection(path: string): void {
+    if (this.selectedExportPaths.has(path)) {
+      this.selectedExportPaths.delete(path);
+    } else {
+      this.selectedExportPaths.add(path);
+    }
+  }
+
+  toggleAllExports(exports: ProjectExportMetadata[]): void {
+    if (this.selectedExportPaths.size === exports.length) {
+      this.selectedExportPaths.clear();
+    } else {
+      exports.forEach((e) => this.selectedExportPaths.add(e.filename));
+    }
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
   newChat(): void {

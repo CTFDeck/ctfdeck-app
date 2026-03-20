@@ -7,6 +7,7 @@ import { WriteUpStore } from '../../writeups/state/writeup.store';
 import { ProjectHierarchy, FolderHierarchy } from '../models/project-hierarchy.model';
 import { ProjectData, ProjectMetadata } from '../models/project.model';
 import { ProjectClientService } from '../infrastructure/project-client.service';
+import { ProjectExportMetadata } from '../infrastructure/project.websocket.protocol';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectStore implements OnDestroy {
@@ -25,6 +26,9 @@ export class ProjectStore implements OnDestroy {
 
   private projectDataCacheSubject = new BehaviorSubject<Map<string, ProjectData>>(new Map());
   readonly projectDataCache$ = this.projectDataCacheSubject.asObservable();
+
+  private availableExportsSubject = new BehaviorSubject<ProjectExportMetadata[]>([]);
+  readonly availableExports$ = this.availableExportsSubject.asObservable();
 
   private subscriptions = new Subscription();
 
@@ -338,10 +342,52 @@ export class ProjectStore implements OnDestroy {
     }
   }
 
+  async loadAvailableExports(): Promise<void> {
+    try {
+      const exports = await this.projectClient.listExports();
+      this.availableExportsSubject.next(exports);
+    } catch (error) {
+      console.error('[ProjectStore] Failed to load available exports:', error);
+    }
+  }
+
+  async importProjects(paths: string[]): Promise<boolean> {
+    if (paths.length === 0) return true;
+    
+    let allSuccess = true;
+    for (const path of paths) {
+      try {
+        const result = await this.projectClient.importProject(path);
+        if (!result.success) {
+          allSuccess = false;
+          console.error(`[ProjectStore] Failed to import ${path}`);
+          toast.error(`Failed to import ${path}`);
+        }
+      } catch (error) {
+        allSuccess = false;
+        console.error(`[ProjectStore] Import failed for ${path}:`, error);
+        this.showError(`Import failed for ${path}`, error);
+      }
+    }
+
+    if (allSuccess) {
+      toast.success(paths.length > 1 ? `Successfully imported ${paths.length} projects` : 'Project imported');
+    }
+    
+    await this.loadProjects();
+    return allSuccess;
+  }
+
   private showError(title: string, error: unknown): void {
-    toast.error(title, {
-      description:
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error',
-    });
+    const message = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error';
+    const isConflict = message.toLowerCase().includes('already exists');
+
+    if (isConflict) {
+      console.warn(`[ProjectStore] ${title}:`, error);
+      toast.warning(title, { description: message });
+    } else {
+      console.error(`[ProjectStore] ${title}:`, error);
+      toast.error(title, { description: message });
+    }
   }
 }

@@ -91,6 +91,8 @@ export enum MessageType {
   ProjectExportResult = 115,
   ProjectImport = 116,
   ProjectImportResult = 117,
+  ProjectListExports = 118,
+  ProjectListExportsResult = 119,
 
   ToolInventoryRequest = 120,
   ToolInventoryResult = 121,
