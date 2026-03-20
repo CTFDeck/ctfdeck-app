@@ -4,8 +4,10 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostBinding, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { toast } from 'ngx-sonner';
 import { BRN_TOOLTIP_SCROLL_STRATEGY } from '@spartan-ng/brain/tooltip';
 import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
+import { BrnContextMenuTrigger } from '@spartan-ng/brain/menu';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
@@ -14,6 +16,8 @@ import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { HlmSidebarImports } from '@ctfdeck/helm/sidebar';
 import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
+import { HlmMenuImports } from '@ctfdeck/helm/menu';
+import { HlmCheckboxImports } from '@ctfdeck/helm/checkbox';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowUp,
@@ -23,6 +27,7 @@ import {
   lucideChevronRight,
   lucideChevronUp,
   lucideColumns2,
+  lucideDownload,
   lucideFilePlus,
   lucideFileText,
   lucideFolder,
@@ -37,6 +42,7 @@ import {
   lucidePlus,
   lucideSearch,
   lucideTrash2,
+  lucideUpload,
 } from '@ng-icons/lucide';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ProjectHierarchy } from '../../domains/projects/models/project-hierarchy.model';
@@ -62,7 +68,11 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
     ...HlmLabelImports,
     ...BrnDialogImports,
     ...HlmDialogImports,
+    ...HlmDialogImports,
     ...HlmTooltipImports,
+    ...HlmMenuImports,
+    BrnContextMenuTrigger,
+    ...HlmCheckboxImports,
     CdkScrollable,
     BrnDialogContent,
     BrnDialogTrigger,
@@ -103,6 +113,8 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
       lucideColumns2,
       lucideChevronUp,
       lucideFilePlus,
+      lucideDownload,
+      lucideUpload,
     }),
   ],
   templateUrl: './workspace-sidebar.component.html',
@@ -161,12 +173,20 @@ export class WorkspaceSidebarComponent {
   @ViewChild('renameFolderTrigger') renameFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteFolderTrigger') deleteFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('newItemTrigger') newItemTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('exportProjectTrigger') exportProjectTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('importProjectTrigger') importProjectTrigger!: ElementRef<HTMLButtonElement>;
 
   createProjectDraft = { name: '', description: '' };
   createFolderDraft = { projectId: '', parentId: null as string | null, name: '' };
-  folderToRenameDraft = { projectId: '', folderId: '', name: '' };
+  folderToRenameDraft = { projectId: '', folderId: '', name: '', description: '' };
   folderToDeleteDraft = { projectId: '', folderId: '', name: '' };
   newItemDraft = { name: '', type: 'session' as 'session' | 'writeup' };
+  exportDraft = {
+    projectId: '',
+    path: '',
+    options: { history: true, targets: true, writeups: true, media: true, scripts: true },
+  };
+  importDraft = { path: '' };
   successfullyDroppedId = signal<string | null>(null);
   isDragging = signal(false);
   isScrolling = signal(false);
@@ -214,6 +234,46 @@ export class WorkspaceSidebarComponent {
 
     ctx.close();
     await this.projectStore.createProject(name, this.createProjectDraft.description);
+  }
+
+  openExportDialog(projectId: string, name: string): void {
+    this.exportDraft = {
+      projectId,
+      path: `exports/${name.replace(/\s+/g, '_')}_export.json`,
+      options: { history: true, targets: true, writeups: true, media: true, scripts: true },
+    };
+    setTimeout(() => this.exportProjectTrigger.nativeElement.click());
+  }
+
+  async confirmExport(ctx: { close: () => void }): Promise<void> {
+    const { projectId, path, options } = this.exportDraft;
+    console.log('[WorkspaceSidebar] Confirming export:', { projectId, path, options });
+    if (!path.trim()) {
+      toast.warning('Export path required', { description: 'Please enter a path for the export file.' });
+      return;
+    }
+
+    ctx.close();
+    try {
+      await this.projectStore.exportProject(projectId, path.trim(), options);
+    } catch (error) {
+      console.error('[WorkspaceSidebar] Export failed:', error);
+    }
+  }
+
+  openImportDialog(): void {
+    this.importDraft = { path: '' };
+    setTimeout(() => this.importProjectTrigger.nativeElement.click());
+  }
+
+  async confirmImport(ctx: { close: () => void }): Promise<void> {
+    const { path } = this.importDraft;
+    if (!path.trim()) {
+      return;
+    }
+
+    ctx.close();
+    await this.projectStore.importProject(path.trim());
   }
 
   newChat(): void {
@@ -438,20 +498,24 @@ export class WorkspaceSidebarComponent {
     }
   }
 
-  openRenameFolderDialog(projectId: string, folderId: string, currentName: string): void {
-    this.folderToRenameDraft = { projectId, folderId, name: currentName };
+  openRenameFolderDialog(projectId: string, folderId: string, currentName: string, description = ''): void {
+    this.folderToRenameDraft = { projectId, folderId, name: currentName, description };
     setTimeout(() => this.renameFolderTrigger.nativeElement.click());
   }
 
   async renameFolder(ctx: { close: () => void }): Promise<void> {
-    const { projectId, folderId, name } = this.folderToRenameDraft;
+    const { projectId, folderId, name, description } = this.folderToRenameDraft;
     const trimmedName = name.trim();
     if (!trimmedName) {
       return;
     }
 
     ctx.close();
-    await this.projectStore.renameFolder(projectId, folderId, trimmedName);
+    if (folderId) {
+      await this.projectStore.renameFolder(projectId, folderId, trimmedName);
+    } else {
+      await this.projectStore.updateProject(projectId, trimmedName, description);
+    }
   }
 
   openDeleteFolderDialog(projectId: string, folderId: string, name: string): void {
@@ -462,7 +526,11 @@ export class WorkspaceSidebarComponent {
   async deleteFolder(ctx: { close: () => void }): Promise<void> {
     const { projectId, folderId } = this.folderToDeleteDraft;
     ctx.close();
-    await this.projectStore.deleteFolder(projectId, folderId);
+    if (folderId) {
+      await this.projectStore.deleteFolder(projectId, folderId);
+    } else {
+      await this.projectStore.deleteProject(projectId);
+    }
   }
 
   onDragStart(event: DragEvent, type: 'session' | 'writeup', id: string): void {

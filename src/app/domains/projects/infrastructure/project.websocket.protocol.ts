@@ -13,7 +13,11 @@ import {
 } from '../../../infrastructure/transport/websocket/websocket-protocol.utils';
 
 export function isProjectResponse(type: number): boolean {
-  return type >= MessageType.ProjectCreateResult && type <= MessageType.ProjectOperationError;
+  return (
+    (type >= MessageType.ProjectCreateResult && type <= MessageType.ProjectOperationError) ||
+    type === MessageType.ProjectExportResult ||
+    type === MessageType.ProjectImportResult
+  );
 }
 
 export function serializeProjectCreate(name: string, description: string, messageId: string): Uint8Array {
@@ -89,13 +93,41 @@ export function serializeProjectRenameFolder(projectId: string, folderId: string
     .buffer;
 }
 
-export function serializeProjectAssignSession(projectId: string, sessionId: string, folderId: string | null, messageId: string): Uint8Array {
+export function serializeProjectAssignSession(
+  projectId: string,
+  sessionId: string,
+  folderId: string | null,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + 16 + 16)
     .writeByte(MessageType.ProjectAssignSession)
     .writeUuid(messageId)
     .writeUuid(projectId)
     .writeUuid(sessionId)
     .writeNullableUuid(folderId)
+    .buffer;
+}
+
+export function serializeProjectExport(
+  projectId: string,
+  path: string,
+  flags: number,
+  messageId: string,
+): Uint8Array {
+  return new BinaryWriter(1 + 16 + 16 + binarySizeOfString(path) + 1)
+    .writeByte(MessageType.ProjectExport)
+    .writeUuid(messageId)
+    .writeUuid(projectId)
+    .writeString(path)
+    .writeByte(flags)
+    .buffer;
+}
+
+export function serializeProjectImport(path: string, messageId: string): Uint8Array {
+  return new BinaryWriter(1 + 16 + binarySizeOfString(path))
+    .writeByte(MessageType.ProjectImport)
+    .writeUuid(messageId)
+    .writeString(path)
     .buffer;
 }
 
@@ -178,6 +210,22 @@ export function deserializeProjectAddFolderResult(data: Uint8Array): {
 } {
   const { messageId, success, entityId: folderId } = deserializeMessageIdSuccessUuid(data);
   return { messageId, success, folderId };
+}
+
+export function deserializeProjectExportResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+} {
+  return deserializeMessageIdSuccess(data);
+}
+
+export function deserializeProjectImportResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+  projectId: string;
+} {
+  const { messageId, success, entityId: projectId } = deserializeMessageIdSuccessUuid(data);
+  return { messageId, success, projectId };
 }
 
 export function deserializeProjectOperationError(data: Uint8Array): {

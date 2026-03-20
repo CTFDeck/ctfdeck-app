@@ -73,6 +73,9 @@
       ],
       "@ctfdeck/helm/spinner": [
         "./libs/ui/spinner/src/index.ts"
+      ],
+      "@ctfdeck/helm/checkbox": [
+        "./libs/ui/checkbox/src/index.ts"
       ]
     }
   },

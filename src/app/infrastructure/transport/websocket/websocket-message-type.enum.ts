@@ -82,6 +82,16 @@ export enum MessageType {
   ProjectAssignSessionResult = 108,
   ProjectOperationError = 109,
 
+  ProjectListSessions = 110,
+  ProjectListSessionsResult = 111,
+  ProjectListWriteUps = 112,
+  ProjectListWriteUpsResult = 113,
+
+  ProjectExport = 114,
+  ProjectExportResult = 115,
+  ProjectImport = 116,
+  ProjectImportResult = 117,
+
   ToolInventoryRequest = 120,
   ToolInventoryResult = 121,
   ToolInstallRequest = 122,

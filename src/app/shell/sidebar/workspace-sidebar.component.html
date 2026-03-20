@@ -37,20 +37,33 @@
     >
       <hlm-sidebar-group>
         <div class="px-3 py-2 flex flex-col gap-2">
-          <button
-            hlmSidebarMenuButton
-            type="button"
-            (click)="newProject()"
-            class="text-xs flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
-            tooltip="New Project"
-          >
-            <ng-icon name="lucideLayoutGrid" />
-            @if (!isCollapsed()) {
-              <span class="truncate font-medium">New Project</span>
-            } @else {
-              <span class="sr-only">New Project</span>
-            }
-          </button>
+          <div class="flex gap-2">
+            <button
+              hlmSidebarMenuButton
+              type="button"
+              (click)="newProject()"
+              class="text-xs flex-1 flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
+              tooltip="New Project"
+            >
+              <ng-icon name="lucideLayoutGrid" />
+              @if (!isCollapsed()) {
+                <span class="truncate font-medium">New Project</span>
+              } @else {
+                <span class="sr-only">New Project</span>
+              }
+            </button>
+
+            <button
+              hlmSidebarMenuButton
+              type="button"
+              (click)="openImportDialog()"
+              class="text-xs flex items-center justify-center p-0 h-9 w-9 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+              tooltip="Import Project"
+            >
+              <ng-icon name="lucideUpload" />
+              <span class="sr-only">Import Project</span>
+            </button>
+          </div>
 
           <div class="flex gap-2">
             <button
@@ -123,6 +136,8 @@
                     (dragover)="onFolderDragOver($event, p.id, 'project')"
                     (dragleave)="onFolderDragLeave($event)"
                     (drop)="onDrop($event, p.id, null)"
+                    [brnCtxMenuTriggerFor]="projectMenu"
+                    [brnCtxMenuTriggerData]="{ project: p }"
                     tabindex="0"
                     role="button"
                     [attr.aria-expanded]="isProjectExpanded(p.id)"
@@ -614,7 +629,7 @@
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
           <ng-icon name="lucidePencil" class="text-primary h-5 w-5" />
-          <span>Rename Folder</span>
+          <span>Rename {{ folderToRenameDraft.folderId ? 'Folder' : 'Project' }}</span>
         </h2>
       </hlm-dialog-header>
       <div class="grid gap-4 py-4">
@@ -645,17 +660,22 @@
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
           <ng-icon name="lucideTrash2" class="text-destructive h-5 w-5" />
-          <span>Delete Folder</span>
+          <span>Delete {{ folderToDeleteDraft.folderId ? 'Folder' : 'Project' }}</span>
         </h2>
         <p hlmDialogDescription>
-          Are you sure you want to delete <strong>{{ folderToDeleteDraft.name }}</strong
-        >? Items will be moved to the project root.
+          @if (folderToDeleteDraft.folderId) {
+            Are you sure you want to delete <strong>{{ folderToDeleteDraft.name }}</strong
+          >? Items will be moved to the project root.
+          } @else {
+            Are you sure you want to delete <strong>{{ folderToDeleteDraft.name }}</strong
+          >? This will permanently remove all data associated with this project.
+          }
         </p>
       </hlm-dialog-header>
       <hlm-dialog-footer>
         <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
         <button hlmBtn type="button" variant="destructive" (click)="deleteFolder(ctx)">
-          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete Folder
+          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete {{ folderToDeleteDraft.folderId ? 'Folder' : 'Project' }}
         </button>
       </hlm-dialog-footer>
     </hlm-dialog-content>
@@ -807,6 +827,135 @@
         <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
         <button hlmBtn type="button" (click)="confirmCreateItem(ctx)">
           <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> Create
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <ng-template #projectMenu let-project="project">
+    <hlm-menu class="w-48">
+      <hlm-menu-group>
+        <button hlmMenuItem (click)="openExportDialog(project.id, project.name)">
+          <ng-icon name="lucideDownload" hlmMenuIcon />
+          <span>Export Project</span>
+        </button>
+      </hlm-menu-group>
+      <hlm-menu-separator />
+      <hlm-menu-group>
+        <button hlmMenuItem (click)="openRenameFolderDialog(project.id, '', project.name, project.description)">
+          <ng-icon name="lucidePencil" hlmMenuIcon />
+          <span>Rename</span>
+        </button>
+        <button hlmMenuItem (click)="openDeleteFolderDialog(project.id, '', project.name)">
+          <ng-icon name="lucideTrash2" hlmMenuIcon class="text-destructive" />
+          <span class="text-destructive">Delete</span>
+        </button>
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+
+  <hlm-dialog>
+    <button #exportProjectTrigger brnDialogTrigger class="hidden" type="button">
+      Open export dialog
+    </button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[500px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideDownload" class="text-primary h-5 w-5" />
+          <span>Export Project</span>
+        </h2>
+        <p hlmDialogDescription>Choose what you want to include in the export.</p>
+      </hlm-dialog-header>
+
+      <div class="grid gap-6 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="exportPath">Export Path (on server)</label>
+          <input
+            hlmInput
+            id="exportPath"
+            [(ngModel)]="exportDraft.path"
+            placeholder="exports/my_project.json"
+          />
+        </div>
+
+        <div class="grid gap-4 border rounded-lg p-4 bg-muted/30">
+          <h3 class="text-sm font-semibold">Options</h3>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="exportHistory" [(ngModel)]="exportDraft.options.history" />
+            <label hlmLabel for="exportHistory" class="text-sm font-normal cursor-pointer"
+              >Command History</label
+            >
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="exportTargets" [(ngModel)]="exportDraft.options.targets" />
+            <label hlmLabel for="exportTargets" class="text-sm font-normal cursor-pointer"
+              >Targets & Infrastructure</label
+            >
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="exportWriteups" [(ngModel)]="exportDraft.options.writeups" />
+            <label hlmLabel for="exportWriteups" class="text-sm font-normal cursor-pointer"
+              >Writeups</label
+            >
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="exportMedia" [(ngModel)]="exportDraft.options.media" />
+            <label hlmLabel for="exportMedia" class="text-sm font-normal cursor-pointer"
+              >Media (Images, Files)</label
+            >
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="exportScripts" [(ngModel)]="exportDraft.options.scripts" />
+            <label hlmLabel for="exportScripts" class="text-sm font-normal cursor-pointer"
+              >Custom Scripts</label
+            >
+          </div>
+        </div>
+      </div>
+
+      <hlm-dialog-footer>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="confirmExport(ctx)">
+          <ng-icon name="lucideDownload" class="mr-2 h-4 w-4" /> Export
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #importProjectTrigger brnDialogTrigger class="hidden" type="button">
+      Open import dialog
+    </button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[500px]">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideUpload" class="text-primary h-5 w-5" />
+          <span>Import Project</span>
+        </h2>
+        <p hlmDialogDescription>Import a project from a file on the server.</p>
+      </hlm-dialog-header>
+
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="importPath">File Path (on server)</label>
+          <input
+            hlmInput
+            id="importPath"
+            [(ngModel)]="importDraft.path"
+            placeholder="exports/my_project.json"
+          />
+        </div>
+      </div>
+
+      <hlm-dialog-footer>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="confirmImport(ctx)">
+          <ng-icon name="lucideUpload" class="mr-2 h-4 w-4" /> Import
         </button>
       </hlm-dialog-footer>
     </hlm-dialog-content>

@@ -86,3 +86,9 @@
     scrollbar-gutter: stable;
   }
 }
+
+.cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
