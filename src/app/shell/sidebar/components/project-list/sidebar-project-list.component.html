@@ -1,0 +1,255 @@
+<div class="mt-4 px-2">
+  @if (!isCollapsed) {
+    <div class="flex items-center gap-2 px-2 py-1 mb-1">
+      <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+        Projects
+      </span>
+    </div>
+  }
+
+  @if (hierarchy$ | async; as projects) {
+    <div class="flex flex-col gap-0.5">
+      @for (p of projects; track p.id) {
+        <div class="flex flex-col">
+          <div
+            class="ctf-folder-node group flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+            [class.ctf-folder-hovering]="hoveredFolderId() === p.id"
+            (click)="toggleProject(p.id)"
+            (keydown.enter)="toggleProject(p.id)"
+            (keydown.space)="toggleProject(p.id); $event.preventDefault()"
+            (dragover)="onFolderDragOver($event, p.id, 'project')"
+            (dragleave)="onFolderDragLeave($event)"
+            (drop)="onDrop($event, p.id, null)"
+            tabindex="0"
+            role="button"
+            [attr.aria-expanded]="isProjectExpanded(p.id)"
+          >
+            @if (hoveredFolderId() === p.id && !isProjectExpanded(p.id)) {
+              <div
+                class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"
+              ></div>
+            }
+
+            <ng-icon
+              [name]="isProjectExpanded(p.id) ? 'lucideChevronDown' : 'lucideChevronRight'"
+              class="text-foreground w-3.5 h-3.5 pointer-events-none"
+            />
+            <ng-icon
+              name="lucideLayoutGrid"
+              class="text-primary w-4 h-4 pointer-events-none"
+            />
+            <span class="text-sm font-medium truncate flex-1 pointer-events-none">
+              {{ p.name }}
+            </span>
+
+            <button
+              type="button"
+              class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+              (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: p.id, parentId: null })"
+              hlmTooltipTrigger="Add folder"
+              aria-label="Add folder"
+            >
+              <ng-icon name="lucideFolderPlus" class="w-3.5 h-3.5" />
+              <span class="sr-only">Add folder</span>
+            </button>
+          </div>
+
+          @if (isProjectExpanded(p.id)) {
+            <div
+              class="ml-4 pl-2 border-l border-border flex flex-col gap-1 mt-1 ctf-folder-content"
+            >
+              <ng-container
+                *ngTemplateOutlet="
+                  folderTree;
+                  context: { $implicit: p.folders, projectId: p.id, depth: 0 }
+                "
+              ></ng-container>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if ((((hierarchy$ | async)?.length || 0) < ((totalProjectsCount$ | async) || 0)) && !isCollapsed) {
+    <button
+      type="button"
+      class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
+      (click)="loadMoreProjects()"
+    >
+      Load more
+    </button>
+  }
+</div>
+
+<ng-template #folderTree let-folders let-projectId="projectId" let-depth="depth">
+  @for (f of folders; track f.id) {
+    <div class="flex flex-col">
+      <div
+        class="ctf-folder-node group flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+        [class.ctf-folder-hovering]="hoveredFolderId() === f.id"
+        (click)="toggleFolder(f.id)"
+        (keydown.enter)="toggleFolder(f.id)"
+        (keydown.space)="toggleFolder(f.id); $event.preventDefault()"
+        (dragover)="onFolderDragOver($event, f.id, 'folder')"
+        (dragleave)="onFolderDragLeave($event)"
+        (drop)="onDrop($event, projectId, f.id)"
+        tabindex="0"
+        role="button"
+        [attr.aria-expanded]="isFolderExpanded(f.id)"
+      >
+        @if (hoveredFolderId() === f.id && !isFolderExpanded(f.id)) {
+          <div
+            class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"
+          ></div>
+        }
+
+        <ng-icon
+          [name]="isFolderExpanded(f.id) ? 'lucideChevronDown' : 'lucideChevronRight'"
+          class="text-foreground w-3 h-3 pointer-events-none"
+        />
+        <ng-icon
+          [name]="isFolderExpanded(f.id) ? 'lucideFolderOpen' : 'lucideFolder'"
+          class="text-foreground w-3.5 h-3.5 pointer-events-none"
+        />
+        <span class="text-xs truncate flex-1 font-medium pointer-events-none">{{ f.name }}</span>
+
+        <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-auto">
+          @if (depth < 1) {
+            <button
+              type="button"
+              class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+              (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: projectId, parentId: f.id })"
+              hlmTooltipTrigger="Add subfolder"
+              aria-label="Add subfolder"
+            >
+              <ng-icon name="lucideFolderPlus" class="w-3 h-3" />
+              <span class="sr-only">Add subfolder</span>
+            </button>
+          }
+          @if (!f.isSystem) {
+            <button
+              type="button"
+              class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+              (click)="$event.stopPropagation(); openRenameFolder.emit({ projectId, folderId: f.id, name: f.name })"
+              hlmTooltipTrigger="Rename"
+              aria-label="Rename folder"
+            >
+              <ng-icon name="lucidePencil" class="w-3 h-3" />
+              <span class="sr-only">Rename folder</span>
+            </button>
+          }
+          @if (!f.isSystem) {
+            <button
+              type="button"
+              class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
+              (click)="$event.stopPropagation(); openDeleteFolder.emit({ projectId, folderId: f.id, name: f.name })"
+              hlmTooltipTrigger="Delete"
+              aria-label="Delete folder"
+            >
+              <ng-icon name="lucideTrash2" class="w-3 h-3" />
+              <span class="sr-only">Delete folder</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (isFolderExpanded(f.id)) {
+        <div
+          class="ml-4 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5 ctf-folder-content"
+        >
+          <ng-container
+            *ngTemplateOutlet="
+              folderTree;
+              context: { $implicit: f.folders, projectId: projectId, depth: depth + 1 }
+            "
+          ></ng-container>
+
+          @for (s of f.sessions; track s.id) {
+            <div
+              class="ctf-item-group relative group/item"
+              [class.bg-accent]="s.id === activeSessionId"
+              [class.ctf-drop-success]="successfullyDroppedId === s.id"
+              draggable="true"
+              (dragstart)="onDragStart($event, 'session', s.id)"
+              (dragend)="onDragEnd()"
+            >
+              <button
+                type="button"
+                (click)="openChat.emit(s)"
+                class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14"
+              >
+                <ng-icon name="lucideMessageCircleDashed" class="w-3 h-3 text-foreground" />
+                <span class="truncate">{{ s.name }}</span>
+              </button>
+              <div class="ctf-item-actions group-hover/item:opacity-100">
+                <button
+                  type="button"
+                  class="ctf-action-btn"
+                  (click)="$event.stopPropagation(); openRenameChat.emit(s)"
+                  hlmTooltipTrigger="Rename"
+                  aria-label="Rename chat"
+                >
+                  <ng-icon name="lucidePencil" />
+                  <span class="sr-only">Rename chat</span>
+                </button>
+                <button
+                  type="button"
+                  class="ctf-action-btn ctf-action-destroy"
+                  (click)="$event.stopPropagation(); openDeleteChat.emit(s)"
+                  hlmTooltipTrigger="Delete"
+                  aria-label="Delete chat"
+                >
+                  <ng-icon name="lucideTrash2" />
+                  <span class="sr-only">Delete chat</span>
+                </button>
+              </div>
+            </div>
+          }
+
+          @for (w of f.writeups; track w.id) {
+            <div
+              class="ctf-item-group relative group/item"
+              [class.bg-accent]="w.id === activeWriteUpId"
+              [class.ctf-drop-success]="successfullyDroppedId === w.id"
+              draggable="true"
+              (dragstart)="onDragStart($event, 'writeup', w.id)"
+              (dragend)="onDragEnd()"
+            >
+              <button
+                type="button"
+                (click)="openWriteUp.emit(w)"
+                class="text-[11px] text-left flex items-center gap-2 h-7 px-2 w-full rounded hover:bg-accent pr-14"
+              >
+                <ng-icon name="lucideFileText" class="w-3 h-3 text-foreground" />
+                <span class="truncate">{{ w.name }}</span>
+              </button>
+              <div class="ctf-item-actions group-hover/item:opacity-100">
+                <button
+                  type="button"
+                  class="ctf-action-btn"
+                  (click)="$event.stopPropagation(); openRenameWriteUp.emit(w)"
+                  hlmTooltipTrigger="Rename"
+                  aria-label="Rename write-up"
+                >
+                  <ng-icon name="lucidePencil" />
+                  <span class="sr-only">Rename write-up</span>
+                </button>
+                <button
+                  type="button"
+                  class="ctf-action-btn ctf-action-destroy"
+                  (click)="$event.stopPropagation(); openDeleteWriteUp.emit(w)"
+                  hlmTooltipTrigger="Delete"
+                  aria-label="Delete write-up"
+                >
+                  <ng-icon name="lucideTrash2" />
+                  <span class="sr-only">Delete write-up</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>

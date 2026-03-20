@@ -7,7 +7,6 @@ import { Router } from '@angular/router';
 import { toast } from 'ngx-sonner';
 import { BRN_TOOLTIP_SCROLL_STRATEGY } from '@spartan-ng/brain/tooltip';
 import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
-import { BrnContextMenuTrigger } from '@spartan-ng/brain/menu';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 import { HlmInputGroupImports } from '@ctfdeck/helm/input-group';
@@ -19,6 +18,8 @@ import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { HlmMenuImports } from '@ctfdeck/helm/menu';
 import { HlmCheckboxImports } from '@ctfdeck/helm/checkbox';
 import { NgIcon, provideIcons } from '@ng-icons/core';
+import { SidebarRecentListComponent } from './components/recent-list/sidebar-recent-list.component';
+import { SidebarProjectListComponent } from './components/project-list/sidebar-project-list.component';
 import {
   lucideArrowUp,
   lucideBox,
@@ -72,12 +73,13 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
     ...HlmDialogImports,
     ...HlmTooltipImports,
     ...HlmMenuImports,
-    BrnContextMenuTrigger,
     ...HlmCheckboxImports,
     ...HlmTableImports,
     CdkScrollable,
     BrnDialogContent,
     BrnDialogTrigger,
+    SidebarRecentListComponent,
+    SidebarProjectListComponent,
   ],
   providers: [
     {
@@ -92,20 +94,10 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
       lucideCheck,
       lucideMessageCircleDashed,
       lucidePanelLeft,
-      lucidePencil,
-      lucideTrash2,
-      lucideFileText,
-      lucideFolderPlus,
-      lucideMoreVertical,
-      lucideChevronRight,
-      lucideChevronDown,
       lucideLayoutGrid,
-      lucideFolderOpen,
-      lucideFolder,
-      lucideBox,
       lucideMessageSquarePlus,
-      lucideColumns2,
       lucideChevronUp,
+      lucideChevronDown,
       lucideFilePlus,
       lucideDownload,
       lucideUpload,
@@ -138,9 +130,7 @@ export class WorkspaceSidebarComponent {
   }
 
   search = '';
-  sessionsDisplayLimit = signal(5);
-  writeUpsDisplayLimit = signal(5);
-
+  
   sessions$: Observable<SessionMetadata[]>;
   activeSessionId$: Observable<string | null>;
   sessionsLoading$: Observable<boolean>;
@@ -188,20 +178,14 @@ export class WorkspaceSidebarComponent {
   isDragging = signal(false);
   isScrolling = signal(false);
 
-  hoveredFolderId = signal<string | null>(null);
-  private folderExpandTimeout: ReturnType<typeof setTimeout> | null = null;
+  @ViewChild('scrollContainer', { read: ElementRef }) scrollContainer!: ElementRef;
+  
   private scrollTimeout: ReturnType<typeof setTimeout> | null = null;
   private dragScrollInterval: ReturnType<typeof setInterval> | null = null;
-
-  @ViewChild('scrollContainer', { read: ElementRef }) scrollContainer!: ElementRef;
-  hierarchy$: Observable<ProjectHierarchy[]>;
-  expandedProjectIds = signal<Set<string>>(new Set());
-  expandedFolderIds = signal<Set<string>>(new Set());
-
+  
   protected readonly projectStore = inject(ProjectStore);
 
   constructor() {
-    this.hierarchy$ = this.projectStore.getHierarchy$();
     this.sessions$ = this.sessionStore.unassignedSessions$;
     this.activeSessionId$ = this.sessionStore.activeSessionId$;
     this.sessionsLoading$ = this.sessionStore.sessionsLoading$;
@@ -470,38 +454,6 @@ export class WorkspaceSidebarComponent {
     this.isCollapsed.set(!this.isCollapsed());
   }
 
-  toggleProject(projectId: string): void {
-    const next = new Set(this.expandedProjectIds());
-    if (next.has(projectId)) {
-      next.delete(projectId);
-    } else {
-      next.add(projectId);
-    }
-    this.expandedProjectIds.set(next);
-
-    if (next.has(projectId)) {
-      void this.projectStore.loadProjectDetails(projectId);
-    }
-  }
-
-  toggleFolder(folderId: string): void {
-    const next = new Set(this.expandedFolderIds());
-    if (next.has(folderId)) {
-      next.delete(folderId);
-    } else {
-      next.add(folderId);
-    }
-    this.expandedFolderIds.set(next);
-  }
-
-  isProjectExpanded(projectId: string): boolean {
-    return this.expandedProjectIds().has(projectId);
-  }
-
-  isFolderExpanded(folderId: string): boolean {
-    return this.expandedFolderIds().has(folderId);
-  }
-
   openCreateFolderDialog(projectId: string, parentId: string | null = null): void {
     this.createFolderDraft = { projectId, parentId, name: 'New folder' };
     setTimeout(() => this.createFolderTrigger.nativeElement.click());
@@ -518,7 +470,7 @@ export class WorkspaceSidebarComponent {
     await this.projectStore.addFolder(projectId, trimmedName, parentId);
 
     if (parentId) {
-      this.expandedFolderIds.update((state) => new Set(state).add(parentId));
+      // Parent folder expansion should be handled via project list component if needed
     }
   }
 
@@ -570,7 +522,6 @@ export class WorkspaceSidebarComponent {
   onDragEnd(): void {
     this.isDragging.set(false);
     this.clearDragScroll();
-    this.clearFolderExpandTimer();
   }
 
   onDragOver(event: DragEvent): void {
@@ -579,63 +530,8 @@ export class WorkspaceSidebarComponent {
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
-
     this.isScrolling.set(true);
     this.handleDragScroll(event);
-  }
-
-  onFolderDragOver(event: DragEvent, id: string, type: 'project' | 'folder' = 'folder'): void {
-    event.preventDefault();
-    this.handleDragScroll(event);
-
-    const isExpanded = type === 'project' ? this.isProjectExpanded(id) : this.isFolderExpanded(id);
-
-    if (isExpanded) {
-      if (this.hoveredFolderId() === id) {
-        this.clearFolderExpandTimer();
-      }
-      return;
-    }
-
-    if (this.hoveredFolderId() !== id) {
-      this.clearFolderExpandTimer();
-      this.hoveredFolderId.set(id);
-
-      this.folderExpandTimeout = setTimeout(() => {
-        if (this.hoveredFolderId() === id) {
-          if (type === 'project') {
-            const next = new Set(this.expandedProjectIds());
-            next.add(id);
-            this.expandedProjectIds.set(next);
-            void this.projectStore.loadProjectDetails(id);
-          } else {
-            const next = new Set(this.expandedFolderIds());
-            next.add(id);
-            this.expandedFolderIds.set(next);
-          }
-
-          this.clearFolderExpandTimer();
-        }
-      }, 450);
-    }
-  }
-
-  onFolderDragLeave(event: DragEvent): void {
-    const target = event.relatedTarget as HTMLElement | null;
-    if (target && (target.closest('.ctf-folder-node') || target.closest('.ctf-folder-content'))) {
-      return;
-    }
-
-    this.clearFolderExpandTimer();
-  }
-
-  private clearFolderExpandTimer(): void {
-    if (this.folderExpandTimeout) {
-      clearTimeout(this.folderExpandTimeout);
-      this.folderExpandTimeout = null;
-    }
-
-    this.hoveredFolderId.set(null);
   }
 
   onScroll(): void {
@@ -648,6 +544,11 @@ export class WorkspaceSidebarComponent {
     this.scrollTimeout = setTimeout(() => {
       this.isScrolling.set(false);
     }, 150);
+  }
+
+  onFolderDragOver(event: DragEvent, id: string, type: 'project' | 'folder' = 'folder'): void {
+    event.preventDefault();
+    this.handleDragScroll(event);
   }
 
   private handleDragScroll(event: DragEvent): void {
@@ -698,7 +599,6 @@ export class WorkspaceSidebarComponent {
   async onDrop(event: DragEvent, projectId: string, folderId: string | null): Promise<void> {
     event.preventDefault();
     this.clearDragScroll();
-    this.clearFolderExpandTimer();
 
     const type = event.dataTransfer?.getData('application/ctf-type') as
       | 'session'
@@ -732,60 +632,5 @@ export class WorkspaceSidebarComponent {
     } catch (error) {
       console.error(`[WorkspaceSidebarComponent] Drop failed for ${type} ${id}:`, error);
     }
-  }
-
-  async loadMoreProjects(): Promise<void> {
-    const projects = await firstValueFrom(this.projectStore.projects$);
-    await this.projectStore.loadProjects(projects.length, 6);
-  }
-
-  async loadMoreSessions(): Promise<void> {
-    this.sessionsDisplayLimit.update((count) => count + 6);
-    const sessions = await firstValueFrom(this.sessions$);
-    await this.sessionStore.refreshSessions(true, sessions.length, 12, true);
-  }
-
-  async loadMoreWriteUps(): Promise<void> {
-    this.writeUpsDisplayLimit.update((count) => count + 6);
-    const writeUps = await firstValueFrom(this.writeUps$);
-    await this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
-  }
-
-  filteredChats(sessions: SessionMetadata[]): SessionMetadata[] {
-    const term = this.search?.toLowerCase().trim();
-
-    const filtered = term
-      ? sessions.filter((session) => session.name.toLowerCase().includes(term))
-      : sessions;
-
-    const limit = this.sessionsDisplayLimit();
-
-    if (
-      filtered.length < limit &&
-      sessions.length < (this.sessionStore.getTotalSessions(true) || 0)
-    ) {
-      void this.sessionStore.refreshSessions(true, sessions.length, 12, true);
-    }
-
-    return filtered.slice(0, limit);
-  }
-
-  filteredWriteUps(writeUps: WriteUpMetadata[]): WriteUpMetadata[] {
-    const term = this.search?.toLowerCase().trim();
-
-    const filtered = term
-      ? writeUps.filter((writeUp) => writeUp.name.toLowerCase().includes(term))
-      : writeUps;
-
-    const limit = this.writeUpsDisplayLimit();
-
-    if (
-      filtered.length < limit &&
-      writeUps.length < (this.writeUpStore.getTotalWriteUps(true) || 0)
-    ) {
-      void this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
-    }
-
-    return filtered.slice(0, limit);
   }
 }

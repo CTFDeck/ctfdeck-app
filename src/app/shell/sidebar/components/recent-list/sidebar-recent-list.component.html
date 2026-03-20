@@ -1,0 +1,153 @@
+<div class="mt-6 px-2">
+  @if (!isCollapsed) {
+    <div class="flex items-center justify-between px-2 py-1 mb-1">
+      <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+        Recent Chats
+      </span>
+      <button
+        type="button"
+        class="p-1 hover:bg-accent rounded"
+        (click)="onNewChat()"
+        aria-label="New chat"
+      >
+        <ng-icon name="lucideMessageSquarePlus" class="w-3.5 h-3.5 text-white" />
+        <span class="sr-only">New chat</span>
+      </button>
+    </div>
+  }
+
+  <div
+    class="flex flex-col gap-0.5 px-1"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+  >
+    @for (s of filteredChats((sessions$ | async) || []); track s.id) {
+      <div
+        class="ctf-item-group relative group/item"
+        [class.bg-accent]="s.id === (activeSessionId$ | async)"
+        [class.ctf-drop-success]="successfullyDroppedId === s.id"
+        draggable="true"
+        (dragstart)="onDragStart($event, 'session', s.id)"
+        (dragend)="onDragEnd()"
+      >
+        <button
+          type="button"
+          (click)="openChat.emit(s)"
+          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
+        >
+          <ng-icon name="lucideMessageCircleDashed" class="w-3.5 h-3.5 text-white" />
+          <span class="truncate">{{ s.name }}</span>
+        </button>
+        <div class="ctf-item-actions group-hover/item:opacity-100">
+          <button
+            type="button"
+            class="ctf-action-btn"
+            (click)="$event.stopPropagation(); renameChat.emit(s)"
+            hlmTooltipTrigger="Rename"
+            aria-label="Rename chat"
+          >
+            <ng-icon name="lucidePencil" />
+            <span class="sr-only">Rename chat</span>
+          </button>
+          <button
+            type="button"
+            class="ctf-action-btn ctf-action-destroy"
+            (click)="$event.stopPropagation(); deleteChat.emit(s)"
+            hlmTooltipTrigger="Delete"
+            aria-label="Delete chat"
+          >
+            <ng-icon name="lucideTrash2" />
+            <span class="sr-only">Delete chat</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if ((((sessions$ | async)?.length || 0) < ((totalSessions$ | async) || 0)) && !isCollapsed) {
+    <button
+      type="button"
+      class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
+      (click)="loadMoreSessions()"
+    >
+      Load more
+    </button>
+  }
+</div>
+
+<div class="mt-6 px-2 pb-10">
+  @if (!isCollapsed) {
+    <div class="flex items-center justify-between px-2 py-1 mb-1">
+      <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+        Recent WriteUps
+      </span>
+      <button
+        type="button"
+        class="p-1 hover:bg-accent rounded"
+        (click)="onNewWriteUp()"
+        aria-label="New write-up"
+      >
+        <ng-icon name="lucideFilePlus" class="w-3.5 h-3.5 text-white" />
+        <span class="sr-only">New write-up</span>
+      </button>
+    </div>
+  }
+
+  <div
+    class="flex flex-col gap-0.5 px-1"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+  >
+    @for (w of filteredWriteUps((writeUps$ | async) || []); track w.id) {
+      <div
+        class="ctf-item-group relative group/item"
+        [class.bg-accent]="w.id === (activeWriteUpId$ | async)"
+        [class.ctf-drop-success]="successfullyDroppedId === w.id"
+        draggable="true"
+        (dragstart)="onDragStart($event, 'writeup', w.id)"
+        (dragend)="onDragEnd()"
+      >
+        <button
+          type="button"
+          (click)="openWriteUp.emit(w)"
+          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
+        >
+          <ng-icon name="lucideFileText" class="w-3.5 h-3.5 text-foreground" />
+          <span class="truncate">{{ w.name }}</span>
+        </button>
+        <div class="ctf-item-actions group-hover/item:opacity-100">
+          <button
+            type="button"
+            class="ctf-action-btn"
+            (click)="$event.stopPropagation(); renameWriteUp.emit(w)"
+            hlmTooltipTrigger="Rename"
+            aria-label="Rename write-up"
+          >
+            <ng-icon name="lucidePencil" />
+            <span class="sr-only">Rename write-up</span>
+          </button>
+          <button
+            type="button"
+            class="ctf-action-btn ctf-action-destroy"
+            (click)="$event.stopPropagation(); deleteWriteUp.emit(w)"
+            hlmTooltipTrigger="Delete"
+            aria-label="Delete write-up"
+          >
+            <ng-icon name="lucideTrash2" />
+            <span class="sr-only">Delete write-up</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if ((((writeUps$ | async)?.length || 0) < ((totalWriteUps$ | async) || 0)) && !isCollapsed) {
+    <button
+      type="button"
+      class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
+      (click)="loadMoreWriteUps()"
+    >
+      Load more
+    </button>
+  }
+</div>

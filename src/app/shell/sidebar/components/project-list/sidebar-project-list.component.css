@@ -1,0 +1,93 @@
+.ctf-folder-node {
+  position: relative;
+  min-width: 0;
+}
+
+.ctf-item-group {
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.ctf-item-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding-right: 6px;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.ctf-item-group:hover .ctf-item-actions {
+  opacity: 1;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.ctf-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--sidebar-foreground);
+  opacity: 0.55;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    opacity 130ms ease,
+    background 130ms ease,
+    color 130ms ease,
+    transform 130ms ease;
+}
+
+.ctf-action-btn:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  transform: scale(1.1);
+}
+
+.ctf-action-btn.ctf-action-destroy:hover {
+  color: var(--destructive);
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+}
+
+.animate-folder-progress {
+  width: 0;
+  animation: folder-progress 450ms linear forwards;
+  box-shadow: 0 0 8px var(--primary);
+  border-radius: 0 99px 99px 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes folder-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ctf-drop-success span,
+.ctf-drop-success ng-icon {
+  color: #22c55e !important;
+  transition: color 0.3s ease;
+}
