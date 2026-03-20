@@ -1,23 +1,25 @@
 export enum MessageType {
   CompleteResponse = 0,
-
   StreamOutput = 1,
   StreamError = 2,
   StreamEnd = 3,
-
+  CommandKill = 4,
+  CommandKillResult = 5,
   CommandExecute = 6,
-
   PasswordRequest = 7,
   PasswordProvide = 8,
+
   SessionCreate = 10,
   SessionSetActive = 11,
   SessionLoad = 12,
   SessionList = 13,
   SessionDelete = 14,
+  SessionUpdateTargets = 15,
   SessionUpdate = 16,
   SessionAddTarget = 17,
   SessionDeleteTarget = 18,
   SessionEditTarget = 19,
+
   SessionCreateResult = 20,
   SessionSetActiveResult = 21,
   SessionLoadResult = 22,
@@ -33,6 +35,7 @@ export enum MessageType {
   CustomScriptUpdate = 31,
   CustomScriptDelete = 32,
   CustomScriptList = 33,
+
   CustomScriptCreateResult = 40,
   CustomScriptUpdateResult = 41,
   CustomScriptDeleteResult = 42,
@@ -45,6 +48,7 @@ export enum MessageType {
   WriteUpList = 53,
   WriteUpLoad = 54,
   WriteUpMove = 55,
+
   WriteUpCreateResult = 60,
   WriteUpUpdateResult = 61,
   WriteUpDeleteResult = 62,
@@ -57,8 +61,10 @@ export enum MessageType {
   MediaLoad = 71,
   MediaDelete = 72,
   MediaList = 73,
+
   MediaUploadResult = 80,
   MediaLoadResult = 81,
+  MediaDeleteResult = 82,
   MediaListResult = 83,
   MediaOperationError = 89,
 
@@ -71,6 +77,7 @@ export enum MessageType {
   ProjectDeleteFolder = 96,
   ProjectRenameFolder = 97,
   ProjectAssignSession = 98,
+
   ProjectCreateResult = 100,
   ProjectLoadResult = 101,
   ProjectListResult = 102,
@@ -80,11 +87,12 @@ export enum MessageType {
   ProjectDeleteFolderResult = 106,
   ProjectRenameFolderResult = 107,
   ProjectAssignSessionResult = 108,
-  ProjectOperationError = 109,
+  ProjectOperationError = 111,
 
   ProjectListSessions = 110,
-  ProjectListSessionsResult = 111,
   ProjectListWriteUps = 112,
+
+  ProjectListSessionsResult = 109,
   ProjectListWriteUpsResult = 113,
 
   ProjectExport = 114,
@@ -95,10 +103,11 @@ export enum MessageType {
   ProjectListExportsResult = 119,
 
   ToolInventoryRequest = 120,
-  ToolInventoryResult = 121,
-  ToolInstallRequest = 122,
-  ToolInstallAccepted = 123,
-  ToolInstallProgress = 124,
-  ToolOperationError = 125,
-  ToolCatalogSnapshot = 126,
+  ToolInstallRequest = 121,
+
+  ToolInventoryResult = 130,
+  ToolInstallAccepted = 131,
+  ToolInstallProgress = 132,
+  ToolOperationError = 139,
+  ToolCatalogSnapshot = 140,
 }
