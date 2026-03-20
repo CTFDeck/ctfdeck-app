@@ -249,6 +249,8 @@ export interface ProjectExportMetadata {
   sessionCount: number;
   writeUpCount: number;
   exportedAt: number;
+  projectId: string;
+  isAlreadyImported: boolean;
 }
 
 export function deserializeProjectListExportsResult(data: Uint8Array): {
@@ -267,6 +269,8 @@ export function deserializeProjectListExportsResult(data: Uint8Array): {
       sessionCount: reader.readInt32(),
       writeUpCount: reader.readInt32(),
       exportedAt: Number(reader.readBigInt64()),
+      projectId: reader.readUuid(),
+      isAlreadyImported: reader.readBoolean(),
     });
   }
 

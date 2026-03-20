@@ -45,7 +45,7 @@ import {
   lucideTrash2,
   lucideUpload,
 } from '@ng-icons/lucide';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { ProjectExportMetadata } from '../../domains/projects/infrastructure/project.websocket.protocol';
 import { ProjectHierarchy } from '../../domains/projects/models/project-hierarchy.model';
 import { ProjectStore } from '../../domains/projects/state/project.store';
@@ -98,6 +98,7 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
       lucideMessageSquarePlus,
       lucideChevronUp,
       lucideChevronDown,
+      lucideChevronRight,
       lucideFilePlus,
       lucideDownload,
       lucideUpload,
@@ -203,6 +204,17 @@ export class WorkspaceSidebarComponent {
     });
   }
 
+  get groupedExports$() {
+    return this.availableExports$.pipe(
+      map((exports: ProjectExportMetadata[]) => ({
+        new: exports.filter((e) => !e.isAlreadyImported),
+        imported: exports.filter((e) => e.isAlreadyImported),
+      })),
+    );
+  }
+
+  showImported = signal(false);
+
   newProject(): void {
     this.createProjectDraft = { name: 'New Project', description: '' };
     setTimeout(() => this.createProjectTrigger.nativeElement.click());
@@ -269,11 +281,16 @@ export class WorkspaceSidebarComponent {
   }
 
   toggleAllExports(exports: ProjectExportMetadata[]): void {
-    if (this.selectedExportPaths.size === exports.length) {
-      this.selectedExportPaths.clear();
+    const allSelected = exports.every((e) => this.selectedExportPaths.has(e.filename));
+    if (allSelected) {
+      exports.forEach((e) => this.selectedExportPaths.delete(e.filename));
     } else {
       exports.forEach((e) => this.selectedExportPaths.add(e.filename));
     }
+  }
+
+  areAllSelected(exports: ProjectExportMetadata[]): boolean {
+    return exports.length > 0 && exports.every((e) => this.selectedExportPaths.has(e.filename));
   }
 
   formatSize(bytes: number): string {
