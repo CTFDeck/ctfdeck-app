@@ -20,14 +20,12 @@
       class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       tabindex="0"
       role="button"
-      aria-label="Close target manager"
+      [attr.aria-label]="'app.ariaCloseTargetManager' | translate"
       (click)="$event.target === $event.currentTarget && closeTargetManager()"
       (keydown.enter)="closeTargetManager()"
       (keydown.space)="closeTargetManager(); $event.preventDefault()"
     >
-      <div
-        class="bg-slate-900 border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
-      >
+      <div class="bg-slate-900 border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         <app-target-manager
           #targetManager
           [mode]="targetManagerMode"
@@ -42,14 +40,12 @@
       class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       tabindex="0"
       role="button"
-      aria-label="Close command runner"
+      [attr.aria-label]="'app.ariaCloseCommandRunner' | translate"
       (click)="$event.target === $event.currentTarget && closeCommandRunner()"
       (keydown.enter)="closeCommandRunner()"
       (keydown.space)="closeCommandRunner(); $event.preventDefault()"
     >
-      <div
-        class="bg-background border border-border rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-      >
+      <div class="bg-background border border-border rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <app-command-runner
           [initialToolId]="selectedToolId"
           (closeEvent)="closeCommandRunner()"

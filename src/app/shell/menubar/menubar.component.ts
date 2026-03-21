@@ -20,6 +20,8 @@ import { ToolCatalogStore } from '../../domains/tools/state/tool-catalog.store';
 import { ThemeToggle } from './theme-toggle';
 import type { MenubarCustomScript } from './menubar.models';
 import { HlmIcon } from '@ctfdeck/helm/icon';
+import { I18nLanguageSwitcherComponent } from './i18n-language-switcher.component';
+import { TranslatePipe } from './translate.pipe';
 
 @Component({
   // eslint-disable-next-line @angular-eslint/component-selector
@@ -39,6 +41,8 @@ import { HlmIcon } from '@ctfdeck/helm/icon';
     ThemeToggle,
     NgIcon,
     HlmIcon,
+    I18nLanguageSwitcherComponent,
+    TranslatePipe,
   ],
   providers: [
     provideIcons({
