@@ -1,4 +1,3 @@
-// src/app/shell/menubar/translate.pipe.ts
 import { Pipe, PipeTransform, inject, ChangeDetectorRef } from '@angular/core';
 import { effect } from '@angular/core';
 import { I18nService } from './i18n.service';
