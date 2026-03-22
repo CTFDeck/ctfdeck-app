@@ -5,7 +5,10 @@ import { Subscription, distinctUntilChanged, filter } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideCheckCheck,
+  lucideClock3,
   lucideDownload,
+  lucideListX,
   lucideLoaderCircle,
   lucidePackageSearch,
   lucideRefreshCw,
@@ -44,6 +47,9 @@ import { I18nService } from '../../../../shell/menubar/i18n.service';
       lucideLoaderCircle,
       lucidePackageSearch,
       lucideDownload,
+      lucideCheckCheck,
+      lucideListX,
+      lucideClock3,
     }),
   ],
   templateUrl: './tool-install-modal.component.html',
