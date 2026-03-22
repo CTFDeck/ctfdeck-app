@@ -42,21 +42,9 @@
               <button
                 hlmSidebarMenuButton
                 type="button"
-                (click)="newProject()"
-                class="text-xs flex-1 flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
-                [tooltip]="'sidebar.newProject' | translate"
-              >
-                <ng-icon name="lucideLayoutGrid" />
-                <span class="truncate font-medium">{{ 'sidebar.newProject' | translate }}</span>
-              </button>
-            </div>
-
-            <div class="flex gap-2">
-              <button
-                hlmSidebarMenuButton
-                type="button"
                 (click)="newChat()"
                 class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+                [tooltip]="'sidebar.newChat' | translate"
               >
                 <ng-icon name="lucideMessageSquarePlus" />
                 <span class="truncate font-medium">{{ 'sidebar.chat' | translate }}</span>
@@ -67,6 +55,7 @@
                 type="button"
                 (click)="newWriteUp()"
                 class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+                [tooltip]="'sidebar.newWriteUp' | translate"
               >
                 <ng-icon name="lucideFilePlus" />
                 <span class="truncate font-medium">{{ 'sidebar.writeUp' | translate }}</span>
@@ -75,17 +64,6 @@
           </div>
         } @else {
           <div class="px-2 py-2 flex flex-col items-center gap-2">
-            <button
-              hlmSidebarMenuButton
-              type="button"
-              (click)="newProject()"
-              class="h-9 w-9 p-0 flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
-              [tooltip]="'sidebar.newProject' | translate"
-            >
-              <ng-icon name="lucideLayoutGrid" />
-              <span class="sr-only">{{ 'sidebar.newProject' | translate }}</span>
-            </button>
-
             <button
               hlmSidebarMenuButton
               type="button"

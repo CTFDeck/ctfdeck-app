@@ -95,14 +95,17 @@
   </header>
 
   <main
+    #splitContainer
     class="flex-1 flex overflow-hidden relative"
     (dragover)="onDragOver($event)"
     (drop)="onDrop($event)"
   >
     <div
-      class="flex-1 h-full flex flex-col overflow-hidden transition-all duration-300 ease-in-out border-r border-border"
+      class="flex-1 h-full flex flex-col overflow-hidden border-r border-border"
       [class.hidden]="mode() === 'preview'"
-      [ngClass]="{ 'w-1/2': mode() === 'split' }"
+      [style.flex-basis.%]="mode() === 'split' ? splitRatio() : null"
+      [style.flex-grow]="mode() === 'split' ? '0' : '1'"
+      [style.flex-shrink]="mode() === 'split' ? '0' : '1'"
     >
       <div
         class="toolbar flex items-center gap-1 px-4 py-2 border-b border-border/30 bg-background/95 sticky top-0 z-20 backdrop-blur-sm"
@@ -266,10 +269,31 @@
       </div>
     </div>
 
+    @if (mode() === 'split') {
+      <div
+        #splitter
+        class="editor-splitter"
+        [class.is-resizing]="isResizingSplit()"
+        role="separator"
+        aria-orientation="vertical"
+        tabindex="0"
+        [attr.aria-valuemin]="25"
+        [attr.aria-valuemax]="75"
+        [attr.aria-valuenow]="splitRatio() | number: '1.0-0'"
+        [attr.aria-label]="'Resize editor and preview panels'"
+        (click)="focusSplitter($event)"
+        (mousedown)="onSplitResizeStart($event)"
+        (touchstart)="onSplitResizeStart($event)"
+        (keydown)="onSplitResizeKeydown($event)"
+      ></div>
+    }
+
     <div
-      class="flex-1 h-full overflow-y-auto transition-all duration-300 ease-in-out bg-card/20 relative"
+      class="flex-1 h-full overflow-y-auto bg-card/20 relative"
       [class.hidden]="mode() === 'edit'"
-      [ngClass]="{ 'w-1/2': mode() === 'split' }"
+      [style.flex-basis.%]="mode() === 'split' ? 100 - splitRatio() : null"
+      [style.flex-grow]="mode() === 'split' ? '0' : '1'"
+      [style.flex-shrink]="mode() === 'split' ? '0' : '1'"
     >
       <span
         class="absolute top-3 right-4 z-20 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-widest rounded-full bg-card/80 text-primary border border-primary/30 backdrop-blur-sm shadow-sm pointer-events-none"

@@ -104,11 +104,15 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
   @ViewChild('editor') editor!: ElementRef<HTMLTextAreaElement>;
   @ViewChild('previewBody') previewBody!: ElementRef<HTMLDivElement>;
+  @ViewChild('splitContainer') splitContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('splitter') splitter?: ElementRef<HTMLDivElement>;
 
   content = '';
   name = '';
 
   readonly mode = signal<'edit' | 'preview' | 'split'>('split');
+  readonly splitRatio = signal(50);
+  readonly isResizingSplit = signal(false);
   readonly isSaving = signal(false);
   readonly isLoading = signal(false);
   readonly isInitialLoad = signal(true);
@@ -131,6 +135,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private markedInstance = new Marked({ breaks: true });
   private lastHoveredEl: HTMLElement | null = null;
   private mediaUpdateTimer: ReturnType<typeof setTimeout> | null = null;
+  private splitMoveHandler?: (event: MouseEvent | TouchEvent) => void;
+  private splitUpHandler?: () => void;
 
   constructor() {
     const renderer: RendererObject = {
@@ -250,6 +256,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     if (this.mediaUpdateTimer) {
       clearTimeout(this.mediaUpdateTimer);
     }
+
+    this.detachSplitListeners();
   }
 
   async loadWriteUp(id: string): Promise<void> {
@@ -384,6 +392,92 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     if (mode !== 'edit') {
       setTimeout(() => this.updatePreview());
+    }
+  }
+
+  onSplitResizeStart(event: MouseEvent | TouchEvent): void {
+    if (this.mode() !== 'split') {
+      return;
+    }
+
+    event.preventDefault();
+    this.splitter?.nativeElement.focus();
+    this.isResizingSplit.set(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    this.splitMoveHandler = (moveEvent: MouseEvent | TouchEvent) => this.onSplitResizeMove(moveEvent);
+    this.splitUpHandler = () => this.onSplitResizeEnd();
+
+    window.addEventListener('mousemove', this.splitMoveHandler);
+    window.addEventListener('touchmove', this.splitMoveHandler, { passive: false });
+    window.addEventListener('mouseup', this.splitUpHandler);
+    window.addEventListener('touchend', this.splitUpHandler);
+  }
+
+  onSplitResizeKeydown(event: KeyboardEvent): void {
+    if (this.mode() !== 'split') {
+      return;
+    }
+
+    if (event.key === 'ArrowLeft' || event.key === 'Left') {
+      event.preventDefault();
+      this.splitRatio.set(Math.max(25, this.splitRatio() - 2));
+      return;
+    }
+
+    if (event.key === 'ArrowRight' || event.key === 'Right') {
+      event.preventDefault();
+      this.splitRatio.set(Math.min(75, this.splitRatio() + 2));
+    }
+  }
+
+  focusSplitter(event: MouseEvent): void {
+    (event.currentTarget as HTMLDivElement | null)?.focus();
+  }
+
+  private onSplitResizeMove(event: MouseEvent | TouchEvent): void {
+    if (!this.isResizingSplit() || !this.splitContainer?.nativeElement) {
+      return;
+    }
+
+    if ('touches' in event && event.touches.length > 0) {
+      event.preventDefault();
+    }
+
+    const pointerX =
+      'touches' in event
+        ? (event.touches[0]?.clientX ?? 0)
+        : event.clientX;
+
+    const rect = this.splitContainer.nativeElement.getBoundingClientRect();
+    if (rect.width <= 0) {
+      return;
+    }
+
+    const rawRatio = ((pointerX - rect.left) / rect.width) * 100;
+    const clampedRatio = Math.max(25, Math.min(75, rawRatio));
+    this.splitRatio.set(clampedRatio);
+  }
+
+  private onSplitResizeEnd(): void {
+    this.isResizingSplit.set(false);
+    this.detachSplitListeners();
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  private detachSplitListeners(): void {
+    if (this.splitMoveHandler) {
+      window.removeEventListener('mousemove', this.splitMoveHandler);
+      window.removeEventListener('touchmove', this.splitMoveHandler);
+      this.splitMoveHandler = undefined;
+    }
+
+    if (this.splitUpHandler) {
+      window.removeEventListener('mouseup', this.splitUpHandler);
+      window.removeEventListener('touchend', this.splitUpHandler);
+      this.splitUpHandler = undefined;
     }
   }
 
@@ -685,13 +779,15 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
 
-    this.content = this.content.substring(0, start) + text + this.content.substring(end);
+    queueMicrotask(() => {
+      this.content = this.content.substring(0, start) + text + this.content.substring(end);
 
-    setTimeout(() => {
-      textarea.scrollTop = scrollTop;
-      textarea.selectionStart = start + text.length;
-      textarea.selectionEnd = start + text.length;
-      this.updatePreview();
+      setTimeout(() => {
+        textarea.scrollTop = scrollTop;
+        textarea.selectionStart = start + text.length;
+        textarea.selectionEnd = start + text.length;
+        this.updatePreview();
+      });
     });
   }
 
