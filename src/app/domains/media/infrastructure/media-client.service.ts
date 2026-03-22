@@ -1,7 +1,7 @@
 import { Injectable, NgZone, inject } from '@angular/core';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
-import { generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import { bytesToUuid, generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import {
   PendingMap,
   createWebSocketRequest,
@@ -46,26 +46,45 @@ export class MediaClientService {
       return false;
     }
 
-    let result: PendingMediaResult;
+    try {
+      let result: PendingMediaResult;
 
-    switch (type) {
-      case MessageType.MediaUploadResult:
-        result = deserializeMediaUploadResult(data);
-        break;
-      case MessageType.MediaLoadResult:
-        result = deserializeMediaLoadResult(data);
-        break;
-      case MessageType.MediaListResult:
-        result = deserializeMediaListResult(data);
-        break;
-      case MessageType.MediaOperationError:
-        result = deserializeMediaOperationError(data);
-        break;
-      default:
-        return false;
+      switch (type) {
+        case MessageType.MediaUploadResult:
+          result = deserializeMediaUploadResult(data);
+          break;
+        case MessageType.MediaLoadResult:
+          result = deserializeMediaLoadResult(data);
+          break;
+        case MessageType.MediaListResult:
+          result = deserializeMediaListResult(data);
+          break;
+        case MessageType.MediaOperationError:
+          result = deserializeMediaOperationError(data);
+          break;
+        default:
+          return false;
+      }
+
+      resolvePendingWebSocketResult(this.pending, result, this.zone);
+    } catch (error) {
+      // Media response was addressed to this client type but malformed.
+      // Resolve matching pending request with an explicit error to avoid 30s timeout.
+      console.error('[MediaClientService] Failed to deserialize media response:', error);
+
+      if (data.length >= 17) {
+        try {
+          const parsedMessageId = bytesToUuid(data.subarray(1, 17));
+          resolvePendingWebSocketResult(this.pending, {
+            messageId: parsedMessageId,
+            error: `Malformed media response (type ${type})`,
+          }, this.zone);
+        } catch {
+          // Ignore messageId extraction failures.
+        }
+      }
     }
 
-    resolvePendingWebSocketResult(this.pending, result, this.zone);
     return true;
   }
 
