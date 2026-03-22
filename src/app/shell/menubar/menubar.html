@@ -5,6 +5,7 @@
 
   <div class="ctf-menu-center">
     <hlm-menu-bar class="w-fit border-none">
+      <button hlmMenuBarItem [brnMenuTriggerFor]="projects">Projects</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="target">{{ 'menu.target' | translate }}</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">{{ 'menu.scripts' | translate }}</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">{{ 'menu.documentation' | translate }}</button>
@@ -27,16 +28,25 @@
     <button themeToggle aria-label="Toggle theme"></button>
   </div>
 
+  <ng-template #projects>
+    <hlm-menu variant="menubar" class="w-56">
+      <hlm-menu-group>
+        <button hlmMenuItem (click)="openNewProject()">New Project</button>
+      </hlm-menu-group>
+      <hlm-menu-separator />
+      <hlm-menu-group>
+        <button hlmMenuItem (click)="openImportProjects()">Import Projects...</button>
+        <button hlmMenuItem (click)="openExportProjects()">Export Projects...</button>
+      </hlm-menu-group>
+    </hlm-menu>
+  </ng-template>
+
   <ng-template #target>
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
         <button hlmMenuItem (click)="openTargetManager('view')">{{ 'menu.target.configuration' | translate }}</button>
         <button hlmMenuItem (click)="openTargetManager('add')">{{ 'menu.target.add' | translate }}</button>
         <button hlmMenuItem (click)="openTargetManager('delete')">{{ 'menu.target.remove' | translate }}</button>
-      </hlm-menu-group>
-      <hlm-menu-separator />
-      <hlm-menu-group>
-        <button hlmMenuItem (click)="openImportProjects()">Import Projects</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>

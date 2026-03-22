@@ -8,6 +8,7 @@ import {
   lucideFolderOpen,
   lucideFolderPlus,
   lucideLayoutGrid,
+  lucideDownload,
   lucidePencil,
   lucideTrash2,
   lucideMessageCircleDashed,
@@ -30,6 +31,7 @@ import { ProjectStore } from '../../../../domains/projects/state/project.store';
       lucideFolderPlus,
       lucideFolderOpen,
       lucideFolder,
+      lucideDownload,
       lucidePencil,
       lucideTrash2,
       lucideMessageCircleDashed,
@@ -46,6 +48,7 @@ export class SidebarProjectListComponent {
   @Input() activeWriteUpId: string | null = null;
 
   @Output() openCreateFolder = new EventEmitter<{ projectId: string; parentId: string | null }>();
+  @Output() openExportProject = new EventEmitter<{ projectId: string; name: string }>();
   @Output() openRenameFolder = new EventEmitter<{ projectId: string; folderId: string; name: string; description?: string }>();
   @Output() openDeleteFolder = new EventEmitter<{ projectId: string; folderId: string; name: string }>();
   @Output() openChat = new EventEmitter<any>();

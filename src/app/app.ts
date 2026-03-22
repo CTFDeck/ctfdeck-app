@@ -66,4 +66,12 @@ export class App {
   openImportProjects(): void {
     this.workspaceSidebar?.openImportDialog();
   }
+
+  openNewProject(): void {
+    this.workspaceSidebar?.newProject();
+  }
+
+  openExportProjects(): void {
+    this.workspaceSidebar?.openExportProjectsDialog();
+  }
 }

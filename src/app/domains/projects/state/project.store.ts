@@ -307,19 +307,24 @@ export class ProjectStore implements OnDestroy {
       media: boolean;
       scripts: boolean;
     },
+    silent = false,
   ): Promise<boolean> {
     try {
       const success = await this.projectClient.export(projectId, path, options);
 
-      if (success) {
+      if (success && !silent) {
         toast.success('Project exported', { description: `Saved to ${path}` });
-      } else {
+      } else if (!success && !silent) {
         toast.error('Export failed');
       }
 
       return success;
     } catch (error) {
-      this.showError('Export failed', error);
+      if (silent) {
+        console.error('[ProjectStore] Export failed:', error);
+      } else {
+        this.showError('Export failed', error);
+      }
       return false;
     }
   }

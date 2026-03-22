@@ -134,6 +134,7 @@
           [activeSessionId]="activeSessionId$ | async"
           [activeWriteUpId]="activeWriteUpId$ | async"
           (openCreateFolder)="openCreateFolderDialog($event.projectId, $event.parentId)"
+          (openExportProject)="openExportDialog($event.projectId, $event.name)"
           (openRenameFolder)="openRenameFolderDialog($event.projectId, $event.folderId, $event.name)"
           (openDeleteFolder)="openDeleteFolderDialog($event.projectId, $event.folderId, $event.name)"
           (openChat)="openChat($event)"
@@ -524,6 +525,121 @@
         <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
         <button hlmBtn type="button" (click)="confirmExport(ctx)">
           <ng-icon name="lucideDownload" class="mr-2 h-4 w-4" /> Export
+        </button>
+      </hlm-dialog-footer>
+    </hlm-dialog-content>
+  </hlm-dialog>
+
+  <hlm-dialog>
+    <button #exportProjectsTrigger brnDialogTrigger class="hidden" type="button">
+      Open global export dialog
+    </button>
+    <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[750px] w-full">
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle class="flex items-center gap-2">
+          <ng-icon name="lucideDownload" class="text-primary h-5 w-5" />
+          <span>Export Projects</span>
+        </h2>
+        <p hlmDialogDescription>Select one or more projects to export.</p>
+      </hlm-dialog-header>
+
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <label hlmLabel for="globalExportSuffix">Filename suffix</label>
+          <input
+            hlmInput
+            id="globalExportSuffix"
+            [(ngModel)]="globalExportDraft.suffix"
+            placeholder="export"
+          />
+        </div>
+
+        <div class="grid gap-4 border rounded-lg p-4 bg-muted/30">
+          <h3 class="text-sm font-semibold">Options</h3>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="globalExportHistory" [(ngModel)]="globalExportDraft.options.history" />
+            <label hlmLabel for="globalExportHistory" class="text-sm font-normal cursor-pointer">Command History</label>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="globalExportTargets" [(ngModel)]="globalExportDraft.options.targets" />
+            <label hlmLabel for="globalExportTargets" class="text-sm font-normal cursor-pointer">Targets & Infrastructure</label>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="globalExportWriteups" [(ngModel)]="globalExportDraft.options.writeups" />
+            <label hlmLabel for="globalExportWriteups" class="text-sm font-normal cursor-pointer">Writeups</label>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="globalExportMedia" [(ngModel)]="globalExportDraft.options.media" />
+            <label hlmLabel for="globalExportMedia" class="text-sm font-normal cursor-pointer">Media (Images, Files)</label>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <hlm-checkbox id="globalExportScripts" [(ngModel)]="globalExportDraft.options.scripts" />
+            <label hlmLabel for="globalExportScripts" class="text-sm font-normal cursor-pointer">Custom Scripts</label>
+          </div>
+        </div>
+
+        <div class="grid gap-2">
+          <label hlmLabel class="text-xs font-semibold">Projects</label>
+          <ng-scrollbar hlm class="max-h-[min(45vh,380px)] border rounded-md bg-muted/10 overflow-hidden">
+            @if (sortedProjectsForExport$ | async; as projects) {
+              @if (projects.length > 0) {
+                <table hlmTable class="w-full border-none">
+                  <thead hlmTHead>
+                    <tr hlmTr class="hover:bg-transparent border-b h-9">
+                      <th hlmTh class="w-10 px-2 text-center">
+                        <hlm-checkbox
+                          [checked]="areAllProjectExportsSelected(projectIds(projects))"
+                          (changed)="toggleAllProjectExports(projectIds(projects))"
+                        />
+                      </th>
+                      <th hlmTh class="text-[10px] uppercase font-bold tracking-tight">Project Name</th>
+                      <th hlmTh class="w-20 text-center text-[10px] uppercase font-bold tracking-tight">Folders</th>
+                      <th hlmTh class="w-28 text-right text-[10px] uppercase font-bold tracking-tight px-4">Last changed</th>
+                    </tr>
+                  </thead>
+                  <tbody hlmTBody>
+                    @for (project of projects; track project.id) {
+                      <tr
+                        hlmTr
+                        class="cursor-pointer hover:bg-muted/50 border-b last:border-0 h-10"
+                        (click)="toggleProjectExportSelection(project.id)"
+                      >
+                        <td hlmTd class="w-10 px-2" (click)="$event.stopPropagation()">
+                          <hlm-checkbox
+                            [checked]="selectedProjectExportIds.has(project.id)"
+                            (changed)="toggleProjectExportSelection(project.id)"
+                          />
+                        </td>
+                        <td hlmTd class="truncate">
+                          <span class="font-medium text-xs">{{ project.name }}</span>
+                        </td>
+                        <td hlmTd class="w-20 text-center text-[10px] text-muted-foreground">{{ project.folderCount }}</td>
+                        <td hlmTd class="w-28 text-right text-[9px] text-muted-foreground leading-tight px-4">{{ project.updatedAt | date:'MM/dd HH:mm' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <div class="py-20 text-center text-muted-foreground text-sm flex flex-col items-center gap-2">
+                  <ng-icon name="lucideLayoutGrid" class="h-8 w-8 opacity-20" />
+                  <span>No projects found.</span>
+                </div>
+              }
+            }
+          </ng-scrollbar>
+        </div>
+      </div>
+
+      <hlm-dialog-footer>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">Cancel</button>
+        <button hlmBtn type="button" (click)="confirmGlobalExport(ctx)" [disabled]="selectedProjectExportIds.size === 0">
+          <ng-icon name="lucideDownload" class="mr-2 h-4 w-4" />
+          Export {{ selectedProjectExportIds.size ? '(' + selectedProjectExportIds.size + ')' : '' }}
         </button>
       </hlm-dialog-footer>
     </hlm-dialog-content>

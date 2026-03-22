@@ -36,7 +36,7 @@ import {
   lucideSearch,
   lucideUpload,
 } from '@ng-icons/lucide';
-import { Observable, map } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { ProjectExportMetadata } from '../../domains/projects/infrastructure/project.websocket.protocol';
 import { ProjectStore } from '../../domains/projects/state/project.store';
 import { HlmTableImports } from '@ctfdeck/helm/table';
@@ -44,6 +44,7 @@ import { SessionMetadata } from '../../domains/sessions/models/session-metadata.
 import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpMetadata } from '../../domains/writeups/models/writeup.model';
 import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
+import { ProjectMetadata } from '../../domains/projects/models/project.model';
 import { DEFAULT_CHAT_NAME, DEFAULT_WRITEUP_NAME } from '../../shared/constants/default-item-names.constants';
 import { TranslatePipe } from '../menubar/translate.pipe';
 
@@ -138,6 +139,7 @@ export class WorkspaceSidebarComponent {
   totalWriteUps$: Observable<number>;
   availableExports$: Observable<ProjectExportMetadata[]>;
   selectedExportPaths = new Set<string>();
+  selectedProjectExportIds = new Set<string>();
 
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
@@ -155,6 +157,7 @@ export class WorkspaceSidebarComponent {
   @ViewChild('deleteFolderTrigger') deleteFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('newItemTrigger') newItemTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('exportProjectTrigger') exportProjectTrigger!: ElementRef<HTMLButtonElement>;
+  @ViewChild('exportProjectsTrigger') exportProjectsTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('importProjectTrigger') importProjectTrigger!: ElementRef<HTMLButtonElement>;
 
   createProjectDraft = { name: '', description: '' };
@@ -165,6 +168,10 @@ export class WorkspaceSidebarComponent {
   exportDraft = {
     projectId: '',
     filename: '',
+    options: { history: true, targets: true, writeups: true, media: true, scripts: true },
+  };
+  globalExportDraft = {
+    suffix: 'export',
     options: { history: true, targets: true, writeups: true, media: true, scripts: true },
   };
   importDraft = { path: '' };
@@ -203,6 +210,14 @@ export class WorkspaceSidebarComponent {
         new: exports.filter((e) => !e.isAlreadyImported),
         imported: exports.filter((e) => e.isAlreadyImported),
       })),
+    );
+  }
+
+  get sortedProjectsForExport$() {
+    return this.projectStore.projects$.pipe(
+      map((projects) =>
+        [...projects].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
+      ),
     );
   }
 
@@ -254,6 +269,30 @@ export class WorkspaceSidebarComponent {
     setTimeout(() => this.importProjectTrigger.nativeElement.click());
   }
 
+  openExportProjectsDialog(): void {
+    this.selectedProjectExportIds.clear();
+    this.globalExportDraft = {
+      suffix: 'export',
+      options: { history: true, targets: true, writeups: true, media: true, scripts: true },
+    };
+
+    void this.loadAllProjectsForExport();
+    setTimeout(() => this.exportProjectsTrigger.nativeElement.click());
+  }
+
+  private async loadAllProjectsForExport(): Promise<void> {
+    await this.projectStore.loadProjects(0, 50);
+
+    let projects = await firstValueFrom(this.projectStore.projects$);
+    let total = await firstValueFrom(this.projectStore.totalProjectsCount$);
+
+    while (projects.length < total) {
+      await this.projectStore.loadProjects(projects.length, 50);
+      projects = await firstValueFrom(this.projectStore.projects$);
+      total = await firstValueFrom(this.projectStore.totalProjectsCount$);
+    }
+  }
+
   async confirmImport(ctx: { close: () => void }): Promise<void> {
     const paths = Array.from(this.selectedExportPaths);
     if (paths.length === 0) {
@@ -284,6 +323,88 @@ export class WorkspaceSidebarComponent {
 
   areAllSelected(exports: ProjectExportMetadata[]): boolean {
     return exports.length > 0 && exports.every((e) => this.selectedExportPaths.has(e.filename));
+  }
+
+  toggleProjectExportSelection(projectId: string): void {
+    if (this.selectedProjectExportIds.has(projectId)) {
+      this.selectedProjectExportIds.delete(projectId);
+    } else {
+      this.selectedProjectExportIds.add(projectId);
+    }
+  }
+
+  toggleAllProjectExports(projectIds: string[]): void {
+    const allSelected = projectIds.every((id) => this.selectedProjectExportIds.has(id));
+    if (allSelected) {
+      projectIds.forEach((id) => this.selectedProjectExportIds.delete(id));
+    } else {
+      projectIds.forEach((id) => this.selectedProjectExportIds.add(id));
+    }
+  }
+
+  areAllProjectExportsSelected(projectIds: string[]): boolean {
+    return projectIds.length > 0 && projectIds.every((id) => this.selectedProjectExportIds.has(id));
+  }
+
+  projectIds(projects: ProjectMetadata[]): string[] {
+    return projects.map((project) => project.id);
+  }
+
+  async confirmGlobalExport(ctx: { close: () => void }): Promise<void> {
+    if (this.selectedProjectExportIds.size === 0) {
+      toast.warning('Export selection required');
+      return;
+    }
+
+    const projects = await firstValueFrom(this.projectStore.projects$);
+    const selectedProjects = projects.filter((project) => this.selectedProjectExportIds.has(project.id));
+
+    if (selectedProjects.length === 0) {
+      toast.warning('No selected projects found');
+      return;
+    }
+
+    const suffix = this.globalExportDraft.suffix.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_');
+    const usedNames = new Map<string, number>();
+    let successCount = 0;
+
+    ctx.close();
+
+    for (const project of selectedProjects) {
+      const baseName = project.name.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_') || 'project';
+      const filenameBase = suffix ? `${baseName}_${suffix}` : baseName;
+      const duplicateIndex = (usedNames.get(filenameBase) ?? 0) + 1;
+      usedNames.set(filenameBase, duplicateIndex);
+      const uniqueFilenameBase =
+        duplicateIndex > 1 ? `${filenameBase}_${duplicateIndex}` : filenameBase;
+
+      const success = await this.projectStore.exportProject(
+        project.id,
+        `${uniqueFilenameBase}.json`,
+        this.globalExportDraft.options,
+        true,
+      );
+
+      if (success) {
+        successCount += 1;
+      }
+    }
+
+    if (successCount === selectedProjects.length) {
+      toast.success(
+        successCount > 1
+          ? `Successfully exported ${successCount} projects`
+          : 'Project exported',
+      );
+      return;
+    }
+
+    if (successCount === 0) {
+      toast.error('Export failed for all selected projects');
+      return;
+    }
+
+    toast.warning(`Export completed with partial success (${successCount}/${selectedProjects.length})`);
   }
 
   formatSize(bytes: number): string {
