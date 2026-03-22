@@ -60,6 +60,8 @@ import {
   getTargetKey,
 } from '../utils/target-manager.utils';
 import { SessionMetadata } from '../../sessions/models/session-metadata.model';
+import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
+
 
 @Component({
   selector: 'app-target-manager',
@@ -86,6 +88,7 @@ import { SessionMetadata } from '../../sessions/models/session-metadata.model';
     BrnAlertDialogContent,
     BrnDialogTrigger,
     BrnAlertDialogTrigger,
+    TranslatePipe,
   ],
   providers: [
     provideIcons({

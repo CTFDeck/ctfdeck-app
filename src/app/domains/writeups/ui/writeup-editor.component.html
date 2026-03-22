@@ -5,12 +5,12 @@
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-3 h-14">
         <div class="title-auto-resizer">
-          <span>{{ name || 'Untitled Writeup' }}</span>
+          <span>{{ name || ('writeup.titlePlaceholder' | translate) }}</span>
           <input
             [(ngModel)]="name"
             (ngModelChange)="onContentChange()"
             class="h-full"
-            placeholder="Untitled Writeup"
+            [placeholder]="'writeup.titlePlaceholder' | translate"
             maxlength="32"
             autocomplete="off"
           />
@@ -23,72 +23,64 @@
         class="flex items-center bg-muted/40 rounded-lg border border-border/40 backdrop-blur-sm h-9 p-1 gap-1"
       >
         <button
-          hlmBtn
-          size="sm"
+          hlmBtn size="sm"
           [variant]="mode() === 'edit' ? 'secondary' : 'ghost'"
           (click)="setMode('edit')"
           class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
-          hlmTooltipTrigger="Switch to Writing mode"
+          [hlmTooltipTrigger]="'writeup.mode.tooltip.write' | translate"
         >
           <ng-icon name="lucideEdit" class="mr-2" />
-          Write
+          {{ 'writeup.mode.write' | translate }}
         </button>
         <button
-          hlmBtn
-          size="sm"
+          hlmBtn size="sm"
           [variant]="mode() === 'split' ? 'secondary' : 'ghost'"
           (click)="setMode('split')"
           class="h-7 text-xs px-3 hidden lg:flex rounded-md transition-all active:scale-95"
-          hlmTooltipTrigger="Parallel Edit & Preview"
+          [hlmTooltipTrigger]="'writeup.mode.tooltip.split' | translate"
         >
           <ng-icon name="lucideColumns2" class="mr-2" />
-          Split
+          {{ 'writeup.mode.split' | translate }}
         </button>
         <button
-          hlmBtn
-          size="sm"
+          hlmBtn size="sm"
           [variant]="mode() === 'preview' ? 'secondary' : 'ghost'"
           (click)="setMode('preview')"
           class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
-          hlmTooltipTrigger="Switch to Preview mode"
+          [hlmTooltipTrigger]="'writeup.mode.tooltip.preview' | translate"
         >
           <ng-icon name="lucideEye" class="mr-2" />
-          Preview
+          {{ 'writeup.mode.preview' | translate }}
         </button>
         <div class="w-[1px] h-4 bg-border/40 mx-0.5 opacity-50"></div>
         <button
-          hlmBtn
-          size="sm"
-          variant="ghost"
+          hlmBtn size="sm" variant="ghost"
           (click)="exportZip()"
           class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
-          hlmTooltipTrigger="Download as .zip (with media)"
+          [hlmTooltipTrigger]="'writeup.export.tooltip' | translate"
         >
           <ng-icon name="lucideDownload" class="mr-2" />
-          Export
+          {{ 'writeup.export' | translate }}
         </button>
       </div>
 
       <div class="w-2"></div>
 
       <button
-        hlmBtn
-        variant="outline"
-        size="sm"
+        hlmBtn variant="outline" size="sm"
         (click)="delete()"
         class="h-9 w-9 p-0 text-destructive border-border/40 hover:bg-destructive/10 hover:border-destructive/30"
-        hlmTooltipTrigger="Delete this WriteUp"
+        [hlmTooltipTrigger]="'writeup.delete.tooltip' | translate"
       >
         <ng-icon name="lucideTrash2" />
       </button>
 
       <button
-        hlmBtn
-        size="sm"
+        hlmBtn size="sm"
         (click)="save()"
         [disabled]="isSaving()"
         class="h-9 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-        hlmTooltipTrigger="Save changes manually"
+        [hlmTooltipTrigger]="'writeup.save.tooltip' | translate"
       >
         @if (syncState() !== 'saving') {
           <ng-icon name="lucideSave" class="text-base" />
@@ -97,7 +89,7 @@
             class="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"
           ></div>
         }
-        <span>Save</span>
+        <span>{{ 'writeup.save' | translate }}</span>
       </button>
     </div>
   </header>
@@ -307,7 +299,7 @@
           class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none"
         >
           <ng-icon name="lucideFileText" class="text-64 mb-4" />
-          <p>Preview will appear here</p>
+          <p>{{ 'writeup.preview.empty' | translate }}</p>
         </div>
       }
     </div>
@@ -320,25 +312,25 @@
         @case ('saving') {
           <div class="flex items-center gap-2 text-primary">
             <ng-icon name="lucideCloudUpload" class="text-base animate-bounce" />
-            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">Saving</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saving' | translate }}</span>
           </div>
         }
         @case ('saved') {
           <div class="flex items-center gap-2 text-green-500">
             <ng-icon name="lucideCheckCircle2" class="text-base" />
-            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">Synced</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saved' | translate }}</span>
           </div>
         }
         @case ('unsaved') {
           <div class="flex items-center gap-2 text-muted-foreground">
             <ng-icon name="lucideCloud" class="text-base opacity-40" />
-            <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Draft</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">{{ 'writeup.sync.unsaved' | translate }}</span>
           </div>
         }
         @case ('error') {
           <div class="flex items-center gap-2 text-destructive">
             <ng-icon name="lucideAlertCircle" class="text-base" />
-            <span class="text-[10px] font-bold uppercase tracking-widest">Error</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest">{{ 'writeup.sync.error' | translate }}</span>
           </div>
         }
       }
@@ -346,19 +338,16 @@
       <ng-template #syncTooltip>
         <div class="flex flex-col gap-1 p-1">
           <span class="font-bold border-b border-border/40 pb-1 mb-1">{{
-            syncState() === 'saved' ? 'Synchronized' : 'Sync Status'
+            syncState() === 'saved'
+              ? ('writeup.sync.tooltip.title.saved' | translate)
+              : ('writeup.sync.tooltip.title.other' | translate)
           }}</span>
-          <span class="text-xs opacity-70">
-            {{
-              syncState() === 'saved'
-                ? 'All changes are permanently saved.'
-                : syncState() === 'saving'
-                  ? 'Uploading your content now...'
-                  : syncState() === 'unsaved'
-                    ? 'Local changes not yet saved.'
-                    : 'Could not connect to server.'
-            }}
-          </span>
+          <span class="text-xs opacity-70">{{
+            syncState() === 'saved'   ? ('writeup.sync.tooltip.saved'   | translate) :
+            syncState() === 'saving'  ? ('writeup.sync.tooltip.saving'  | translate) :
+            syncState() === 'unsaved' ? ('writeup.sync.tooltip.unsaved' | translate) :
+                                        ('writeup.sync.tooltip.error'   | translate)
+          }}</span>
         </div>
       </ng-template>
     </div>
@@ -368,10 +357,8 @@
         class="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-20 transition-all duration-300"
       >
         <div class="flex flex-col items-center gap-4">
-          <div
-            class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"
-          ></div>
-          <span class="text-sm font-medium">Loading writeup...</span>
+          <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-sm font-medium">{{ 'writeup.loading' | translate }}</span>
         </div>
       </div>
     }

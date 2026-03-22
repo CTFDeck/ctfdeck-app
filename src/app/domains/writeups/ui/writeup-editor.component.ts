@@ -43,6 +43,8 @@ import {
 import { toast } from 'ngx-sonner';
 import { WriteUpStore } from '../state/writeup.store';
 import { MediaClientService } from '../../media/infrastructure/media-client.service';
+import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
+import { I18nService } from '../../../shell/menubar/i18n.service'; 
 
 @Component({
   selector: 'app-writeup-editor',
@@ -56,6 +58,7 @@ import { MediaClientService } from '../../media/infrastructure/media-client.serv
     NgIcon,
     ...HlmTooltipImports,
     ...BrnTooltipImports,
+    TranslatePipe,
   ],
   providers: [
     provideIcons({
@@ -93,6 +96,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private writeUpStore = inject(WriteUpStore);
   private mediaClient = inject(MediaClientService);
+
+  private readonly i18n = inject(I18nService);
 
   @ViewChild('editor') editor!: ElementRef<HTMLTextAreaElement>;
   @ViewChild('previewBody') previewBody!: ElementRef<HTMLDivElement>;
@@ -293,7 +298,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   async delete(): Promise<void> {
-    if (!this.writeUpId || !confirm('Are you sure you want to delete this writeup?')) {
+    if (!this.writeUpId || !confirm(this.i18n.translate('writeup.delete.confirm'))) {
       return;
     }
 

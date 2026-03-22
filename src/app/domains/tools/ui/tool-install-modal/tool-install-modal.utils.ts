@@ -34,7 +34,7 @@ export function computeInstallingState(
   );
 }
 
-export function getToolInstallStateLabel(state: ToolInstallState): string {
+export function getToolInstallStateLabel(state: ToolInstallState, translate: (key: string) => string,): string {
   switch (state) {
     case ToolInstallState.Pending:
       return 'Pending';

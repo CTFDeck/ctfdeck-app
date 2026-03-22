@@ -8,6 +8,7 @@ import { CommandRunnerComponent } from './domains/command-runner/ui/command-runn
 import { HlmToaster } from '@ctfdeck/helm/sonner';
 import { SudoPasswordModalComponent } from './shell/sudo-password-modal/sudo-password-modal.component';
 import { ToolInstallModalComponent } from './domains/tools/ui/tool-install-modal/tool-install-modal.component';
+import { TranslatePipe } from './shell/menubar/translate.pipe';
 
 @Component({
   selector: 'app-root',
@@ -22,6 +23,7 @@ import { ToolInstallModalComponent } from './domains/tools/ui/tool-install-modal
     HlmToaster,
     SudoPasswordModalComponent,
     ToolInstallModalComponent,
+    TranslatePipe,
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.css'],

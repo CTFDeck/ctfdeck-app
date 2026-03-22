@@ -29,11 +29,13 @@ import {
   isToolSelectable,
 } from './tool-install-modal.utils';
 import { HlmIcon } from '@ctfdeck/helm/icon';
+import { TranslatePipe } from '../../../../shell/menubar/translate.pipe';
+import { I18nService } from '../../../../shell/menubar/i18n.service';
 
 @Component({
   selector: 'app-tool-install-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, HlmSpinner, HlmIcon],
+  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, HlmSpinner, HlmIcon, TranslatePipe],
   providers: [
     provideIcons({
       lucideWrench,
@@ -52,6 +54,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   private readonly toolsStore = inject(ToolsStore);
   private readonly webSocketService = inject(WebSocketService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly i18n = inject(I18nService);
 
   @Output() closed = new EventEmitter<void>();
 
@@ -190,7 +193,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
       .map((tool) => tool.id);
 
     if (selectedToolIds.length === 0) {
-      this.errorMessage = 'Select at least one tool.';
+      this.errorMessage = this.i18n.translate('tools.error.selectAtLeastOne');
       this.cdr.markForCheck();
       return;
     }
@@ -233,6 +236,6 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   }
 
   getStateLabel(state: ToolInstallState): string {
-    return getToolInstallStateLabel(state);
+    return getToolInstallStateLabel(state, (key) => this.i18n.translate(key));
   }
 }
