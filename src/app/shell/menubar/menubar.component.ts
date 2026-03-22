@@ -22,6 +22,8 @@ import type { MenubarCustomScript } from './menubar.models';
 import { HlmIcon } from '@ctfdeck/helm/icon';
 import { I18nLanguageSwitcherComponent } from './i18n-language-switcher.component';
 import { TranslatePipe } from './translate.pipe';
+import { ProjectsDialogHostComponent } from './components/projects/projects-dialog-host.component';
+import { ProjectsMenuComponent } from './components/projects/projects-menu.component';
 
 @Component({
   // eslint-disable-next-line @angular-eslint/component-selector
@@ -43,6 +45,8 @@ import { TranslatePipe } from './translate.pipe';
     HlmIcon,
     I18nLanguageSwitcherComponent,
     TranslatePipe,
+    ProjectsMenuComponent,
+    ProjectsDialogHostComponent,
   ],
   providers: [
     provideIcons({
@@ -59,9 +63,6 @@ export class MenubarComponent implements OnInit, OnDestroy {
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
   @Output() openCommandRunnerEvent = new EventEmitter<string | undefined>();
   @Output() openMissingToolsEvent = new EventEmitter<void>();
-  @Output() openNewProjectEvent = new EventEmitter<void>();
-  @Output() openImportProjectsEvent = new EventEmitter<void>();
-  @Output() openExportProjectsEvent = new EventEmitter<void>();
 
   customScripts: MenubarCustomScript[] = [];
   customScriptsLoading = false;
@@ -117,18 +118,6 @@ export class MenubarComponent implements OnInit, OnDestroy {
 
   openMissingTools(): void {
     this.openMissingToolsEvent.emit();
-  }
-
-  openImportProjects(): void {
-    this.openImportProjectsEvent.emit();
-  }
-
-  openNewProject(): void {
-    this.openNewProjectEvent.emit();
-  }
-
-  openExportProjects(): void {
-    this.openExportProjectsEvent.emit();
   }
 
   openTool(tool: ToolCatalogItem): void {

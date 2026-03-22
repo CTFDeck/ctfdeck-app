@@ -65,7 +65,7 @@
           </div>
         </div>
       } @else {
-        <div class="overflow-y-auto px-5 sm:px-8 py-4 sm:py-6 space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0">
+        <div class="overflow-y-scroll [scrollbar-gutter:stable] px-5 sm:px-8 py-4 sm:py-6 space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0">
           @for (tool of installableTools; track tool.id) {
             <div class="group rounded-xl border border-border bg-card/40 p-3 sm:p-4 transition-all hover:bg-accent/40">
               <div class="flex items-start gap-3 sm:gap-4">

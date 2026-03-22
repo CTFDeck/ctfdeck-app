@@ -6,6 +6,10 @@ export type SupportedLang = 'fr' | 'en' | 'es';
 const translations: Record<SupportedLang, Record<string, string>> = {
   en: {
     // menubar :
+    'menu.projects': 'Projects',
+    'menu.projects.new': 'New Project',
+    'menu.projects.import': 'Import Projects...',
+    'menu.projects.export': 'Export Projects...',
     'menu.target': 'Target',
     'menu.target.configuration': 'Configuration',
     'menu.target.add': 'Add Target',
@@ -319,6 +323,10 @@ const translations: Record<SupportedLang, Record<string, string>> = {
   },
   fr: {
     //menubar :
+    'menu.projects': 'Projets',
+    'menu.projects.new': 'Nouveau projet',
+    'menu.projects.import': 'Importer des projets...',
+    'menu.projects.export': 'Exporter des projets...',
     'menu.target': 'Cible',
     'menu.target.configuration': 'Configuration',
     'menu.target.add': 'Ajouter une cible',
@@ -609,6 +617,10 @@ const translations: Record<SupportedLang, Record<string, string>> = {
   },
   es: {
     // menubar :
+    'menu.projects': 'Proyectos',
+    'menu.projects.new': 'Nuevo proyecto',
+    'menu.projects.import': 'Importar proyectos...',
+    'menu.projects.export': 'Exportar proyectos...',
     'menu.target': 'Objetivo',
     'menu.target.configuration': 'Configuración',
     'menu.target.add': 'Añadir objetivo',

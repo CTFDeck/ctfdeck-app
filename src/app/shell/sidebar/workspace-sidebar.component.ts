@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostBinding, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { toast } from 'ngx-sonner';
 import { BRN_TOOLTIP_SCROLL_STRATEGY } from '@spartan-ng/brain/tooltip';
 import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -16,37 +15,31 @@ import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { HlmSidebarImports } from '@ctfdeck/helm/sidebar';
 import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { HlmMenuImports } from '@ctfdeck/helm/menu';
-import { HlmCheckboxImports } from '@ctfdeck/helm/checkbox';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { SidebarRecentListComponent } from './components/recent-list/sidebar-recent-list.component';
 import { SidebarProjectListComponent } from './components/project-list/sidebar-project-list.component';
 import {
-  lucideArrowUp,
   lucideCheck,
   lucideChevronDown,
-  lucideChevronRight,
   lucideChevronUp,
-  lucideDownload,
   lucideFilePlus,
-  lucideLayoutGrid,
-  lucideMessageCircleDashed,
+  lucideFolderPlus,
   lucideMessageSquarePlus,
   lucidePanelLeft,
+  lucidePencil,
   lucidePlus,
   lucideSearch,
-  lucideUpload,
+  lucideTrash2,
 } from '@ng-icons/lucide';
-import { Observable, firstValueFrom, map } from 'rxjs';
-import { ProjectExportMetadata } from '../../domains/projects/infrastructure/project.websocket.protocol';
+import { Observable } from 'rxjs';
 import { ProjectStore } from '../../domains/projects/state/project.store';
-import { HlmTableImports } from '@ctfdeck/helm/table';
 import { SessionMetadata } from '../../domains/sessions/models/session-metadata.model';
 import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpMetadata } from '../../domains/writeups/models/writeup.model';
 import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
-import { ProjectMetadata } from '../../domains/projects/models/project.model';
 import { DEFAULT_CHAT_NAME, DEFAULT_WRITEUP_NAME } from '../../shared/constants/default-item-names.constants';
 import { TranslatePipe } from '../menubar/translate.pipe';
+import { ProjectsUiService } from '../menubar/components/projects/projects-ui.service';
 
 @Component({
   // eslint-disable-next-line @angular-eslint/component-selector
@@ -66,8 +59,6 @@ import { TranslatePipe } from '../menubar/translate.pipe';
     ...HlmDialogImports,
     ...HlmTooltipImports,
     ...HlmMenuImports,
-    ...HlmCheckboxImports,
-    ...HlmTableImports,
     CdkScrollable,
     BrnDialogContent,
     BrnDialogTrigger,
@@ -84,18 +75,15 @@ import { TranslatePipe } from '../menubar/translate.pipe';
     provideIcons({
       lucideSearch,
       lucidePlus,
-      lucideArrowUp,
       lucideCheck,
-      lucideMessageCircleDashed,
       lucidePanelLeft,
-      lucideLayoutGrid,
       lucideMessageSquarePlus,
       lucideChevronUp,
       lucideChevronDown,
-      lucideChevronRight,
       lucideFilePlus,
-      lucideDownload,
-      lucideUpload,
+      lucideFolderPlus,
+      lucidePencil,
+      lucideTrash2,
     }),
   ],
   templateUrl: './workspace-sidebar.component.html',
@@ -105,7 +93,7 @@ export class WorkspaceSidebarComponent {
   private sessionStore = inject(SessionStore);
   private writeUpStore = inject(WriteUpStore);
   private router = inject(Router);
-  private readonly FILENAME_SANITIZATION_REGEX = /[^a-zA-Z0-9\-_]/g;
+  private readonly projectsUi = inject(ProjectsUiService);
 
   isCollapsed = signal(false);
 
@@ -134,12 +122,8 @@ export class WorkspaceSidebarComponent {
   writeUpsLoading$: Observable<boolean>;
   activeWriteUpId$: Observable<string | null>;
 
-  totalProjectsCount$: Observable<number>;
   totalSessions$: Observable<number>;
   totalWriteUps$: Observable<number>;
-  availableExports$: Observable<ProjectExportMetadata[]>;
-  selectedExportPaths = new Set<string>();
-  selectedProjectExportIds = new Set<string>();
 
   @ViewChild('renameTrigger') renameTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteTrigger') deleteTrigger!: ElementRef<HTMLButtonElement>;
@@ -151,30 +135,15 @@ export class WorkspaceSidebarComponent {
   writeUpToRename: WriteUpMetadata | null = null;
   writeUpToDelete: WriteUpMetadata | null = null;
 
-  @ViewChild('createProjectTrigger') createProjectTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('createFolderTrigger') createFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('renameFolderTrigger') renameFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteFolderTrigger') deleteFolderTrigger!: ElementRef<HTMLButtonElement>;
   @ViewChild('newItemTrigger') newItemTrigger!: ElementRef<HTMLButtonElement>;
-  @ViewChild('exportProjectTrigger') exportProjectTrigger!: ElementRef<HTMLButtonElement>;
-  @ViewChild('exportProjectsTrigger') exportProjectsTrigger!: ElementRef<HTMLButtonElement>;
-  @ViewChild('importProjectTrigger') importProjectTrigger!: ElementRef<HTMLButtonElement>;
 
-  createProjectDraft = { name: '', description: '' };
   createFolderDraft = { projectId: '', parentId: null as string | null, name: '' };
   folderToRenameDraft = { projectId: '', folderId: '', name: '', description: '' };
   folderToDeleteDraft = { projectId: '', folderId: '', name: '' };
   newItemDraft = { name: '', type: 'session' as 'session' | 'writeup' };
-  exportDraft = {
-    projectId: '',
-    filename: '',
-    options: { history: true, targets: true, writeups: true, media: true, scripts: true },
-  };
-  globalExportDraft = {
-    suffix: 'export',
-    options: { history: true, targets: true, writeups: true, media: true, scripts: true },
-  };
-  importDraft = { path: '' };
   successfullyDroppedId = signal<string | null>(null);
   isDragging = signal(false);
   isScrolling = signal(false);
@@ -193,10 +162,8 @@ export class WorkspaceSidebarComponent {
 
     this.writeUps$ = this.writeUpStore.unassignedWriteUps$;
     this.writeUpsLoading$ = this.writeUpStore.writeUpsLoading$;
-    this.totalProjectsCount$ = this.projectStore.totalProjectsCount$;
     this.totalSessions$ = this.sessionStore.unassignedTotal$;
     this.totalWriteUps$ = this.writeUpStore.unassignedTotal$;
-    this.availableExports$ = this.projectStore.availableExports$;
     this.activeWriteUpId$ = new Observable((subscriber) => {
       this.writeUpStore.activeWriteUp$.subscribe((activeWriteUp) =>
         subscriber.next(activeWriteUp?.id || null),
@@ -204,215 +171,8 @@ export class WorkspaceSidebarComponent {
     });
   }
 
-  get groupedExports$() {
-    return this.availableExports$.pipe(
-      map((exports: ProjectExportMetadata[]) => ({
-        new: exports.filter((e) => !e.isAlreadyImported),
-        imported: exports.filter((e) => e.isAlreadyImported),
-      })),
-    );
-  }
-
-  get sortedProjectsForExport$() {
-    return this.projectStore.projects$.pipe(
-      map((projects) =>
-        [...projects].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
-      ),
-    );
-  }
-
-  showImported = signal(false);
-
-  newProject(): void {
-    this.createProjectDraft = { name: 'New Project', description: '' };
-    setTimeout(() => this.createProjectTrigger.nativeElement.click());
-  }
-
-  async createProject(ctx: { close: () => void }): Promise<void> {
-    const name = this.createProjectDraft.name.trim();
-    if (!name) {
-      return;
-    }
-
-    ctx.close();
-    await this.projectStore.createProject(name, this.createProjectDraft.description);
-  }
-
-  openExportDialog(projectId: string, name: string): void {
-    this.exportDraft = {
-      projectId,
-      filename: `${name.replace(this.FILENAME_SANITIZATION_REGEX, '_')}_export`,
-      options: { history: true, targets: true, writeups: true, media: true, scripts: true },
-    };
-    setTimeout(() => this.exportProjectTrigger.nativeElement.click());
-  }
-
-  async confirmExport(ctx: { close: () => void }): Promise<void> {
-    const { projectId, filename, options } = this.exportDraft;
-    const sanitizedName = filename.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_');
-    if (!sanitizedName) {
-      toast.warning('Export filename required');
-      return;
-    }
-
-    ctx.close();
-    try {
-      await this.projectStore.exportProject(projectId, `${sanitizedName}.json`, options);
-    } catch (error) {
-      console.error('[WorkspaceSidebar] Export failed:', error);
-    }
-  }
-
-  openImportDialog(): void {
-    this.selectedExportPaths.clear();
-    void this.projectStore.loadAvailableExports();
-    setTimeout(() => this.importProjectTrigger.nativeElement.click());
-  }
-
-  openExportProjectsDialog(): void {
-    this.selectedProjectExportIds.clear();
-    this.globalExportDraft = {
-      suffix: 'export',
-      options: { history: true, targets: true, writeups: true, media: true, scripts: true },
-    };
-
-    void this.loadAllProjectsForExport();
-    setTimeout(() => this.exportProjectsTrigger.nativeElement.click());
-  }
-
-  private async loadAllProjectsForExport(): Promise<void> {
-    await this.projectStore.loadProjects(0, 50);
-
-    let projects = await firstValueFrom(this.projectStore.projects$);
-    let total = await firstValueFrom(this.projectStore.totalProjectsCount$);
-
-    while (projects.length < total) {
-      await this.projectStore.loadProjects(projects.length, 50);
-      projects = await firstValueFrom(this.projectStore.projects$);
-      total = await firstValueFrom(this.projectStore.totalProjectsCount$);
-    }
-  }
-
-  async confirmImport(ctx: { close: () => void }): Promise<void> {
-    const paths = Array.from(this.selectedExportPaths);
-    if (paths.length === 0) {
-      toast.warning('Import selection required');
-      return;
-    }
-
-    ctx.close();
-    await this.projectStore.importProjects(paths);
-  }
-
-  toggleExportSelection(path: string): void {
-    if (this.selectedExportPaths.has(path)) {
-      this.selectedExportPaths.delete(path);
-    } else {
-      this.selectedExportPaths.add(path);
-    }
-  }
-
-  toggleAllExports(exports: ProjectExportMetadata[]): void {
-    const allSelected = exports.every((e) => this.selectedExportPaths.has(e.filename));
-    if (allSelected) {
-      exports.forEach((e) => this.selectedExportPaths.delete(e.filename));
-    } else {
-      exports.forEach((e) => this.selectedExportPaths.add(e.filename));
-    }
-  }
-
-  areAllSelected(exports: ProjectExportMetadata[]): boolean {
-    return exports.length > 0 && exports.every((e) => this.selectedExportPaths.has(e.filename));
-  }
-
-  toggleProjectExportSelection(projectId: string): void {
-    if (this.selectedProjectExportIds.has(projectId)) {
-      this.selectedProjectExportIds.delete(projectId);
-    } else {
-      this.selectedProjectExportIds.add(projectId);
-    }
-  }
-
-  toggleAllProjectExports(projectIds: string[]): void {
-    const allSelected = projectIds.every((id) => this.selectedProjectExportIds.has(id));
-    if (allSelected) {
-      projectIds.forEach((id) => this.selectedProjectExportIds.delete(id));
-    } else {
-      projectIds.forEach((id) => this.selectedProjectExportIds.add(id));
-    }
-  }
-
-  areAllProjectExportsSelected(projectIds: string[]): boolean {
-    return projectIds.length > 0 && projectIds.every((id) => this.selectedProjectExportIds.has(id));
-  }
-
-  projectIds(projects: ProjectMetadata[]): string[] {
-    return projects.map((project) => project.id);
-  }
-
-  async confirmGlobalExport(ctx: { close: () => void }): Promise<void> {
-    if (this.selectedProjectExportIds.size === 0) {
-      toast.warning('Export selection required');
-      return;
-    }
-
-    const projects = await firstValueFrom(this.projectStore.projects$);
-    const selectedProjects = projects.filter((project) => this.selectedProjectExportIds.has(project.id));
-
-    if (selectedProjects.length === 0) {
-      toast.warning('No selected projects found');
-      return;
-    }
-
-    const suffix = this.globalExportDraft.suffix.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_');
-    const usedNames = new Map<string, number>();
-    let successCount = 0;
-
-    ctx.close();
-
-    for (const project of selectedProjects) {
-      const baseName = project.name.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_') || 'project';
-      const filenameBase = suffix ? `${baseName}_${suffix}` : baseName;
-      const duplicateIndex = (usedNames.get(filenameBase) ?? 0) + 1;
-      usedNames.set(filenameBase, duplicateIndex);
-      const uniqueFilenameBase =
-        duplicateIndex > 1 ? `${filenameBase}_${duplicateIndex}` : filenameBase;
-
-      const success = await this.projectStore.exportProject(
-        project.id,
-        `${uniqueFilenameBase}.json`,
-        this.globalExportDraft.options,
-        true,
-      );
-
-      if (success) {
-        successCount += 1;
-      }
-    }
-
-    if (successCount === selectedProjects.length) {
-      toast.success(
-        successCount > 1
-          ? `Successfully exported ${successCount} projects`
-          : 'Project exported',
-      );
-      return;
-    }
-
-    if (successCount === 0) {
-      toast.error('Export failed for all selected projects');
-      return;
-    }
-
-    toast.warning(`Export completed with partial success (${successCount}/${selectedProjects.length})`);
-  }
-
-  formatSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  openExportProject(projectId: string, projectName: string): void {
+    this.projectsUi.openExportProject(projectId, projectName);
   }
 
   newChat(): void {

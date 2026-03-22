@@ -37,8 +37,6 @@ export class App {
   selectedToolId = '';
 
   @ViewChild('targetManager', { static: false }) targetManager?: TargetManagerComponent;
-  @ViewChild('workspaceSidebar', { static: false }) workspaceSidebar?: WorkspaceSidebarComponent;
-
   openTargetManager(mode: 'view' | 'add' | 'delete') {
     this.targetManagerMode = mode;
     this.targetManagerVisible = true;
@@ -61,17 +59,5 @@ export class App {
 
   closeCommandRunner() {
     this.commandRunnerVisible = false;
-  }
-
-  openImportProjects(): void {
-    this.workspaceSidebar?.openImportDialog();
-  }
-
-  openNewProject(): void {
-    this.workspaceSidebar?.newProject();
-  }
-
-  openExportProjects(): void {
-    this.workspaceSidebar?.openExportProjectsDialog();
   }
 }
