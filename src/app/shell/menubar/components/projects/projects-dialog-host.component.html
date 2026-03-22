@@ -1,19 +1,19 @@
 <hlm-dialog>
-  <button #newProjectTrigger brnDialogTrigger class="hidden" type="button">Open new project dialog</button>
+  <button #newProjectTrigger brnDialogTrigger class="hidden" type="button">{{ 'projects.dialog.trigger.openNewProject' | translate }}</button>
   <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
     <ctf-new-project-dialog [dialogCtx]="ctx"></ctf-new-project-dialog>
   </hlm-dialog-content>
 </hlm-dialog>
 
 <hlm-dialog>
-  <button #importProjectsTrigger brnDialogTrigger class="hidden" type="button">Open import projects dialog</button>
+  <button #importProjectsTrigger brnDialogTrigger class="hidden" type="button">{{ 'projects.dialog.trigger.openImportProjects' | translate }}</button>
   <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[700px] w-full">
     <ctf-import-projects-dialog [dialogCtx]="ctx"></ctf-import-projects-dialog>
   </hlm-dialog-content>
 </hlm-dialog>
 
 <hlm-dialog>
-  <button #exportProjectsTrigger brnDialogTrigger class="hidden" type="button">Open export projects dialog</button>
+  <button #exportProjectsTrigger brnDialogTrigger class="hidden" type="button">{{ 'projects.dialog.trigger.openExportProjects' | translate }}</button>
   <hlm-dialog-content
     *brnDialogContent="let ctx"
     [class]="isSingleExportMode() ? 'max-w-[560px] w-full max-h-[85vh] flex flex-col overflow-hidden' : 'max-w-[920px] w-full max-h-[85vh] flex flex-col overflow-hidden'"

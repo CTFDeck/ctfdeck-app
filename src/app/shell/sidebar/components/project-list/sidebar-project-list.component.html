@@ -2,8 +2,9 @@
   @if (hierarchy$ | async; as projects) {
     @if (isCollapsed) {
       <div class="flex flex-col items-center gap-1.5">
-        <div class="text-[9px] font-bold text-muted-foreground tracking-widest uppercase py-1">
-          P
+        <div class="flex items-center justify-center py-1">
+          <ng-icon name="lucideLayoutGrid" class="w-3.5 h-3.5 text-muted-foreground/80" />
+          <span class="sr-only">{{ 'sidebar.projects' | translate }}</span>
         </div>
         @for (p of projects; track p.id) {
           <button
@@ -21,7 +22,7 @@
     } @else {
       <div class="flex items-center gap-2 px-1 py-1 mb-1">
         <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
-          Projects
+          {{ 'sidebar.projects' | translate }}
         </span>
       </div>
 
@@ -63,22 +64,22 @@
                 type="button"
                 class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
                 (click)="$event.stopPropagation(); openExportProject.emit({ projectId: p.id, name: p.name })"
-                hlmTooltipTrigger="Export project"
-                aria-label="Export project"
+                [hlmTooltipTrigger]="'sidebar.project.export' | translate"
+                [attr.aria-label]="'sidebar.project.export' | translate"
               >
                 <ng-icon name="lucideDownload" class="w-3.5 h-3.5" />
-                <span class="sr-only">Export project</span>
+                <span class="sr-only">{{ 'sidebar.project.export' | translate }}</span>
               </button>
 
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
                 (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: p.id, parentId: null })"
-                hlmTooltipTrigger="Add folder"
-                aria-label="Add folder"
+                [hlmTooltipTrigger]="'sidebar.folder.add' | translate"
+                [attr.aria-label]="'sidebar.folder.add' | translate"
               >
                 <ng-icon name="lucideFolderPlus" class="w-3.5 h-3.5" />
-                <span class="sr-only">Add folder</span>
+                <span class="sr-only">{{ 'sidebar.folder.add' | translate }}</span>
               </button>
             </div>
 
@@ -106,7 +107,7 @@
       class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
       (click)="loadMoreProjects()"
     >
-      Load more
+      {{ 'sidebar.loadMore' | translate }}
     </button>
   }
 </div>
@@ -149,11 +150,11 @@
               type="button"
               class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
               (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: projectId, parentId: f.id })"
-              hlmTooltipTrigger="Add subfolder"
-              aria-label="Add subfolder"
+              [hlmTooltipTrigger]="'sidebar.folder.addSub' | translate"
+              [attr.aria-label]="'sidebar.folder.addSub' | translate"
             >
               <ng-icon name="lucideFolderPlus" class="w-3 h-3" />
-              <span class="sr-only">Add subfolder</span>
+              <span class="sr-only">{{ 'sidebar.folder.addSub' | translate }}</span>
             </button>
           }
           @if (!f.isSystem) {
@@ -161,11 +162,11 @@
               type="button"
               class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
               (click)="$event.stopPropagation(); openRenameFolder.emit({ projectId, folderId: f.id, name: f.name })"
-              hlmTooltipTrigger="Rename"
-              aria-label="Rename folder"
+              [hlmTooltipTrigger]="'sidebar.folder.rename' | translate"
+              [attr.aria-label]="'sidebar.folder.renameAria' | translate"
             >
               <ng-icon name="lucidePencil" class="w-3 h-3" />
-              <span class="sr-only">Rename folder</span>
+              <span class="sr-only">{{ 'sidebar.folder.renameAria' | translate }}</span>
             </button>
           }
           @if (!f.isSystem) {
@@ -173,11 +174,11 @@
               type="button"
               class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
               (click)="$event.stopPropagation(); openDeleteFolder.emit({ projectId, folderId: f.id, name: f.name })"
-              hlmTooltipTrigger="Delete"
-              aria-label="Delete folder"
+              [hlmTooltipTrigger]="'sidebar.folder.delete' | translate"
+              [attr.aria-label]="'sidebar.folder.deleteAria' | translate"
             >
               <ng-icon name="lucideTrash2" class="w-3 h-3" />
-              <span class="sr-only">Delete folder</span>
+              <span class="sr-only">{{ 'sidebar.folder.deleteAria' | translate }}</span>
             </button>
           }
         </div>
@@ -216,21 +217,21 @@
                   type="button"
                   class="ctf-action-btn"
                   (click)="$event.stopPropagation(); openRenameChat.emit(s)"
-                  hlmTooltipTrigger="Rename"
-                  aria-label="Rename chat"
+                  [hlmTooltipTrigger]="'sidebar.item.rename' | translate"
+                  [attr.aria-label]="'sidebar.chat.renameAria' | translate"
                 >
                   <ng-icon name="lucidePencil" />
-                  <span class="sr-only">Rename chat</span>
+                  <span class="sr-only">{{ 'sidebar.chat.renameAria' | translate }}</span>
                 </button>
                 <button
                   type="button"
                   class="ctf-action-btn ctf-action-destroy"
                   (click)="$event.stopPropagation(); openDeleteChat.emit(s)"
-                  hlmTooltipTrigger="Delete"
-                  aria-label="Delete chat"
+                  [hlmTooltipTrigger]="'sidebar.item.delete' | translate"
+                  [attr.aria-label]="'sidebar.chat.deleteAria' | translate"
                 >
                   <ng-icon name="lucideTrash2" />
-                  <span class="sr-only">Delete chat</span>
+                  <span class="sr-only">{{ 'sidebar.chat.deleteAria' | translate }}</span>
                 </button>
               </div>
             </div>
@@ -258,21 +259,21 @@
                   type="button"
                   class="ctf-action-btn"
                   (click)="$event.stopPropagation(); openRenameWriteUp.emit(w)"
-                  hlmTooltipTrigger="Rename"
-                  aria-label="Rename write-up"
+                  [hlmTooltipTrigger]="'sidebar.item.rename' | translate"
+                  [attr.aria-label]="'sidebar.writeup.renameAria' | translate"
                 >
                   <ng-icon name="lucidePencil" />
-                  <span class="sr-only">Rename write-up</span>
+                  <span class="sr-only">{{ 'sidebar.writeup.renameAria' | translate }}</span>
                 </button>
                 <button
                   type="button"
                   class="ctf-action-btn ctf-action-destroy"
                   (click)="$event.stopPropagation(); openDeleteWriteUp.emit(w)"
-                  hlmTooltipTrigger="Delete"
-                  aria-label="Delete write-up"
+                  [hlmTooltipTrigger]="'sidebar.item.delete' | translate"
+                  [attr.aria-label]="'sidebar.writeup.deleteAria' | translate"
                 >
                   <ng-icon name="lucideTrash2" />
-                  <span class="sr-only">Delete write-up</span>
+                  <span class="sr-only">{{ 'sidebar.writeup.deleteAria' | translate }}</span>
                 </button>
               </div>
             </div>

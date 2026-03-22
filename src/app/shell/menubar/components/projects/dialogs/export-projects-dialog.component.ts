@@ -10,6 +10,7 @@ import { HlmTableImports } from '@ctfdeck/helm/table';
 import { NgIcon } from '@ng-icons/core';
 import { ProjectMetadata } from '../../../../../domains/projects/models/project.model';
 import { ProjectsUiService } from '../projects-ui.service';
+import { TranslatePipe } from '../../../translate.pipe';
 
 @Component({
   selector: 'ctf-export-projects-dialog',
@@ -24,6 +25,7 @@ import { ProjectsUiService } from '../projects-ui.service';
     ...HlmLabelImports,
     ...HlmTableImports,
     NgIcon,
+    TranslatePipe,
   ],
   templateUrl: './export-projects-dialog.component.html',
   styles: [

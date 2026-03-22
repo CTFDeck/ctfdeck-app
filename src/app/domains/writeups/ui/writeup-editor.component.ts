@@ -303,19 +303,19 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       if (success) {
         this.syncState.set('saved');
         if (!silent) {
-          toast.success('Writeup saved successfully');
+          toast.success(this.i18n.translate('writeup.toast.save.success'));
         }
         return;
       }
 
       this.syncState.set('error');
       if (!silent) {
-        toast.error('Failed to save writeup');
+        toast.error(this.i18n.translate('writeup.toast.save.failed'));
       }
     } catch {
       this.syncState.set('error');
       if (!silent) {
-        toast.error('Error saving writeup');
+        toast.error(this.i18n.translate('writeup.toast.save.error'));
       }
     } finally {
       this.isSaving.set(false);
@@ -333,7 +333,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
   async exportZip(): Promise<void> {
     const fileName = (this.name || 'Untitled').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    toast.info('Preparing export...');
+    toast.info(this.i18n.translate('writeup.toast.export.preparing'));
 
     const uuidPattern = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi;
     const mediaIds = [...new Set(this.content.match(uuidPattern) ?? [])];
@@ -384,7 +384,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(anchor);
 
-    toast.success(`Exported ${mediaFiles.size} media file(s) + writeup.md`);
+    toast.success(
+      this.i18n.translate('writeup.toast.export.success').replace('{count}', String(mediaFiles.size)),
+    );
   }
 
   setMode(mode: 'edit' | 'preview' | 'split'): void {
@@ -748,7 +750,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   private async uploadAndInsertMedia(file: File): Promise<void> {
-    toast.info(`Uploading ${file.name}...`);
+    toast.info(this.i18n.translate('writeup.toast.media.uploading').replace('{name}', file.name));
 
     try {
       const result = await this.mediaClient.uploadFile(file);
@@ -766,10 +768,10 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         : `\n![${file.name}](media://${result.mediaId})\n`;
 
       this.insertAtCursor(markdown);
-      toast.success('Media uploaded and inserted');
+      toast.success(this.i18n.translate('writeup.toast.media.success'));
       this.autoSave$.next();
     } catch {
-      toast.error('Media upload failed');
+      toast.error(this.i18n.translate('writeup.toast.media.failed'));
     }
   }
 

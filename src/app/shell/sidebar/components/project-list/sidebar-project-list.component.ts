@@ -18,11 +18,12 @@ import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ProjectHierarchy } from '../../../../domains/projects/models/project-hierarchy.model';
 import { ProjectStore } from '../../../../domains/projects/state/project.store';
+import { TranslatePipe } from '../../../menubar/translate.pipe';
 
 @Component({
   selector: 'ctf-sidebar-project-list',
   standalone: true,
-  imports: [CommonModule, NgIcon, HlmTooltipImports],
+  imports: [CommonModule, NgIcon, HlmTooltipImports, TranslatePipe],
   providers: [
     provideIcons({
       lucideChevronDown,

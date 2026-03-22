@@ -15,6 +15,7 @@ import { ExportProjectsDialogComponent } from './dialogs/export-projects-dialog.
 import { ImportProjectsDialogComponent } from './dialogs/import-projects-dialog.component';
 import { NewProjectDialogComponent } from './dialogs/new-project-dialog.component';
 import { ProjectsUiService } from './projects-ui.service';
+import { TranslatePipe } from '../../translate.pipe';
 
 @Component({
   selector: 'ctf-projects-dialog-host',
@@ -28,6 +29,7 @@ import { ProjectsUiService } from './projects-ui.service';
     NewProjectDialogComponent,
     ImportProjectsDialogComponent,
     ExportProjectsDialogComponent,
+    TranslatePipe,
   ],
   providers: [
     provideIcons({

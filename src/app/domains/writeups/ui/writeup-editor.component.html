@@ -119,7 +119,7 @@
             variant="ghost"
             (click)="addHeading(1)"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Heading 1"
+            [hlmTooltipTrigger]="'writeup.toolbar.heading1' | translate"
           >
             <ng-icon name="lucideHeading1" class="text-base" />
           </button>
@@ -130,7 +130,7 @@
             variant="ghost"
             (click)="addHeading(2)"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Heading 2"
+            [hlmTooltipTrigger]="'writeup.toolbar.heading2' | translate"
           >
             <ng-icon name="lucideHeading2" class="text-base" />
           </button>
@@ -141,7 +141,7 @@
             variant="ghost"
             (click)="addHeading(3)"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Heading 3"
+            [hlmTooltipTrigger]="'writeup.toolbar.heading3' | translate"
           >
             <ng-icon name="lucideHeading3" class="text-base" />
           </button>
@@ -157,7 +157,7 @@
             variant="ghost"
             (click)="toggleBold()"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Bold"
+            [hlmTooltipTrigger]="'writeup.toolbar.bold' | translate"
           >
             <ng-icon name="lucideBold" class="text-base" />
           </button>
@@ -168,7 +168,7 @@
             variant="ghost"
             (click)="toggleItalic()"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Italic"
+            [hlmTooltipTrigger]="'writeup.toolbar.italic' | translate"
           >
             <ng-icon name="lucideItalic" class="text-base" />
           </button>
@@ -184,7 +184,7 @@
             variant="ghost"
             (click)="openLinkDialog()"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Insert Link"
+            [hlmTooltipTrigger]="'writeup.toolbar.insertLink' | translate"
           >
             <ng-icon name="lucideLink" class="text-base" />
           </button>
@@ -195,7 +195,7 @@
             variant="ghost"
             (click)="triggerImageUpload()"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Insert Image"
+            [hlmTooltipTrigger]="'writeup.toolbar.insertImage' | translate"
           >
             <ng-icon name="lucideImage" class="text-base" />
           </button>
@@ -211,7 +211,7 @@
             variant="ghost"
             (click)="addList(false)"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Bullet List"
+            [hlmTooltipTrigger]="'writeup.toolbar.bulletList' | translate"
           >
             <ng-icon name="lucideList" class="text-base" />
           </button>
@@ -222,7 +222,7 @@
             variant="ghost"
             (click)="addList(true)"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Numbered List"
+            [hlmTooltipTrigger]="'writeup.toolbar.numberedList' | translate"
           >
             <ng-icon name="lucideListOrdered" class="text-base" />
           </button>
@@ -238,7 +238,7 @@
             variant="ghost"
             (click)="addQuote()"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Quote"
+            [hlmTooltipTrigger]="'writeup.toolbar.quote' | translate"
           >
             <ng-icon name="lucideQuote" class="text-base" />
           </button>
@@ -249,7 +249,7 @@
             variant="ghost"
             (click)="addCode()"
             class="h-8 w-8 p-0 hover:bg-muted"
-            hlmTooltipTrigger="Code"
+            [hlmTooltipTrigger]="'writeup.toolbar.code' | translate"
           >
             <ng-icon name="lucideCode" class="text-base" />
           </button>
@@ -264,7 +264,7 @@
           (ngModelChange)="onContentChange()"
           (paste)="onPaste($event)"
           (keydown)="onEditorKeydown($event)"
-          placeholder="Start writing your report... (Support for Drag & Drop and Paste images)"
+          [placeholder]="'writeup.editor.placeholder' | translate"
         ></textarea>
       </div>
     </div>
@@ -280,7 +280,7 @@
         [attr.aria-valuemin]="25"
         [attr.aria-valuemax]="75"
         [attr.aria-valuenow]="splitRatio() | number: '1.0-0'"
-        [attr.aria-label]="'Resize editor and preview panels'"
+        [attr.aria-label]="'writeup.aria.splitter' | translate"
         (click)="focusSplitter($event)"
         (mousedown)="onSplitResizeStart($event)"
         (touchstart)="onSplitResizeStart($event)"
@@ -403,7 +403,7 @@
           tabindex="-1"
         >
           <div class="flex items-center justify-between mb-4">
-            <h3 id="link-dialog-title" class="text-lg font-semibold">Insert Link</h3>
+            <h3 id="link-dialog-title" class="text-lg font-semibold">{{ 'writeup.linkDialog.title' | translate }}</h3>
             <button
               type="button"
               hlmBtn
@@ -412,38 +412,38 @@
               (click)="closeLinkDialog()"
               (keydown.enter)="closeLinkDialog()"
               class="h-8 w-8 p-0"
-              aria-label="Close dialog"
+              [attr.aria-label]="'writeup.linkDialog.closeAria' | translate"
             >
               <ng-icon name="lucideX" class="text-base" />
             </button>
           </div>
           <div class="space-y-4">
             <div class="space-y-2">
-              <label hlmLabel for="linkText">Link Text</label>
+              <label hlmLabel for="linkText">{{ 'writeup.linkDialog.textLabel' | translate }}</label>
               <input
                 id="linkText"
                 hlmInput
                 type="text"
                 [(ngModel)]="linkText"
-                placeholder="Enter link text"
+                [placeholder]="'writeup.linkDialog.textPlaceholder' | translate"
                 class="w-full"
               />
             </div>
             <div class="space-y-2">
-              <label hlmLabel for="linkUrl">URL</label>
+              <label hlmLabel for="linkUrl">{{ 'writeup.linkDialog.urlLabel' | translate }}</label>
               <input
                 id="linkUrl"
                 hlmInput
                 type="url"
                 [(ngModel)]="linkUrl"
-                placeholder="https://example.com"
+                [placeholder]="'writeup.linkDialog.urlPlaceholder' | translate"
                 class="w-full"
               />
             </div>
             <div class="flex justify-end gap-2 mt-6">
-              <button hlmBtn variant="outline" (click)="closeLinkDialog()">Cancel</button>
+              <button hlmBtn variant="outline" (click)="closeLinkDialog()">{{ 'dialog.cancel' | translate }}</button>
               <button hlmBtn (click)="insertLink()" [disabled]="!linkText || !linkUrl">
-                Insert
+                {{ 'writeup.linkDialog.insert' | translate }}
               </button>
             </div>
           </div>

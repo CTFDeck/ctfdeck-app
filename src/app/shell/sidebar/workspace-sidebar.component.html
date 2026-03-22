@@ -171,7 +171,7 @@
   }
   <!-- Dialog: New Folder -->
   <hlm-dialog>
-    <button #createFolderTrigger brnDialogTrigger class="hidden" type="button">Open create folder dialog</button>
+    <button #createFolderTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openCreateFolder' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -197,7 +197,7 @@
 
   <!-- Dialog: Rename Folder -->
   <hlm-dialog>
-    <button #renameFolderTrigger brnDialogTrigger class="hidden" type="button">Open rename folder dialog</button>
+    <button #renameFolderTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openRenameFolder' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -222,7 +222,7 @@
 
   <!-- Dialog: Delete Folder -->
   <hlm-dialog>
-    <button #deleteFolderTrigger brnDialogTrigger class="hidden" type="button">Open delete folder dialog</button>
+    <button #deleteFolderTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openDeleteFolder' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -238,8 +238,12 @@
       <hlm-dialog-footer>
         <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
         <button hlmBtn type="button" variant="destructive" (click)="deleteFolder(ctx)">
-          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> Delete {{ folderToDeleteDraft.folderId ? 'Folder' : 'Project' }}
-          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> {{ 'dialog.deleteFolder' | translate }}
+          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" />
+          {{
+            (folderToDeleteDraft.folderId
+              ? 'sidebar.dialog.deleteFolder.actionFolder'
+              : 'sidebar.dialog.deleteFolder.actionProject') | translate
+          }}
         </button>
       </hlm-dialog-footer>
     </hlm-dialog-content>
@@ -247,7 +251,7 @@
 
   <!-- Dialog: Rename Session -->
   <hlm-dialog>
-    <button #renameTrigger brnDialogTrigger class="hidden" type="button">Open rename session dialog</button>
+    <button #renameTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openRenameSession' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -274,7 +278,7 @@
 
   <!-- Dialog: Delete Session -->
   <hlm-dialog>
-    <button #deleteTrigger brnDialogTrigger class="hidden" type="button">Open delete session dialog</button>
+    <button #deleteTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openDeleteSession' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -294,7 +298,7 @@
 
   <!-- Dialog: Rename WriteUp -->
   <hlm-dialog>
-    <button #renameWriteUpTrigger brnDialogTrigger class="hidden" type="button">Open rename write-up dialog</button>
+    <button #renameWriteUpTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openRenameWriteUp' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -321,7 +325,7 @@
 
   <!-- Dialog: Delete WriteUp -->
   <hlm-dialog>
-    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden" type="button">Open delete write-up dialog</button>
+    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openDeleteWriteUp' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -341,7 +345,7 @@
 
   <!-- Dialog: New Item (Chat ou WriteUp) -->
   <hlm-dialog>
-    <button #newItemTrigger brnDialogTrigger class="hidden" type="button">Open new item dialog</button>
+    <button #newItemTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openNewItem' | translate }}</button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">

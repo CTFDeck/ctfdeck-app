@@ -15,11 +15,12 @@ import { SessionMetadata } from '../../../../domains/sessions/models/session-met
 import { SessionStore } from '../../../../domains/sessions/state/session.store';
 import { WriteUpMetadata } from '../../../../domains/writeups/models/writeup.model';
 import { WriteUpStore } from '../../../../domains/writeups/state/writeup.store';
+import { TranslatePipe } from '../../../menubar/translate.pipe';
 
 @Component({
   selector: 'ctf-sidebar-recent-list',
   standalone: true,
-  imports: [CommonModule, NgIcon, HlmTooltipImports],
+  imports: [CommonModule, NgIcon, HlmTooltipImports, TranslatePipe],
   providers: [
     provideIcons({
       lucideMessageSquarePlus,

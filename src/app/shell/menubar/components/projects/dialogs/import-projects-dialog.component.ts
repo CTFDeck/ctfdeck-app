@@ -9,6 +9,7 @@ import { HlmScrollAreaImports } from '@ctfdeck/helm/scroll-area';
 import { NgIcon } from '@ng-icons/core';
 import { ProjectExportMetadata } from '../../../../../domains/projects/infrastructure/project.websocket.protocol';
 import { ProjectsUiService } from '../projects-ui.service';
+import { TranslatePipe } from '../../../translate.pipe';
 
 @Component({
   selector: 'ctf-import-projects-dialog',
@@ -22,6 +23,7 @@ import { ProjectsUiService } from '../projects-ui.service';
     ...HlmTableImports,
     ...HlmScrollAreaImports,
     NgIcon,
+    TranslatePipe,
   ],
   templateUrl: './import-projects-dialog.component.html',
 })

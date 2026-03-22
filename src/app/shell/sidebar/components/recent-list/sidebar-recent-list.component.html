@@ -1,18 +1,23 @@
-<div class="mt-6 px-3">
+<div [ngClass]="isCollapsed ? 'mt-3 px-3' : 'mt-6 px-3'">
   @if (!isCollapsed) {
     <div class="flex items-center justify-between px-1 py-1 mb-1">
       <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
-        Recent Chats
+        {{ 'sidebar.recentChats' | translate }}
       </span>
       <button
         type="button"
         class="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-accent shrink-0"
         (click)="onNewChat()"
-        aria-label="New chat"
+        [attr.aria-label]="'sidebar.newChat' | translate"
       >
         <ng-icon name="lucideMessageSquarePlus" class="w-3 h-3 text-foreground" />
-        <span class="sr-only">New chat</span>
+        <span class="sr-only">{{ 'sidebar.newChat' | translate }}</span>
       </button>
+    </div>
+  } @else {
+    <div class="flex items-center justify-center py-0.5 mb-0.5">
+      <ng-icon name="lucideMessageCircleDashed" class="w-3 h-3 text-muted-foreground/75" />
+      <span class="sr-only">{{ 'sidebar.recentChats' | translate }}</span>
     </div>
   }
 
@@ -51,21 +56,21 @@
               type="button"
               class="ctf-action-btn"
               (click)="$event.stopPropagation(); renameChat.emit(s)"
-              hlmTooltipTrigger="Rename"
-              aria-label="Rename chat"
+              [hlmTooltipTrigger]="'sidebar.item.rename' | translate"
+              [attr.aria-label]="'sidebar.chat.renameAria' | translate"
             >
               <ng-icon name="lucidePencil" />
-              <span class="sr-only">Rename chat</span>
+              <span class="sr-only">{{ 'sidebar.chat.renameAria' | translate }}</span>
             </button>
             <button
               type="button"
               class="ctf-action-btn ctf-action-destroy"
               (click)="$event.stopPropagation(); deleteChat.emit(s)"
-              hlmTooltipTrigger="Delete"
-              aria-label="Delete chat"
+              [hlmTooltipTrigger]="'sidebar.item.delete' | translate"
+              [attr.aria-label]="'sidebar.chat.deleteAria' | translate"
             >
               <ng-icon name="lucideTrash2" />
-              <span class="sr-only">Delete chat</span>
+              <span class="sr-only">{{ 'sidebar.chat.deleteAria' | translate }}</span>
             </button>
           </div>
         }
@@ -79,26 +84,31 @@
       class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
       (click)="loadMoreSessions()"
     >
-      Load more
+      {{ 'sidebar.loadMore' | translate }}
     </button>
   }
 </div>
 
-<div class="mt-6 px-3 pb-10">
+<div [ngClass]="isCollapsed ? 'mt-3 px-3 pb-4' : 'mt-6 px-3 pb-10'">
   @if (!isCollapsed) {
     <div class="flex items-center justify-between px-1 py-1 mb-1">
       <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
-        Recent WriteUps
+        {{ 'sidebar.recentWriteUps' | translate }}
       </span>
       <button
         type="button"
         class="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-accent shrink-0"
         (click)="onNewWriteUp()"
-        aria-label="New write-up"
+        [attr.aria-label]="'sidebar.newWriteUp' | translate"
       >
         <ng-icon name="lucideFilePlus" class="w-3 h-3 text-foreground" />
-        <span class="sr-only">New write-up</span>
+        <span class="sr-only">{{ 'sidebar.newWriteUp' | translate }}</span>
       </button>
+    </div>
+  } @else {
+    <div class="flex items-center justify-center py-0.5 mb-0.5">
+      <ng-icon name="lucideFileText" class="w-3 h-3 text-muted-foreground/75" />
+      <span class="sr-only">{{ 'sidebar.recentWriteUps' | translate }}</span>
     </div>
   }
 
@@ -137,21 +147,21 @@
               type="button"
               class="ctf-action-btn"
               (click)="$event.stopPropagation(); renameWriteUp.emit(w)"
-              hlmTooltipTrigger="Rename"
-              aria-label="Rename write-up"
+              [hlmTooltipTrigger]="'sidebar.item.rename' | translate"
+              [attr.aria-label]="'sidebar.writeup.renameAria' | translate"
             >
               <ng-icon name="lucidePencil" />
-              <span class="sr-only">Rename write-up</span>
+              <span class="sr-only">{{ 'sidebar.writeup.renameAria' | translate }}</span>
             </button>
             <button
               type="button"
               class="ctf-action-btn ctf-action-destroy"
               (click)="$event.stopPropagation(); deleteWriteUp.emit(w)"
-              hlmTooltipTrigger="Delete"
-              aria-label="Delete write-up"
+              [hlmTooltipTrigger]="'sidebar.item.delete' | translate"
+              [attr.aria-label]="'sidebar.writeup.deleteAria' | translate"
             >
               <ng-icon name="lucideTrash2" />
-              <span class="sr-only">Delete write-up</span>
+              <span class="sr-only">{{ 'sidebar.writeup.deleteAria' | translate }}</span>
             </button>
           </div>
         }
@@ -165,7 +175,7 @@
       class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
       (click)="loadMoreWriteUps()"
     >
-      Load more
+      {{ 'sidebar.loadMore' | translate }}
     </button>
   }
 </div>
