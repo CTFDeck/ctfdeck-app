@@ -1,4 +1,4 @@
-<div class="mt-4 px-3">
+<div [ngClass]="isCollapsed ? 'mt-2 px-2' : 'mt-4 px-3'">
   @if (hierarchy$ | async; as projects) {
     @if (isCollapsed) {
       <div class="flex flex-col items-center gap-1.5">
@@ -42,10 +42,13 @@
               role="button"
               [attr.aria-expanded]="isProjectExpanded(p.id)"
             >
-              @if (hoveredFolderId() === p.id && !isProjectExpanded(p.id)) {
+              @if (isDragging && hoveredFolderId() === p.id && !isProjectExpanded(p.id)) {
                 <div
                   class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"
                 ></div>
+              }
+              @if (isDragging && hoveredFolderId() === p.id) {
+                <div class="ctf-drop-ghost"></div>
               }
 
               <ng-icon
@@ -85,8 +88,15 @@
 
             @if (isProjectExpanded(p.id)) {
               <div
-                class="ml-4 pl-2 border-l border-border flex flex-col gap-1 mt-1 ctf-folder-content"
+                class="ml-4 pl-2 border-l border-border flex flex-col gap-1 mt-1 ctf-folder-content relative"
+                [class.ctf-content-drop-hover]="isDragging && hoveredContentKey() === ('project:' + p.id)"
+                (dragover)="onContentDragOver($event, p.id, null, 'project:' + p.id)"
+                (dragleave)="onContentDragLeave($event, 'project:' + p.id)"
+                (drop)="onDrop($event, p.id, null)"
               >
+                @if (isDragging && hoveredContentKey() === ('project:' + p.id)) {
+                  <div class="ctf-content-drop-ghost"></div>
+                }
                 <ng-container
                   *ngTemplateOutlet="
                     folderTree;
@@ -128,10 +138,13 @@
         role="button"
         [attr.aria-expanded]="isFolderExpanded(f.id)"
       >
-        @if (hoveredFolderId() === f.id && !isFolderExpanded(f.id)) {
+        @if (isDragging && hoveredFolderId() === f.id && !isFolderExpanded(f.id)) {
           <div
             class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"
           ></div>
+        }
+        @if (isDragging && hoveredFolderId() === f.id) {
+          <div class="ctf-drop-ghost"></div>
         }
 
         <ng-icon
@@ -186,8 +199,15 @@
 
       @if (isFolderExpanded(f.id)) {
         <div
-          class="ml-4 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5 ctf-folder-content"
+          class="ml-4 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5 ctf-folder-content relative"
+          [class.ctf-content-drop-hover]="isDragging && hoveredContentKey() === ('folder:' + f.id)"
+          (dragover)="onContentDragOver($event, projectId, f.id, 'folder:' + f.id)"
+          (dragleave)="onContentDragLeave($event, 'folder:' + f.id)"
+          (drop)="onDrop($event, projectId, f.id)"
         >
+          @if (isDragging && hoveredContentKey() === ('folder:' + f.id)) {
+            <div class="ctf-content-drop-ghost"></div>
+          }
           <ng-container
             *ngTemplateOutlet="
               folderTree;

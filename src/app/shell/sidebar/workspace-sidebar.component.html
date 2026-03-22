@@ -5,7 +5,15 @@
   [class.ctf-is-dragging]="isDragging()"
 >
   <hlm-sidebar-header>
-    <div class="flex w-full items-center justify-between px-3 py-3">
+    <div
+      class="flex w-full items-center"
+      [class.px-3]="!isCollapsed()"
+      [class.py-3]="!isCollapsed()"
+      [class.px-2]="isCollapsed()"
+      [class.py-2]="isCollapsed()"
+      [class.justify-between]="!isCollapsed()"
+      [class.justify-center]="isCollapsed()"
+    >
       @if (!isCollapsed()) {
         <div class="overflow-hidden whitespace-nowrap">
           <div class="font-semibold text-sm">{{ 'sidebar.workspace' | translate }}</div>
@@ -16,26 +24,31 @@
         hlmSidebarMenuButton
         type="button"
         (click)="toggleSidebar()"
-        class="ml-auto p-1 h-8 w-8 flex items-center justify-center shrink-0"
+        class="p-1 h-8 w-8 flex items-center justify-center shrink-0"
+        [class.p-0]="isCollapsed()"
+        [class.ml-auto]="!isCollapsed()"
         [tooltip]="'sidebar.toggleSidebar' | translate"
         [attr.aria-label]="'sidebar.toggleSidebar' | translate"
       >
-        <ng-icon name="lucidePanelLeft" />
+        <ng-icon name="lucidePanelLeft" class="w-4 h-4" />
         <span class="sr-only">{{ 'sidebar.toggleSidebar' | translate }}</span>
       </button>
     </div>
   </hlm-sidebar-header>
+
+  <hlm-sidebar-separator class="mx-0 w-full my-0" />
 
   <hlm-sidebar-content class="relative">
     <ng-scrollbar
       #scrollContainer
       hlm
       class="h-full"
+      [class.ctf-collapsed-scroll]="isCollapsed()"
       cdkScrollable
       (dragover)="onDragOver($event)"
       (scroll)="onScroll()"
     >
-      <hlm-sidebar-group>
+      <hlm-sidebar-group [class.p-0]="isCollapsed()" [class.pb-0]="isCollapsed()">
         @if (!isCollapsed()) {
           <div class="px-3 py-2 flex flex-col gap-2">
             <div class="flex gap-2">
@@ -89,7 +102,7 @@
         }
 
         @if (!isCollapsed()) {
-          <div class="px-3 py-2 mb-2">
+          <div class="px-3 pt-2 pb-0 mb-0">
             <div hlmInputGroup class="w-full">
               <div hlmInputGroupAddon>
                 <ng-icon name="lucideSearch" />
@@ -103,11 +116,14 @@
             </div>
           </div>
         }
+      </hlm-sidebar-group>
 
-        <hlm-sidebar-separator />
+      <hlm-sidebar-separator class="mx-0 w-full my-0" />
 
+      <hlm-sidebar-group [class.p-0]="isCollapsed()" [class.pt-0]="isCollapsed()">
         <ctf-sidebar-project-list
           [isCollapsed]="isCollapsed()"
+          [isDragging]="isDragging()"
           [successfullyDroppedId]="successfullyDroppedId()"
           [activeSessionId]="activeSessionId$ | async"
           [activeWriteUpId]="activeWriteUpId$ | async"

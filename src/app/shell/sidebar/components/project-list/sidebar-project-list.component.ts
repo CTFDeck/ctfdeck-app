@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideChevronDown,
@@ -44,6 +44,7 @@ import { TranslatePipe } from '../../../menubar/translate.pipe';
 })
 export class SidebarProjectListComponent {
   @Input() isCollapsed = false;
+  @Input() isDragging = false;
   @Input() successfullyDroppedId: string | null = null;
   @Input() activeSessionId: string | null = null;
   @Input() activeWriteUpId: string | null = null;
@@ -73,12 +74,19 @@ export class SidebarProjectListComponent {
   expandedProjectIds = signal<Set<string>>(new Set());
   expandedFolderIds = signal<Set<string>>(new Set());
   hoveredFolderId = signal<string | null>(null);
+  hoveredContentKey = signal<string | null>(null);
 
   private folderExpandTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.hierarchy$ = this.projectStore.getHierarchy$();
     this.totalProjectsCount$ = this.projectStore.totalProjectsCount$;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if ('isDragging' in changes && !this.isDragging) {
+      this.clearDragHoverState();
+    }
   }
 
   toggleProject(projectId: string): void {
@@ -120,19 +128,21 @@ export class SidebarProjectListComponent {
   }
 
   onDragEnd(): void {
+    this.clearDragHoverState();
     this.dragEnded.emit();
   }
 
   onFolderDragOver(event: DragEvent, id: string, type: 'project' | 'folder' = 'folder'): void {
     event.preventDefault();
+    event.stopPropagation();
+    this.hoveredContentKey.set(null);
     this.folderDragOver.emit({ event, id, type });
 
     const isExpanded = type === 'project' ? this.isProjectExpanded(id) : this.isFolderExpanded(id);
 
     if (isExpanded) {
-      if (this.hoveredFolderId() === id) {
-        this.clearFolderExpandTimer();
-      }
+      this.clearFolderExpandTimer();
+      this.hoveredFolderId.set(id);
       return;
     }
 
@@ -154,11 +164,42 @@ export class SidebarProjectListComponent {
   }
 
   onFolderDragLeave(event: DragEvent): void {
+    event.stopPropagation();
     const target = event.relatedTarget as HTMLElement | null;
     if (target && (target.closest('.ctf-folder-node') || target.closest('.ctf-folder-content'))) {
       return;
     }
     this.clearFolderExpandTimer();
+    this.folderDragLeave.emit(event);
+  }
+
+  onContentDragOver(
+    event: DragEvent,
+    projectId: string,
+    folderId: string | null,
+    contentKey: string,
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.clearFolderExpandTimer();
+    this.hoveredFolderId.set(folderId ?? projectId);
+    this.hoveredContentKey.set(contentKey);
+    this.folderDragOver.emit({ event, id: folderId ?? projectId, type: folderId ? 'folder' : 'project' });
+  }
+
+  onContentDragLeave(event: DragEvent, contentKey: string): void {
+    event.stopPropagation();
+    const relatedTarget = event.relatedTarget as Node | null;
+    const currentTarget = event.currentTarget as HTMLElement | null;
+
+    if (relatedTarget && currentTarget?.contains(relatedTarget)) {
+      return;
+    }
+
+    if (this.hoveredContentKey() === contentKey) {
+      this.hoveredContentKey.set(null);
+    }
+
     this.folderDragLeave.emit(event);
   }
 
@@ -171,6 +212,14 @@ export class SidebarProjectListComponent {
   }
 
   onDrop(event: DragEvent, projectId: string, folderId: string | null): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.clearDragHoverState();
     this.itemDropped.emit({ event, projectId, folderId });
+  }
+
+  private clearDragHoverState(): void {
+    this.clearFolderExpandTimer();
+    this.hoveredContentKey.set(null);
   }
 }

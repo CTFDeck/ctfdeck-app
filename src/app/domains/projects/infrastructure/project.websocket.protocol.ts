@@ -104,8 +104,8 @@ export function serializeProjectAssignSession(
     .writeByte(MessageType.ProjectAssignSession)
     .writeUuid(messageId)
     .writeUuid(projectId)
-    .writeUuid(sessionId)
     .writeNullableUuid(folderId)
+    .writeUuid(sessionId)
     .buffer;
 }
 

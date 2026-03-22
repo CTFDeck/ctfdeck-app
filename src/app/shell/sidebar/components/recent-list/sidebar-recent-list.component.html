@@ -1,4 +1,4 @@
-<div [ngClass]="isCollapsed ? 'mt-3 px-3' : 'mt-6 px-3'">
+<div [ngClass]="isCollapsed ? 'mt-2 px-2' : 'mt-6 px-3'">
   @if (!isCollapsed) {
     <div class="flex items-center justify-between px-1 py-1 mb-1">
       <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
@@ -6,23 +6,27 @@
       </span>
       <button
         type="button"
-        class="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-accent shrink-0"
+        class="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent shrink-0 p-2"
         (click)="onNewChat()"
         [attr.aria-label]="'sidebar.newChat' | translate"
       >
-        <ng-icon name="lucideMessageSquarePlus" class="w-3 h-3 text-foreground" />
+        <ng-icon name="lucideMessageSquarePlus" class="w-3.5 h-3.5 text-foreground" />
         <span class="sr-only">{{ 'sidebar.newChat' | translate }}</span>
       </button>
     </div>
   } @else {
-    <div class="flex items-center justify-center py-0.5 mb-0.5">
+    <div class="flex items-center justify-center py-1">
       <ng-icon name="lucideMessageCircleDashed" class="w-3 h-3 text-muted-foreground/75" />
       <span class="sr-only">{{ 'sidebar.recentChats' | translate }}</span>
     </div>
   }
 
   <div
-    class="flex flex-col gap-0.5 px-1"
+    class="flex flex-col"
+    [class.gap-0.5]="!isCollapsed"
+    [class.gap-1.5]="isCollapsed"
+    [class.px-1]="!isCollapsed"
+    [class.px-0]="isCollapsed"
     (dragover)="onDragOver($event)"
     (drop)="onDrop($event)"
   >
@@ -38,7 +42,10 @@
         <button
           type="button"
           (click)="openChat.emit(s)"
-          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent"
+          class="text-xs text-left flex items-center gap-2 h-8 px-2 rounded hover:bg-accent"
+          [class.w-full]="!isCollapsed"
+          [class.w-8]="isCollapsed"
+          [class.mx-auto]="isCollapsed"
           [class.justify-center]="isCollapsed"
           [class.pr-14]="!isCollapsed"
           [hlmTooltipTrigger]="isCollapsed ? s.name : null"
@@ -89,7 +96,7 @@
   }
 </div>
 
-<div [ngClass]="isCollapsed ? 'mt-3 px-3 pb-4' : 'mt-6 px-3 pb-10'">
+<div [ngClass]="isCollapsed ? 'mt-2 px-2 pb-1' : 'mt-6 px-3 pb-10'">
   @if (!isCollapsed) {
     <div class="flex items-center justify-between px-1 py-1 mb-1">
       <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
@@ -97,23 +104,27 @@
       </span>
       <button
         type="button"
-        class="h-6 w-6 inline-flex items-center justify-center rounded-md hover:bg-accent shrink-0"
+        class="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent shrink-0 p-2"
         (click)="onNewWriteUp()"
         [attr.aria-label]="'sidebar.newWriteUp' | translate"
       >
-        <ng-icon name="lucideFilePlus" class="w-3 h-3 text-foreground" />
+        <ng-icon name="lucideFilePlus" class="w-3.5 h-3.5 text-foreground" />
         <span class="sr-only">{{ 'sidebar.newWriteUp' | translate }}</span>
       </button>
     </div>
   } @else {
-    <div class="flex items-center justify-center py-0.5 mb-0.5">
+    <div class="flex items-center justify-center py-1">
       <ng-icon name="lucideFileText" class="w-3 h-3 text-muted-foreground/75" />
       <span class="sr-only">{{ 'sidebar.recentWriteUps' | translate }}</span>
     </div>
   }
 
   <div
-    class="flex flex-col gap-0.5 px-1"
+    class="flex flex-col"
+    [class.gap-0.5]="!isCollapsed"
+    [class.gap-1.5]="isCollapsed"
+    [class.px-1]="!isCollapsed"
+    [class.px-0]="isCollapsed"
     (dragover)="onDragOver($event)"
     (drop)="onDrop($event)"
   >
@@ -129,7 +140,10 @@
         <button
           type="button"
           (click)="openWriteUp.emit(w)"
-          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent"
+          class="text-xs text-left flex items-center gap-2 h-8 px-2 rounded hover:bg-accent"
+          [class.w-full]="!isCollapsed"
+          [class.w-8]="isCollapsed"
+          [class.mx-auto]="isCollapsed"
           [class.justify-center]="isCollapsed"
           [class.pr-14]="!isCollapsed"
           [hlmTooltipTrigger]="isCollapsed ? w.name : null"

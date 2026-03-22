@@ -52,6 +52,11 @@
   --_sb-thumb-opacity: 0;
 }
 
+.ctf-chat-sidebar ng-scrollbar[hlm].ctf-collapsed-scroll {
+  --scrollbar-thickness: 0;
+  --scrollbar-offset: 0;
+}
+
 .ctf-chat-sidebar ng-scrollbar[hlm] > * {
   min-height: 0;
 }
