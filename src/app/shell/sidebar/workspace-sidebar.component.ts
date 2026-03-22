@@ -22,32 +22,22 @@ import { SidebarRecentListComponent } from './components/recent-list/sidebar-rec
 import { SidebarProjectListComponent } from './components/project-list/sidebar-project-list.component';
 import {
   lucideArrowUp,
-  lucideBox,
   lucideCheck,
   lucideChevronDown,
   lucideChevronRight,
   lucideChevronUp,
-  lucideColumns2,
   lucideDownload,
   lucideFilePlus,
-  lucideFileText,
-  lucideFolder,
-  lucideFolderOpen,
-  lucideFolderPlus,
   lucideLayoutGrid,
   lucideMessageCircleDashed,
   lucideMessageSquarePlus,
-  lucideMoreVertical,
   lucidePanelLeft,
-  lucidePencil,
   lucidePlus,
   lucideSearch,
-  lucideTrash2,
   lucideUpload,
 } from '@ng-icons/lucide';
-import { Observable, firstValueFrom, map } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ProjectExportMetadata } from '../../domains/projects/infrastructure/project.websocket.protocol';
-import { ProjectHierarchy } from '../../domains/projects/models/project-hierarchy.model';
 import { ProjectStore } from '../../domains/projects/state/project.store';
 import { HlmTableImports } from '@ctfdeck/helm/table';
 import { SessionMetadata } from '../../domains/sessions/models/session-metadata.model';

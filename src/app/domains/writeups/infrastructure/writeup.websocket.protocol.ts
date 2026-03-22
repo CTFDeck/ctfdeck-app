@@ -149,7 +149,6 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
   const projectId = reader.readNullableUuid();
   const folderId = reader.readNullableUuid();
   const name = reader.readString();
-  const content = reader.readString();
 
   if (reader.currentOffset + 16 > data.byteLength) {
     throw new Error(`WriteUpLoadResult too short for timestamps, offset=${reader.currentOffset}, length=${data.byteLength}`);
@@ -157,6 +156,7 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
 
   const createdAt = ticksToDate(reader.readBigInt64());
   const updatedAt = ticksToDate(reader.readBigInt64());
+  const content = reader.readString();
 
   return {
     messageId,
