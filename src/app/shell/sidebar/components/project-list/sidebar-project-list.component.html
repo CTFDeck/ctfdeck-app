@@ -1,4 +1,4 @@
-<div class="mt-4 px-2">
+<div class="mt-4 px-3">
   @if (hierarchy$ | async; as projects) {
     @if (isCollapsed) {
       <div class="flex flex-col items-center gap-1.5">
@@ -19,7 +19,7 @@
         }
       </div>
     } @else {
-      <div class="flex items-center gap-2 px-2 py-1 mb-1">
+      <div class="flex items-center gap-2 px-1 py-1 mb-1">
         <span class="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
           Projects
         </span>
