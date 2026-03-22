@@ -65,6 +65,8 @@ import {
   toSafeHtml,
 } from '../utils/command-runner-render.utils';
 import { createRenderScheduler } from '../utils/command-runner-render-scheduler.utils';
+import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
+import { I18nService } from '../../../shell/menubar/i18n.service'; 
 
 @Component({
   selector: 'app-command-runner',
@@ -81,6 +83,7 @@ import { createRenderScheduler } from '../utils/command-runner-render-scheduler.
     ...HlmDialogImports,
     BrnDialogContent,
     BrnDialogTrigger,
+    TranslatePipe,
   ],
   providers: [
     provideIcons({
@@ -110,6 +113,8 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   private readonly toolCatalogStore = inject(ToolCatalogStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly sanitizer = inject(DomSanitizer);
+
+  private readonly i18n = inject(I18nService);
 
   targets: SessionTarget[] = [];
   selectedTargetId = '';
@@ -298,7 +303,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
     this.isRunning = true;
     this.outputLines = [];
-    this.addLine(`<span class="text-blue-400">Running: ${this.currentCommand}</span>`);
+    this.addLine(`<span class="text-blue-400">Running: ${this.i18n.translate('runner.run.running')} ${this.currentCommand}</span>`);
 
     if (!(await this.ensureActiveSession())) {
       this.isRunning = false;
@@ -355,7 +360,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
   stopCommand(): void {
     this.isRunning = false;
-    this.addLine(`<span class="text-yellow-500">Stop requested (UI only)</span>`);
+    this.addLine(`<span class="text-yellow-500">${this.i18n.translate('runner.run.stop')}</span>`);
   }
 
   clearOutput(): void {

@@ -2,17 +2,18 @@
   <div class="flex justify-between items-center mb-6 border-b border-border pb-4">
     <div class="flex items-center gap-2">
       <ng-icon hlm name="lucideTerminal" class="text-primary text-2xl" />
-      <h2 class="text-2xl font-bold tracking-tight">Command Runner</h2>
+      <h2 class="text-2xl font-bold tracking-tight">{{ 'runner.title' | translate }}</h2>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
     <div class="space-y-6">
+
+      <!-- Target -->
       <div class="space-y-2">
         <div class="flex justify-between items-center">
-          <label hlmLabel for="target-select">Target</label>
+          <label hlmLabel for="target-select">{{ 'runner.target.label' | translate }}</label>
         </div>
-
         @if (targets.length > 0) {
           <select
             id="target-select"
@@ -20,31 +21,26 @@
             (ngModelChange)="onTargetChange()"
             class="flex w-full h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <option value="" disabled>Select a target...</option>
+            <option value="" disabled>{{ 'runner.target.placeholder' | translate }}</option>
             @for (target of targets; track target.id) {
-              <option [value]="target.id">
-                {{ target.name }} ({{ target.address }})
-              </option>
+              <option [value]="target.id">{{ target.name }} ({{ target.address }})</option>
             }
           </select>
         } @else {
-          <div
-            class="flex items-center justify-center p-3 border border-dashed border-border rounded-md bg-muted/50 text-muted-foreground text-sm"
-          >
-            No targets available
+          <div class="flex items-center justify-center p-3 border border-dashed border-border rounded-md bg-muted/50 text-muted-foreground text-sm">
+            {{ 'runner.target.empty' | translate }}
           </div>
         }
       </div>
 
+      <!-- Commands -->
       <div class="space-y-2">
         <div class="flex justify-between items-center">
-          <span class="text-sm font-medium leading-none">Commands</span>
+          <span class="text-sm font-medium leading-none">{{ 'runner.commands.label' | translate }}</span>
           <button
-            hlmBtn
-            size="icon"
-            variant="outline"
+            hlmBtn size="icon" variant="outline"
             (click)="openManageScripts()"
-            title="Manage custom scripts"
+            [title]="'runner.commands.manageTitle' | translate"
             class="h-8 w-8"
           >
             <ng-icon hlm name="lucidePlus" size="sm" />
@@ -57,14 +53,8 @@
               <div class="h-8 w-24 rounded-md bg-muted/70 animate-pulse"></div>
             </div>
           }
-
           @for (item of commandOptions; track item.name) {
-            <button
-              hlmBtn
-              [variant]="isCommandSelected(item) ? 'default' : 'outline'"
-              size="sm"
-              (click)="selectCommandOption(item)"
-            >
+            <button hlmBtn [variant]="isCommandSelected(item) ? 'default' : 'outline'" size="sm" (click)="selectCommandOption(item)">
               {{ item.name }}
             </button>
           }
@@ -73,9 +63,11 @@
     </div>
 
     <div class="space-y-6">
+
+      <!-- Command input -->
       <div class="space-y-2">
         <div class="flex justify-between items-center">
-          <label hlmLabel for="command-input">Command</label>
+          <label hlmLabel for="command-input">{{ 'runner.command.label' | translate }}</label>
         </div>
         <div class="flex gap-2">
           <input
@@ -83,188 +75,138 @@
             hlmInput
             class="flex-1 font-mono"
             [(ngModel)]="currentCommand"
-            placeholder="Select target and command..."
+            [placeholder]="'runner.command.placeholder' | translate"
           />
-
-          <button
-            hlmBtn
-            variant="outline"
-            size="icon"
-            (click)="saveCommand()"
-            title="Save as default"
-          >
+          <button hlmBtn variant="outline" size="icon" (click)="saveCommand()" [title]="'runner.command.saveTitle' | translate">
             <ng-icon hlm name="lucideSave" size="sm" />
           </button>
 
           <hlm-dialog>
             <button
-              brnDialogTrigger
-              hlmBtn
-              variant="outline"
-              size="icon"
+              brnDialogTrigger hlmBtn variant="outline" size="icon"
               (click)="runHelp()"
               [disabled]="!canShowHelp"
-              title="Show Help"
+              [title]="'runner.command.helpTitle' | translate"
             >
               <ng-icon hlm name="lucideCircleHelp" />
             </button>
-            <hlm-dialog-content
-              *brnDialogContent="let ctx"
-              class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-            >
+            <hlm-dialog-content *brnDialogContent="let ctx" class="border border-border bg-background text-foreground shadow-lg rounded-md p-0 max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
               <hlm-dialog-header class="p-6 border-b border-border">
-                <h3 hlmDialogTitle>Help: {{ selectedToolId }}</h3>
+                <h3 hlmDialogTitle>{{ 'runner.help.title' | translate }} {{ selectedToolId }}</h3>
                 <p hlmDialogDescription class="mt-2 text-sm text-muted-foreground">
-                  Output of
-                  <code class="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">
-                    {{ selectedToolId }} -h
-                  </code>
+                  {{ 'runner.help.outputOf' | translate }}
+                  <code class="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">{{ selectedToolId }} -h</code>
                 </p>
               </hlm-dialog-header>
-
-              <div
-                class="p-6 flex-1 overflow-auto bg-muted rounded-md m-6 border border-border font-mono text-sm"
-              >
+              <div class="p-6 flex-1 overflow-auto bg-muted rounded-md m-6 border border-border font-mono text-sm">
                 @if (isHelpRunning) {
                   <div class="flex items-center gap-2 text-muted-foreground p-4">
-                    <ng-icon hlm name="lucideLoader" class="animate-spin" /> Loading help...
+                    <ng-icon hlm name="lucideLoader" class="animate-spin" /> {{ 'runner.help.loading' | translate }}
                   </div>
                 } @else {
-                  <div
-                    class="whitespace-pre-wrap text-foreground p-2 leading-relaxed"
-                    [innerHTML]="helpOutput"
-                  ></div>
+                  <div class="whitespace-pre-wrap text-foreground p-2 leading-relaxed" [innerHTML]="helpOutput"></div>
                 }
               </div>
-
               <hlm-dialog-footer class="p-6 border-t border-border flex justify-end">
-                <button hlmBtn variant="outline" (click)="ctx.close()">Close</button>
+                <button hlmBtn variant="outline" (click)="ctx.close()">{{ 'runner.help.close' | translate }}</button>
               </hlm-dialog-footer>
             </hlm-dialog-content>
           </hlm-dialog>
         </div>
       </div>
 
+      <!-- Run / Stop -->
       <div class="flex justify-end gap-3 pt-2">
         @if (isRunning) {
-          <button
-            hlmBtn
-            variant="destructive"
-            (click)="stopCommand()"
-            class="gap-2"
-          >
-            <ng-icon hlm name="lucideSquare" class="h-4 w-4" /> Stop
+          <button hlmBtn variant="destructive" (click)="stopCommand()" class="gap-2">
+            <ng-icon hlm name="lucideSquare" class="h-4 w-4" /> {{ 'runner.run.stop' | translate }}
           </button>
         }
-
         <button
           hlmBtn
           [disabled]="isRunning || !currentCommand || isSessionEnsuring"
           (click)="runCommand()"
           class="gap-2 min-w-[120px]"
         >
-          <ng-icon
-            hlm
-            [name]="isRunning ? 'lucideLoader' : 'lucidePlay'"
-            [class]="isRunning ? 'animate-spin h-4 w-4' : 'h-4 w-4'"
-          />
-          {{ isRunning ? 'Running...' : 'Run' }}
+          <ng-icon hlm [name]="isRunning ? 'lucideLoader' : 'lucidePlay'" [class]="isRunning ? 'animate-spin h-4 w-4' : 'h-4 w-4'" />
+          {{ isRunning ? ('runner.run.running' | translate) : ('runner.run.run' | translate) }}
         </button>
       </div>
     </div>
   </div>
 
-  <div
-    class="flex-1 flex flex-col min-h-0 rounded-md border border-border bg-card text-card-foreground overflow-hidden font-mono"
-  >
+  <!-- Output -->
+  <div class="flex-1 flex flex-col min-h-0 rounded-md border border-border bg-card text-card-foreground overflow-hidden font-mono">
     <div class="flex justify-between items-center px-3 py-2 bg-muted/30 border-b border-border">
-      <span class="text-xs font-medium text-muted-foreground">Terminal Output</span>
-      <button
-        class="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        (click)="clearOutput()"
-      >
-        Clear
+      <span class="text-xs font-medium text-muted-foreground">{{ 'runner.output.title' | translate }}</span>
+      <button class="text-xs text-muted-foreground hover:text-foreground transition-colors" (click)="clearOutput()">
+        {{ 'runner.output.clear' | translate }}
       </button>
     </div>
-    <div
-      #outputContainer
-      class="flex-1 overflow-auto p-3 text-sm leading-relaxed whitespace-pre-wrap"
-    >
+    <div #outputContainer class="flex-1 overflow-auto p-3 text-sm leading-relaxed whitespace-pre-wrap">
       @for (line of outputLines; track $index) {
         <div [innerHTML]="line" class="mb-0.5 break-all"></div>
       }
-
       @if (outputLines.length === 0) {
-        <div class="text-muted-foreground italic">
-          Ready to execute...
-        </div>
+        <div class="text-muted-foreground italic">{{ 'runner.output.ready' | translate }}</div>
       }
     </div>
   </div>
 </div>
 
+<!-- Manage Scripts Modal -->
 @if (showManageScripts) {
   <div
     class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-    tabindex="0"
-    role="button"
-    aria-label="Close manage scripts"
+    tabindex="0" role="button"
+    [attr.aria-label]="'runner.scripts.ariaClose' | translate"
     (click)="$event.target === $event.currentTarget && closeManageScripts()"
     (keydown.enter)="closeManageScripts()"
     (keydown.space)="closeManageScripts(); $event.preventDefault()"
   >
-    <div
-      class="bg-background border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
-    >
+    <div class="bg-background border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
       <div class="p-6 border-b border-border flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Manage Custom Scripts</h3>
-        <button hlmBtn size="sm" variant="ghost" (click)="closeManageScripts()">Close</button>
+        <h3 class="text-lg font-semibold">{{ 'runner.scripts.title' | translate }}</h3>
+        <button hlmBtn size="sm" variant="ghost" (click)="closeManageScripts()">{{ 'runner.scripts.close' | translate }}</button>
       </div>
       <div class="p-6 space-y-4 max-h-[70vh] overflow-auto">
         <div class="space-y-3">
           <div class="grid gap-2">
-            <label hlmLabel for="script-name">Name</label>
-            <input
-              id="script-name"
-              hlmInput
-              [(ngModel)]="scriptForm.name"
-              placeholder="Script name"
-            />
+            <label hlmLabel for="script-name">{{ 'runner.scripts.nameLabel' | translate }}</label>
+            <input id="script-name" hlmInput [(ngModel)]="scriptForm.name" [placeholder]="'runner.scripts.namePlaceholder' | translate" />
           </div>
           <div class="grid gap-2">
-            <label hlmLabel for="script-category">Category</label>
+            <label hlmLabel for="script-category">{{ 'runner.scripts.categoryLabel' | translate }}</label>
             <select
               id="script-category"
               [(ngModel)]="scriptForm.category"
               class="flex w-full h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
               @for (option of scriptCategoryOptions; track option.value) {
-                <option [ngValue]="option.value">
-                  {{ option.label }}
-                </option>
+                <option [ngValue]="option.value">{{ option.label }}</option>
               }
             </select>
           </div>
           <div class="grid gap-2">
-            <label hlmLabel for="script-template">Template</label>
+            <label hlmLabel for="script-template">{{ 'runner.scripts.templateLabel' | translate }}</label>
             <textarea
               id="script-template"
               rows="4"
               [(ngModel)]="scriptForm.template"
               class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-              placeholder="Command template, use {host} and {port} (e.g. nmap -sV {host} -p {port})"
+              [placeholder]="'runner.scripts.templatePlaceholder' | translate"
             ></textarea>
           </div>
           <div class="flex justify-end gap-2">
-            <button hlmBtn variant="outline" (click)="resetScriptForm()">Reset</button>
+            <button hlmBtn variant="outline" (click)="resetScriptForm()">{{ 'runner.scripts.reset' | translate }}</button>
             <button hlmBtn (click)="saveScript()">
-              {{ editingScriptId ? 'Update Script' : 'Create Script' }}
+              {{ (editingScriptId ? 'runner.scripts.update' : 'runner.scripts.create') | translate }}
             </button>
           </div>
         </div>
 
         <div class="border-t border-border pt-4">
-          <h4 class="text-sm font-semibold mb-3">Existing Scripts</h4>
+          <h4 class="text-sm font-semibold mb-3">{{ 'runner.scripts.existing' | translate }}</h4>
 
           @if (customScriptsLoading && customScripts.length === 0) {
             <div class="space-y-2">
@@ -274,27 +216,19 @@
           }
 
           @if (!customScriptsLoading && customScripts.length === 0) {
-            <div class="text-sm text-muted-foreground">
-              No custom scripts yet.
-            </div>
+            <div class="text-sm text-muted-foreground">{{ 'runner.scripts.empty' | translate }}</div>
           }
 
           <div class="space-y-2">
             @for (script of customScripts; track script.id) {
-              <div
-                class="flex items-center justify-between rounded-md border border-border p-3"
-              >
+              <div class="flex items-center justify-between rounded-md border border-border p-3">
                 <div>
                   <div class="font-medium">{{ script.name }}</div>
-                  <div class="text-xs text-muted-foreground">
-                    {{ getScriptCategoryLabel(script.category) }}
-                  </div>
+                  <div class="text-xs text-muted-foreground">{{ getScriptCategoryLabel(script.category) }}</div>
                 </div>
                 <div class="flex gap-2">
-                  <button hlmBtn size="sm" variant="outline" (click)="editScript(script)">Edit</button>
-                  <button hlmBtn size="sm" variant="destructive" (click)="deleteScript(script.id)">
-                    Delete
-                  </button>
+                  <button hlmBtn size="sm" variant="outline" (click)="editScript(script)">{{ 'runner.scripts.edit' | translate }}</button>
+                  <button hlmBtn size="sm" variant="destructive" (click)="deleteScript(script.id)">{{ 'runner.scripts.delete' | translate }}</button>
                 </div>
               </div>
             }

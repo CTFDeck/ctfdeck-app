@@ -54,6 +54,7 @@ import { SessionMetadata } from '../../domains/sessions/models/session-metadata.
 import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpMetadata } from '../../domains/writeups/models/writeup.model';
 import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
+import { TranslatePipe } from '../menubar/translate.pipe';
 
 @Component({
   // eslint-disable-next-line @angular-eslint/component-selector
@@ -80,6 +81,7 @@ import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
     BrnDialogTrigger,
     SidebarRecentListComponent,
     SidebarProjectListComponent,
+    TranslatePipe,
   ],
   providers: [
     {

@@ -54,6 +54,8 @@ import type { SessionData } from '../../../sessions/models/session-data.model';
 import { WriteUpStore } from '../../../writeups/state/writeup.store';
 import { WriteUpClientService } from '../../../writeups/infrastructure/writeup-client.service';
 import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
+import { TranslatePipe } from '../../../../shell/menubar/translate.pipe';
+import { I18nService } from '../../../../shell/menubar/i18n.service';
 
 interface MenuTriggerLike {
   open(): void;
@@ -84,6 +86,7 @@ interface BrnMenuTriggerInternals {
     BrnDialogTrigger,
     BrnDialogContent,
     BrnDialogClose,
+    TranslatePipe,
   ],
   providers: [
     provideIcons({
@@ -109,6 +112,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
   private readonly sessionStore = inject(SessionStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly sanitizer = inject(DomSanitizer);
+  readonly i18n = inject(I18nService);
 
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
   @ViewChild('commandInput') private commandInput!: ElementRef<HTMLInputElement>;
@@ -159,7 +163,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
     if (event) {
       event.stopPropagation();
     }
-
     this.showServerSelection = !this.showServerSelection;
   }
 
@@ -167,9 +170,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.wsService.isConnected$.subscribe((connected) => {
         this.isConnected = connected;
-
         if (!connected) {
-          this.addLine('info', 'Disconnected from server.');
+          this.addLine('info', this.i18n.translate('terminal.log.disconnected'));
         }
       }),
     );
@@ -217,24 +219,24 @@ export class TerminalComponent implements OnInit, OnDestroy {
     }
 
     if (cmd === 'connect') {
-      this.addLine('info', 'Connecting to server...');
+      this.addLine('info', this.i18n.translate('terminal.log.connecting'));
       this.connect();
       return;
     }
 
     if (cmd === 'disconnect') {
-      this.addLine('info', 'Disconnecting from server...');
+      this.addLine('info', this.i18n.translate('terminal.log.disconnecting'));
       this.wsService.disconnect();
       return;
     }
 
     if (!this.isConnected) {
-      this.addLine('error', 'Not connected to server.');
+      this.addLine('error', this.i18n.translate('terminal.log.notConnected'));
       return;
     }
 
     if (this.isSessionLoading) {
-      this.addLine('info', 'Session is loading. Please wait...');
+      this.addLine('info', this.i18n.translate('terminal.log.sessionLoading'));
       return;
     }
 
@@ -369,7 +371,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     if (event && event.target instanceof HTMLElement) {
       const tag = event.target.tagName.toLowerCase();
-
       if (tag === 'input' || tag === 'button' || tag === 'textarea') {
         return;
       }
@@ -417,7 +418,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
       if (this.selectedText) {
         this.dismissSelection();
       }
-
       return;
     }
 
@@ -473,7 +473,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
   dismissSelection(): void {
     this.selectedText = '';
-
     const internals = this.selectionTrigger as unknown as BrnMenuTriggerInternals;
     internals._cdkTrigger?.close?.();
 
@@ -517,7 +516,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-
       toast.error('Failed to append to write-up', {
         description: message,
       });
@@ -532,8 +530,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
   private connect(): void {
     if (this.wsService.isConnected$.value) {
-      this.addLine('info', 'Connected to WebSocket server.');
-      this.addLine('info', 'Type "help" for a list of available commands or just type away!');
+      this.addLine('info', this.i18n.translate('terminal.log.connected'));
+      this.addLine('info', this.i18n.translate('terminal.log.helpHint'));
       this.scrollToBottom();
       this.initializeTerminalState();
       return;
@@ -542,8 +540,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.wsService
       .connect()
       .then(() => {
-        this.addLine('info', 'Connected to WebSocket server.');
-        this.addLine('info', 'Type "help" for a list of available commands or just type away!');
+        this.addLine('info', this.i18n.translate('terminal.log.connected'));
+        this.addLine('info', this.i18n.translate('terminal.log.helpHint'));
         this.scrollToBottom();
         this.initializeTerminalState();
       })
@@ -564,7 +562,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
         if (result.workingDirectory) {
           this.updatePwd(result.workingDirectory);
         }
-
         this.refreshAutocompleteCache();
       })
       .catch(() => { /* Ignore */ });
@@ -599,9 +596,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.wsService
       .executeCommandStreaming(
         'ls',
-        (data) => {
-          output += data;
-        },
+        (data) => { output += data; },
         () => { /* Ignore */ },
       )
       .then(() => {
@@ -654,7 +649,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
       if (entry.output) {
         const html = this.ansiConverter.toHtml(entry.output);
-
         newLines.push({
           type: 'output',
           content: this.sanitizer.bypassSecurityTrustHtml(html),

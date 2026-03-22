@@ -4,12 +4,13 @@ import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { SudoPasswordModalStore } from './sudo-password-modal.store';
+import { TranslatePipe } from '../menubar/translate.pipe';
 
 @Component({
   // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'ctfdeck-sudo-password-modal',
   standalone: true,
-  imports: [AsyncPipe, ...HlmButtonImports, ...HlmInputImports, ...HlmLabelImports],
+  imports: [AsyncPipe, ...HlmButtonImports, ...HlmInputImports, ...HlmLabelImports, TranslatePipe],
   templateUrl: './sudo-password-modal.component.html',
   styleUrls: ['./sudo-password-modal.component.css'],
 })
