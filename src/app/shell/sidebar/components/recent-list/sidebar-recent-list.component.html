@@ -33,33 +33,42 @@
         <button
           type="button"
           (click)="openChat.emit(s)"
-          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
+          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent"
+          [class.justify-center]="isCollapsed"
+          [class.pr-14]="!isCollapsed"
+          [hlmTooltipTrigger]="isCollapsed ? s.name : null"
         >
           <ng-icon name="lucideMessageCircleDashed" class="w-3.5 h-3.5 text-white" />
-          <span class="truncate">{{ s.name }}</span>
+          @if (!isCollapsed) {
+            <span class="truncate">{{ s.name }}</span>
+          } @else {
+            <span class="sr-only">{{ s.name }}</span>
+          }
         </button>
-        <div class="ctf-item-actions group-hover/item:opacity-100">
-          <button
-            type="button"
-            class="ctf-action-btn"
-            (click)="$event.stopPropagation(); renameChat.emit(s)"
-            hlmTooltipTrigger="Rename"
-            aria-label="Rename chat"
-          >
-            <ng-icon name="lucidePencil" />
-            <span class="sr-only">Rename chat</span>
-          </button>
-          <button
-            type="button"
-            class="ctf-action-btn ctf-action-destroy"
-            (click)="$event.stopPropagation(); deleteChat.emit(s)"
-            hlmTooltipTrigger="Delete"
-            aria-label="Delete chat"
-          >
-            <ng-icon name="lucideTrash2" />
-            <span class="sr-only">Delete chat</span>
-          </button>
-        </div>
+        @if (!isCollapsed) {
+          <div class="ctf-item-actions group-hover/item:opacity-100">
+            <button
+              type="button"
+              class="ctf-action-btn"
+              (click)="$event.stopPropagation(); renameChat.emit(s)"
+              hlmTooltipTrigger="Rename"
+              aria-label="Rename chat"
+            >
+              <ng-icon name="lucidePencil" />
+              <span class="sr-only">Rename chat</span>
+            </button>
+            <button
+              type="button"
+              class="ctf-action-btn ctf-action-destroy"
+              (click)="$event.stopPropagation(); deleteChat.emit(s)"
+              hlmTooltipTrigger="Delete"
+              aria-label="Delete chat"
+            >
+              <ng-icon name="lucideTrash2" />
+              <span class="sr-only">Delete chat</span>
+            </button>
+          </div>
+        }
       </div>
     }
   </div>
@@ -110,33 +119,42 @@
         <button
           type="button"
           (click)="openWriteUp.emit(w)"
-          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent pr-14"
+          class="text-xs text-left flex items-center gap-2 h-8 px-2 w-full rounded hover:bg-accent"
+          [class.justify-center]="isCollapsed"
+          [class.pr-14]="!isCollapsed"
+          [hlmTooltipTrigger]="isCollapsed ? w.name : null"
         >
           <ng-icon name="lucideFileText" class="w-3.5 h-3.5 text-foreground" />
-          <span class="truncate">{{ w.name }}</span>
+          @if (!isCollapsed) {
+            <span class="truncate">{{ w.name }}</span>
+          } @else {
+            <span class="sr-only">{{ w.name }}</span>
+          }
         </button>
-        <div class="ctf-item-actions group-hover/item:opacity-100">
-          <button
-            type="button"
-            class="ctf-action-btn"
-            (click)="$event.stopPropagation(); renameWriteUp.emit(w)"
-            hlmTooltipTrigger="Rename"
-            aria-label="Rename write-up"
-          >
-            <ng-icon name="lucidePencil" />
-            <span class="sr-only">Rename write-up</span>
-          </button>
-          <button
-            type="button"
-            class="ctf-action-btn ctf-action-destroy"
-            (click)="$event.stopPropagation(); deleteWriteUp.emit(w)"
-            hlmTooltipTrigger="Delete"
-            aria-label="Delete write-up"
-          >
-            <ng-icon name="lucideTrash2" />
-            <span class="sr-only">Delete write-up</span>
-          </button>
-        </div>
+        @if (!isCollapsed) {
+          <div class="ctf-item-actions group-hover/item:opacity-100">
+            <button
+              type="button"
+              class="ctf-action-btn"
+              (click)="$event.stopPropagation(); renameWriteUp.emit(w)"
+              hlmTooltipTrigger="Rename"
+              aria-label="Rename write-up"
+            >
+              <ng-icon name="lucidePencil" />
+              <span class="sr-only">Rename write-up</span>
+            </button>
+            <button
+              type="button"
+              class="ctf-action-btn ctf-action-destroy"
+              (click)="$event.stopPropagation(); deleteWriteUp.emit(w)"
+              hlmTooltipTrigger="Delete"
+              aria-label="Delete write-up"
+            >
+              <ng-icon name="lucideTrash2" />
+              <span class="sr-only">Delete write-up</span>
+            </button>
+          </div>
+        }
       </div>
     }
   </div>

@@ -3,10 +3,12 @@
     (openTargetManagerEvent)="openTargetManager($event)"
     (openCommandRunnerEvent)="openCommandRunner($event)"
     (openMissingToolsEvent)="toolModal.forceOpen()"
+    (openImportProjectsEvent)="openImportProjects()"
   ></spartan-menubar>
 
   <div class="app-layout flex-1 flex overflow-hidden">
     <ctf-workspace-sidebar
+      #workspaceSidebar
       class="flex-none border-r border-border transition-[width] duration-300 ease-in-out"
     ></ctf-workspace-sidebar>
 

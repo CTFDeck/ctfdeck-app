@@ -59,6 +59,7 @@ export class MenubarComponent implements OnInit, OnDestroy {
   @Output() openTargetManagerEvent = new EventEmitter<'view' | 'add' | 'delete'>();
   @Output() openCommandRunnerEvent = new EventEmitter<string | undefined>();
   @Output() openMissingToolsEvent = new EventEmitter<void>();
+  @Output() openImportProjectsEvent = new EventEmitter<void>();
 
   customScripts: MenubarCustomScript[] = [];
   customScriptsLoading = false;
@@ -114,6 +115,10 @@ export class MenubarComponent implements OnInit, OnDestroy {
 
   openMissingTools(): void {
     this.openMissingToolsEvent.emit();
+  }
+
+  openImportProjects(): void {
+    this.openImportProjectsEvent.emit();
   }
 
   openTool(tool: ToolCatalogItem): void {

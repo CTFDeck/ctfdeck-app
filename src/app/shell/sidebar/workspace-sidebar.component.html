@@ -36,65 +36,79 @@
       (scroll)="onScroll()"
     >
       <hlm-sidebar-group>
-        <div class="px-3 py-2 flex flex-col gap-2">
-          <div class="flex gap-2">
+        @if (!isCollapsed()) {
+          <div class="px-3 py-2 flex flex-col gap-2">
+            <div class="flex gap-2">
+              <button
+                hlmSidebarMenuButton
+                type="button"
+                (click)="newProject()"
+                class="text-xs flex-1 flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
+                [tooltip]="'sidebar.newProject' | translate"
+              >
+                <ng-icon name="lucideLayoutGrid" />
+                <span class="truncate font-medium">{{ 'sidebar.newProject' | translate }}</span>
+              </button>
+            </div>
+
+            <div class="flex gap-2">
+              <button
+                hlmSidebarMenuButton
+                type="button"
+                (click)="newChat()"
+                class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+              >
+                <ng-icon name="lucideMessageSquarePlus" />
+                <span class="truncate font-medium">{{ 'sidebar.chat' | translate }}</span>
+              </button>
+
+              <button
+                hlmSidebarMenuButton
+                type="button"
+                (click)="newWriteUp()"
+                class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+              >
+                <ng-icon name="lucideFilePlus" />
+                <span class="truncate font-medium">{{ 'sidebar.writeUp' | translate }}</span>
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="px-2 py-2 flex flex-col items-center gap-2">
             <button
               hlmSidebarMenuButton
               type="button"
               (click)="newProject()"
-              class="text-xs flex-1 flex items-center gap-2 h-9 px-3 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
+              class="h-9 w-9 p-0 flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-md"
               [tooltip]="'sidebar.newProject' | translate"
             >
               <ng-icon name="lucideLayoutGrid" />
-              @if (!isCollapsed()) {
-                <span class="truncate font-medium">{{ 'sidebar.newProject' | translate }}</span>
-              } @else {
-                <span class="sr-only">{{ 'sidebar.newProject' | translate }}</span>
-              }
+              <span class="sr-only">{{ 'sidebar.newProject' | translate }}</span>
             </button>
 
-            <button
-              hlmSidebarMenuButton
-              type="button"
-              (click)="openImportDialog()"
-              class="text-xs flex items-center justify-center p-0 h-9 w-9 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
-              tooltip="Import Project"
-            >
-              <ng-icon name="lucideUpload" />
-              <span class="sr-only">Import Project</span>
-            </button>
-          </div>
-
-          <div class="flex gap-2">
             <button
               hlmSidebarMenuButton
               type="button"
               (click)="newChat()"
-              class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+              class="h-8 w-8 p-0 flex items-center justify-center bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+              [tooltip]="'sidebar.newChat' | translate"
             >
               <ng-icon name="lucideMessageSquarePlus" />
-              @if (!isCollapsed()) {
-                <span class="truncate font-medium">{{ 'sidebar.chat' | translate }}</span>
-              } @else {
-                <span class="sr-only">{{ 'sidebar.newChat' | translate }}</span>
-              }
+              <span class="sr-only">{{ 'sidebar.newChat' | translate }}</span>
             </button>
 
             <button
               hlmSidebarMenuButton
               type="button"
               (click)="newWriteUp()"
-              class="text-[11px] flex-1 flex items-center justify-center gap-1.5 h-8 bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+              class="h-8 w-8 p-0 flex items-center justify-center bg-accent hover:bg-accent/80 transition-colors border border-border rounded-md"
+              [tooltip]="'sidebar.newWriteUp' | translate"
             >
               <ng-icon name="lucideFilePlus" />
-              @if (!isCollapsed()) {
-                <span class="truncate font-medium">{{ 'sidebar.writeUp' | translate }}</span>
-              } @else {
-                <span class="sr-only">{{ 'sidebar.newWriteUp' | translate }}</span>
-              }
+              <span class="sr-only">{{ 'sidebar.newWriteUp' | translate }}</span>
             </button>
           </div>
-        </div>
+        }
 
         @if (!isCollapsed()) {
           <div class="px-3 py-2 mb-2">

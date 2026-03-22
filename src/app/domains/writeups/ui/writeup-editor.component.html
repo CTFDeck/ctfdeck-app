@@ -8,7 +8,7 @@
           <span>{{ name || ('writeup.titlePlaceholder' | translate) }}</span>
           <input
             [(ngModel)]="name"
-            (ngModelChange)="onContentChange()"
+            (ngModelChange)="onNameChange()"
             class="h-full"
             [placeholder]="'writeup.titlePlaceholder' | translate"
             maxlength="32"

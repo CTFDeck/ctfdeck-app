@@ -44,7 +44,8 @@ import { toast } from 'ngx-sonner';
 import { WriteUpStore } from '../state/writeup.store';
 import { MediaClientService } from '../../media/infrastructure/media-client.service';
 import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
-import { I18nService } from '../../../shell/menubar/i18n.service'; 
+import { I18nService } from '../../../shell/menubar/i18n.service';
+import { DEFAULT_WRITEUP_NAME } from '../../../shared/constants/default-item-names.constants';
 
 @Component({
   selector: 'app-writeup-editor',
@@ -92,6 +93,8 @@ import { I18nService } from '../../../shell/menubar/i18n.service';
   styleUrls: ['./writeup-editor.component.css'],
 })
 export class WriteUpEditorComponent implements OnInit, OnDestroy {
+  private static readonly MAX_AUTO_WRITEUP_TITLE_LENGTH = 30;
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private writeUpStore = inject(WriteUpStore);
@@ -123,6 +126,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private render$ = new Subject<void>();
   private subscriptions = new Subscription();
   private writeUpId: string | null = null;
+  private autoTitleEnabled = false;
+  private suppressNameChangeHandler = false;
   private markedInstance = new Marked({ breaks: true });
   private lastHoveredEl: HTMLElement | null = null;
   private mediaUpdateTimer: ReturnType<typeof setTimeout> | null = null;
@@ -206,6 +211,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
         this.content = writeUp.content;
         this.name = writeUp.name;
+        this.autoTitleEnabled = this.isDefaultWriteUpName(writeUp.name);
         this.isInitialLoad.set(false);
         this.updatePreview();
       }),
@@ -255,12 +261,23 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   onContentChange(): void {
+    this.autoNameWriteUpFromContent();
     this.syncState.set('unsaved');
 
     if (this.mode() === 'split' || this.mode() === 'preview') {
       this.updatePreview();
     }
 
+    this.autoSave$.next();
+  }
+
+  onNameChange(): void {
+    if (this.suppressNameChangeHandler) {
+      return;
+    }
+
+    this.autoTitleEnabled = false;
+    this.syncState.set('unsaved');
     this.autoSave$.next();
   }
 
@@ -483,6 +500,47 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();
+  }
+
+  private autoNameWriteUpFromContent(): void {
+    if (!this.autoTitleEnabled) {
+      return;
+    }
+
+    const autoTitle = this.extractAutoTitle(this.content);
+    if (!autoTitle) {
+      return;
+    }
+
+    if (this.name === autoTitle) {
+      return;
+    }
+
+    this.suppressNameChangeHandler = true;
+    try {
+      this.name = autoTitle;
+    } finally {
+      this.suppressNameChangeHandler = false;
+    }
+  }
+
+  private isDefaultWriteUpName(name: string): boolean {
+    return name.trim().toLowerCase() === DEFAULT_WRITEUP_NAME.toLowerCase();
+  }
+
+  private extractAutoTitle(content: string): string {
+    const normalized = content.replace(/\r\n/g, '\n').trimStart();
+    if (!normalized) {
+      return '';
+    }
+
+    const firstLine = normalized.split('\n', 1)[0] ?? '';
+    return firstLine
+      .replace(/\t/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, WriteUpEditorComponent.MAX_AUTO_WRITEUP_TITLE_LENGTH)
+      .trim();
   }
 
   private executePreviewUpdate(): void {

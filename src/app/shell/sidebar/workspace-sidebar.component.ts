@@ -44,6 +44,7 @@ import { SessionMetadata } from '../../domains/sessions/models/session-metadata.
 import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpMetadata } from '../../domains/writeups/models/writeup.model';
 import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
+import { DEFAULT_CHAT_NAME, DEFAULT_WRITEUP_NAME } from '../../shared/constants/default-item-names.constants';
 import { TranslatePipe } from '../menubar/translate.pipe';
 
 @Component({
@@ -304,7 +305,7 @@ export class WorkspaceSidebarComponent {
   }
 
   async confirmCreateItem(ctx: { close: () => void }): Promise<void> {
-    const defaultName = this.newItemDraft.type === 'session' ? 'New chat' : 'New writeup';
+    const defaultName = this.newItemDraft.type === 'session' ? DEFAULT_CHAT_NAME : DEFAULT_WRITEUP_NAME;
     const name = this.newItemDraft.name.trim() || defaultName;
 
     ctx.close();

@@ -34,6 +34,10 @@
         <button hlmMenuItem (click)="openTargetManager('add')">{{ 'menu.target.add' | translate }}</button>
         <button hlmMenuItem (click)="openTargetManager('delete')">{{ 'menu.target.remove' | translate }}</button>
       </hlm-menu-group>
+      <hlm-menu-separator />
+      <hlm-menu-group>
+        <button hlmMenuItem (click)="openImportProjects()">Import Projects</button>
+      </hlm-menu-group>
     </hlm-menu>
   </ng-template>
 

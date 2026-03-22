@@ -56,6 +56,7 @@ import { WriteUpClientService } from '../../../writeups/infrastructure/writeup-c
 import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
 import { TranslatePipe } from '../../../../shell/menubar/translate.pipe';
 import { I18nService } from '../../../../shell/menubar/i18n.service';
+import { DEFAULT_CHAT_NAME } from '../../../../shared/constants/default-item-names.constants';
 
 interface MenuTriggerLike {
   open(): void;
@@ -108,6 +109,8 @@ interface BrnMenuTriggerInternals {
   styleUrls: ['./terminal.component.css'],
 })
 export class TerminalComponent implements OnInit, OnDestroy {
+  private static readonly MAX_AUTO_CHAT_NAME_LENGTH = 60;
+
   private readonly wsService = inject(WebSocketService);
   private readonly sessionStore = inject(SessionStore);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -141,6 +144,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
   private readonly history = new TerminalHistory();
   public readonly autocomplete = new TerminalAutocomplete();
+  private activeSession: SessionData | null = null;
 
   private readonly writeUpStore = inject(WriteUpStore);
   private readonly writeUpClientService = inject(WriteUpClientService);
@@ -178,6 +182,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
+        this.activeSession = session;
         this.loadSessionHistory(session);
       }),
     );
@@ -242,6 +247,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     try {
       await this.sessionStore.ensureActiveSession();
+      await this.autoRenameChatFromFirstCommand(cmd);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.addLine('error', `Session error: ${message}`);
@@ -621,6 +627,51 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
   private updateLsCache(lsOutput: string): void {
     this.autocomplete.updateCache(lsOutput);
+  }
+
+  private async autoRenameChatFromFirstCommand(command: string): Promise<void> {
+    const activeSessionId = this.sessionStore.getActiveSessionId();
+    if (!activeSessionId) {
+      return;
+    }
+
+    let session = this.activeSession;
+    if (!session || session.id !== activeSessionId) {
+      session = await this.sessionStore.getSessionData(activeSessionId);
+      this.activeSession = session;
+    }
+
+    if (!session || !this.isDefaultChatName(session.name) || session.history.length > 0) {
+      return;
+    }
+
+    const nextName = this.buildChatNameFromCommand(command);
+    if (!nextName || nextName === session.name.trim()) {
+      return;
+    }
+
+    try {
+      await this.sessionStore.renameSession(session.id, nextName, session.description || '');
+      this.activeSession = {
+        ...session,
+        name: nextName,
+      };
+    } catch (error: unknown) {
+      console.warn('Auto-rename chat failed:', error);
+    }
+  }
+
+  private isDefaultChatName(name: string): boolean {
+    return name.trim().toLowerCase() === DEFAULT_CHAT_NAME.toLowerCase();
+  }
+
+  private buildChatNameFromCommand(command: string): string {
+    const normalized = command.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    return normalized.slice(0, TerminalComponent.MAX_AUTO_CHAT_NAME_LENGTH).trim();
   }
 
   private loadSessionHistory(session: SessionData | null): void {
