@@ -25,38 +25,40 @@
     class="flex flex-col"
     [class.gap-0.5]="!isCollapsed"
     [class.gap-1.5]="isCollapsed"
-    [class.px-1]="!isCollapsed"
+    [class.px-0]="!isCollapsed"
     [class.px-0]="isCollapsed"
     (dragover)="onDragOver($event)"
     (drop)="onDrop($event)"
   >
     @for (s of filteredChats((sessions$ | async) || []); track s.id) {
       <div
-        class="ctf-item-group relative group/item"
+        class="ctf-item-group relative group/item rounded-md"
         [class.bg-accent]="s.id === (activeSessionId$ | async)"
         [class.ctf-drop-success]="successfullyDroppedId === s.id"
         draggable="true"
         (dragstart)="onDragStart($event, 'session', s.id)"
         (dragend)="onDragEnd()"
       >
-        <button
-          type="button"
-          (click)="openChat.emit(s)"
-          class="text-xs text-left flex items-center gap-2 h-8 px-2 rounded hover:bg-accent"
-          [class.w-full]="!isCollapsed"
-          [class.w-8]="isCollapsed"
-          [class.mx-auto]="isCollapsed"
-          [class.justify-center]="isCollapsed"
-          [class.pr-14]="!isCollapsed"
-          [hlmTooltipTrigger]="isCollapsed ? s.name : null"
-        >
-          <ng-icon name="lucideMessageCircleDashed" class="w-3.5 h-3.5 text-white" />
-          @if (!isCollapsed) {
-            <span class="truncate">{{ s.name }}</span>
-          } @else {
+        @if (isCollapsed) {
+          <button
+            type="button"
+            (click)="openChat.emit(s)"
+            class="text-xs text-left flex items-center gap-2 h-8 px-2 rounded-md hover:bg-accent w-8 mx-auto justify-center"
+            [hlmTooltipTrigger]="s.name"
+          >
+            <ng-icon name="lucideMessageCircleDashed" class="w-3.5 h-3.5 text-white" />
             <span class="sr-only">{{ s.name }}</span>
-          }
-        </button>
+          </button>
+        } @else {
+          <button
+            type="button"
+            (click)="openChat.emit(s)"
+            class="text-xs text-left flex items-center gap-2 h-8 px-3 rounded-md hover:bg-accent w-full pr-14"
+          >
+            <ng-icon name="lucideMessageCircleDashed" class="w-3.5 h-3.5 text-white" />
+            <span class="truncate">{{ s.name }}</span>
+          </button>
+        }
         @if (!isCollapsed) {
           <div class="ctf-item-actions group-hover/item:opacity-100">
             <button
@@ -123,38 +125,40 @@
     class="flex flex-col"
     [class.gap-0.5]="!isCollapsed"
     [class.gap-1.5]="isCollapsed"
-    [class.px-1]="!isCollapsed"
+    [class.px-0]="!isCollapsed"
     [class.px-0]="isCollapsed"
     (dragover)="onDragOver($event)"
     (drop)="onDrop($event)"
   >
     @for (w of filteredWriteUps((writeUps$ | async) || []); track w.id) {
       <div
-        class="ctf-item-group relative group/item"
+        class="ctf-item-group relative group/item rounded-md"
         [class.bg-accent]="w.id === (activeWriteUpId$ | async)"
         [class.ctf-drop-success]="successfullyDroppedId === w.id"
         draggable="true"
         (dragstart)="onDragStart($event, 'writeup', w.id)"
         (dragend)="onDragEnd()"
       >
-        <button
-          type="button"
-          (click)="openWriteUp.emit(w)"
-          class="text-xs text-left flex items-center gap-2 h-8 px-2 rounded hover:bg-accent"
-          [class.w-full]="!isCollapsed"
-          [class.w-8]="isCollapsed"
-          [class.mx-auto]="isCollapsed"
-          [class.justify-center]="isCollapsed"
-          [class.pr-14]="!isCollapsed"
-          [hlmTooltipTrigger]="isCollapsed ? w.name : null"
-        >
-          <ng-icon name="lucideFileText" class="w-3.5 h-3.5 text-foreground" />
-          @if (!isCollapsed) {
-            <span class="truncate">{{ w.name }}</span>
-          } @else {
+        @if (isCollapsed) {
+          <button
+            type="button"
+            (click)="openWriteUp.emit(w)"
+            class="text-xs text-left flex items-center gap-2 h-8 px-2 rounded-md hover:bg-accent w-8 mx-auto justify-center"
+            [hlmTooltipTrigger]="w.name"
+          >
+            <ng-icon name="lucideFileText" class="w-3.5 h-3.5 text-foreground" />
             <span class="sr-only">{{ w.name }}</span>
-          }
-        </button>
+          </button>
+        } @else {
+          <button
+            type="button"
+            (click)="openWriteUp.emit(w)"
+            class="text-xs text-left flex items-center gap-2 h-8 px-3 rounded-md hover:bg-accent w-full pr-14"
+          >
+            <ng-icon name="lucideFileText" class="w-3.5 h-3.5 text-foreground" />
+            <span class="truncate">{{ w.name }}</span>
+          </button>
+        }
         @if (!isCollapsed) {
           <div class="ctf-item-actions group-hover/item:opacity-100">
             <button
