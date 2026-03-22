@@ -32,22 +32,22 @@
             [class.bg-red-500]="!isConnected"
           ></div>
           <span class="status-text text-xs text-muted-foreground">{{
-              isConnected ? 'Connected to ' + serverUrl : 'Disconnected'
-            }}</span>
+            isConnected
+              ? ('terminal.connection.connectedTo' | translate) + serverUrl
+              : ('terminal.connection.disconnected' | translate)
+          }}</span>
           <ng-icon name="lucideSettings" size="xs" class="ml-1 opacity-50" />
         </button>
 
         <hlm-dialog-content *brnDialogContent="let ctx" class="sm:max-w-[450px]">
           <hlm-dialog-header>
-            <h3 hlmDialogTitle>Connection Settings</h3>
-            <p hlmDialogDescription>
-              Configure the WebSocket server URL to interact with your environment.
-            </p>
+            <h3 hlmDialogTitle>{{ 'terminal.connection.dialogTitle' | translate }}</h3>
+            <p hlmDialogDescription>{{ 'terminal.connection.dialogDescription' | translate }}</p>
           </hlm-dialog-header>
 
           <div class="grid gap-4 py-4">
             <div class="flex flex-col gap-2">
-              <label hlmLabel for="url">Server WebSocket URL</label>
+              <label hlmLabel for="url">{{ 'terminal.connection.urlLabel' | translate }}</label>
               <div class="flex gap-2">
                 <input
                   id="url"
@@ -56,9 +56,15 @@
                   placeholder="ws://localhost:42712"
                   class="flex-1"
                 />
-                <button hlmBtn type="button" variant="secondary" aria-label="Save server" (click)="saveServer()">
+                <button
+                  hlmBtn
+                  type="button"
+                  variant="secondary"
+                  [attr.aria-label]="'terminal.connection.ariaSave' | translate"
+                  (click)="saveServer()"
+                >
                   <ng-icon name="lucideSave" size="sm" />
-                  <span class="sr-only">Save server</span>
+                  <span class="sr-only">{{ 'terminal.connection.ariaSave' | translate }}</span>
                 </button>
               </div>
             </div>
@@ -66,7 +72,7 @@
             @if (savedServers.length > 0) {
               <div class="space-y-2">
                 <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Saved Servers
+                  {{ 'terminal.connection.savedServers' | translate }}
                 </h4>
                 <div class="grid gap-1 max-h-40 overflow-y-auto pr-1">
                   @for (server of savedServers; track server) {
@@ -88,11 +94,11 @@
                         size="icon"
                         variant="ghost"
                         class="h-6 w-6 opacity-0 group-hover:opacity-100"
-                        aria-label="Remove saved server"
+                        [attr.aria-label]="'terminal.connection.ariaRemove' | translate"
                         (click)="removeServer(server, $event)"
                       >
                         <ng-icon name="lucideTrash2" size="xs" class="text-destructive" />
-                        <span class="sr-only">Remove saved server</span>
+                        <span class="sr-only">{{ 'terminal.connection.ariaRemove' | translate }}</span>
                       </button>
                     </div>
                   }
@@ -102,10 +108,12 @@
           </div>
 
           <hlm-dialog-footer>
-            <button hlmBtn type="button" variant="outline" brnDialogClose>Cancel</button>
+            <button hlmBtn type="button" variant="outline" brnDialogClose>
+              {{ 'terminal.connection.cancel' | translate }}
+            </button>
             <button hlmBtn type="button" (click)="reconnect(); ctx.close()" class="gap-2">
               <ng-icon name="lucideZap" size="sm" />
-              Connect
+              {{ 'terminal.connection.connect' | translate }}
             </button>
           </hlm-dialog-footer>
         </hlm-dialog-content>
@@ -134,9 +142,7 @@
         @if (line.type === 'ls' && line.lsEntries?.length) {
           <div class="ls-grid">
             @for (e of line.lsEntries; track e.name) {
-              <span class="ls-item" [ngClass]="classForPrefix(e.prefix)">
-                {{ e.name }}
-              </span>
+              <span class="ls-item" [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
             }
           </div>
         } @else {
@@ -156,9 +162,9 @@
       class="fixed pointer-events-none w-1 h-1 opacity-0"
       [style.left.px]="selectionMenuPosition.x"
       [style.top.px]="selectionMenuPosition.y"
-      aria-label="Open selection menu"
+      [attr.aria-label]="'terminal.ariaOpenSelection' | translate"
     >
-      <span class="sr-only">Open selection menu</span>
+      <span class="sr-only">{{ 'terminal.ariaOpenSelection' | translate }}</span>
     </button>
 
     @if (autocompleteSuggestions.length > 0) {
@@ -191,18 +197,16 @@
 </div>
 
 <ng-template #selectionMenu>
-  <hlm-menu
-    class="w-56 shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 rounded-xl"
-  >
+  <hlm-menu class="w-56 shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 rounded-xl">
     <hlm-menu-label class="flex items-center justify-between">
-      <span>Selection Actions</span>
+      <span>{{ 'terminal.selection.title' | translate }}</span>
       <span class="text-[10px] opacity-40 font-mono">TEXT</span>
     </hlm-menu-label>
     <hlm-menu-separator />
     <hlm-menu-group>
       <button hlmMenuItem type="button" (click)="copySelection()">
         <ng-icon name="lucideCopy" hlmMenuIcon class="mr-2" />
-        <span>Copy Selection</span>
+        <span>{{ 'terminal.selection.copy' | translate }}</span>
         <hlm-menu-shortcut>⌘C</hlm-menu-shortcut>
       </button>
 
@@ -214,7 +218,7 @@
         [brnMenuTriggerFor]="writeupsSubMenu"
       >
         <ng-icon name="lucideFileText" hlmMenuIcon class="mr-2" />
-        <span>Add to Write-up</span>
+        <span>{{ 'terminal.selection.addToWriteUp' | translate }}</span>
         <hlm-menu-item-sub-indicator />
       </button>
     </hlm-menu-group>
@@ -223,17 +227,15 @@
     <hlm-menu-group>
       <button hlmMenuItem type="button" class="text-muted-foreground" (click)="dismissSelection()">
         <ng-icon name="lucideX" hlmMenuIcon class="mr-2" />
-        <span>Dismiss</span>
+        <span>{{ 'terminal.selection.dismiss' | translate }}</span>
       </button>
     </hlm-menu-group>
   </hlm-menu>
 </ng-template>
 
 <ng-template #writeupsSubMenu>
-  <hlm-sub-menu
-    class="w-64 max-h-80 overflow-y-auto shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in slide-in-from-right-1 rounded-xl"
-  >
-    <hlm-menu-label>Target Write-up</hlm-menu-label>
+  <hlm-sub-menu class="w-64 max-h-80 overflow-y-auto shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in slide-in-from-right-1 rounded-xl">
+    <hlm-menu-label>{{ 'terminal.writeup.title' | translate }}</hlm-menu-label>
     <hlm-menu-separator />
     @if ((writeUps$ | async)?.length) {
       <hlm-menu-group>
@@ -246,7 +248,7 @@
       </hlm-menu-group>
     } @else {
       <div class="px-4 py-6 text-center text-xs text-muted-foreground italic">
-        No active write-ups found.
+        {{ 'terminal.writeup.empty' | translate }}
       </div>
     }
   </hlm-sub-menu>
