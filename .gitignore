@@ -47,7 +47,5 @@ Thumbs.db
 dist
 dist-electron
 
-client_litedb_test/*
-client_writeup_project_mngt/*
 .nx/*
-client_writeup_project_mngt.zip
+import_export_client/*
