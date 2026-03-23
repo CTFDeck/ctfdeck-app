@@ -235,6 +235,18 @@
         <hlm-menu-shortcut>⌘C</hlm-menu-shortcut>
       </button>
 
+      <button hlmMenuItem type="button" (click)="addToRecentWriteUpQuick()">
+        <ng-icon name="lucideClock3" hlmMenuIcon class="mr-2" />
+        <span>{{ 'terminal.selection.addToRecentWriteUp' | translate }}</span>
+      </button>
+
+      @if (hasProjectContext()) {
+        <button hlmMenuItem type="button" (click)="addToProjectWriteUpQuick()">
+          <ng-icon name="lucideFolderOpen" hlmMenuIcon class="mr-2" />
+          <span>{{ 'terminal.selection.addToProjectWriteUp' | translate }}</span>
+        </button>
+      }
+
       <button
         hlmMenuItem
         type="button"

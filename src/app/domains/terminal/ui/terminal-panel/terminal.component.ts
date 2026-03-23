@@ -22,8 +22,10 @@ import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmMenuImports, HlmSubMenu } from '@ctfdeck/helm/menu';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideClock3,
   lucideCopy,
   lucideFileText,
+  lucideFolderOpen,
   lucideGlobe,
   lucideMoreHorizontal,
   lucidePlus,
@@ -93,10 +95,12 @@ interface BrnMenuTriggerInternals {
   ],
   providers: [
     provideIcons({
+      lucideClock3,
       lucideServer,
       lucidePlus,
       lucideTrash2,
       lucideFileText,
+      lucideFolderOpen,
       lucideSettings,
       lucideX,
       lucideSave,
@@ -142,7 +146,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
   selectedText = '';
   selectionMenuPosition = { x: 0, y: 0 };
 
-  writeUps$ = inject(WriteUpStore).writeUps$;
+  writeUps$ = inject(WriteUpStore).allWriteUps$;
+  private allWriteUps: WriteUpMetadata[] = [];
 
   private readonly subscriptions = new Subscription();
   private readonly history = new TerminalHistory();
@@ -201,6 +206,13 @@ export class TerminalComponent implements OnInit, OnDestroy {
       }),
     );
 
+    this.subscriptions.add(
+      this.writeUps$.subscribe((writeUps) => {
+        this.allWriteUps = writeUps;
+      }),
+    );
+
+    void this.writeUpStore.refreshAllWriteUps(0, 6, false);
     this.connect();
   }
 
@@ -492,6 +504,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
   }
 
   onContextMenu(event: MouseEvent): void {
+    void this.writeUpStore.refreshAllWriteUps(0, 6, false);
+
     const selection = window.getSelection();
     const currentText = selection?.toString().trim();
 
@@ -555,35 +569,52 @@ export class TerminalComponent implements OnInit, OnDestroy {
   }
 
   async appendToWriteUp(writeUp: WriteUpMetadata): Promise<void> {
+    await this.appendSelectionToWriteUpById(writeUp.id, writeUp.name);
+  }
+
+  hasProjectContext(): boolean {
+    return Boolean(this.activeSession?.projectId);
+  }
+
+  async addToRecentWriteUpQuick(): Promise<void> {
     if (!this.selectedText) {
       return;
     }
 
-    try {
-      const { success, writeUp: fullWriteUp } = await this.writeUpClientService.load(writeUp.id);
+    await this.writeUpStore.refreshAllWriteUps(0, 6, false);
 
-      if (success && fullWriteUp) {
-        const appended = `\n\n\`\`\`bash\n${this.selectedText}\n\`\`\`\n`;
-        const newContent = fullWriteUp.content + appended;
-        const saveOk = await this.writeUpStore.saveActiveWriteUp(newContent, fullWriteUp.name);
+    const recent = this.pickMostRecentWriteUp(this.allWriteUps);
+    if (recent) {
+      await this.appendSelectionToWriteUpById(recent.id, recent.name);
+      return;
+    }
 
-        if (!saveOk) {
-          await this.writeUpClientService.update(writeUp.id, fullWriteUp.name, newContent);
-        }
+    const created = await this.createQuickWriteUp(this.i18n.translate('terminal.writeup.quick.recentName'));
+    if (created) {
+      await this.appendSelectionToWriteUpById(created.id, created.name);
+    }
+  }
 
-        toast.success('Added to write-up!', {
-          description: `Content appended to "${writeUp.name}"`,
-        });
+  async addToProjectWriteUpQuick(): Promise<void> {
+    if (!this.selectedText || !this.activeSession?.projectId) {
+      return;
+    }
 
-        this.dismissSelection();
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Failed to append to write-up', {
-        description: message,
-      });
-    } finally {
-      this.selectedText = '';
+    await this.writeUpStore.refreshAllWriteUps(0, 6, false);
+
+    const projectWriteUps = this.allWriteUps.filter(
+      (writeUp) => writeUp.projectId === this.activeSession?.projectId,
+    );
+    const recentProject = this.pickMostRecentWriteUp(projectWriteUps);
+
+    if (recentProject) {
+      await this.appendSelectionToWriteUpById(recentProject.id, recentProject.name);
+      return;
+    }
+
+    const created = await this.createQuickWriteUp(this.i18n.translate('terminal.writeup.quick.projectName'));
+    if (created) {
+      await this.appendSelectionToWriteUpById(created.id, created.name);
     }
   }
 
@@ -884,5 +915,82 @@ export class TerminalComponent implements OnInit, OnDestroy {
   private nextLineId(prefix: string): string {
     this.lineCounter += 1;
     return `${prefix}-${this.lineCounter}`;
+  }
+
+  private async appendSelectionToWriteUpById(writeUpId: string, writeUpName: string): Promise<void> {
+    const selectedText = this.selectedText;
+    if (!selectedText) {
+      return;
+    }
+
+    try {
+      const { success, writeUp: fullWriteUp } = await this.writeUpClientService.load(writeUpId);
+
+      if (!success || !fullWriteUp) {
+        toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+          description: this.i18n.translate('terminal.writeup.quick.loadError'),
+        });
+        return;
+      }
+
+      const appended = `\n\n\`\`\`bash\n${selectedText}\n\`\`\`\n`;
+      const newContent = fullWriteUp.content + appended;
+      const updated = await this.writeUpClientService.update(writeUpId, fullWriteUp.name, newContent);
+
+      if (!updated) {
+        toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+          description: this.i18n.translate('terminal.writeup.quick.updateError'),
+        });
+        return;
+      }
+
+      toast.success(this.i18n.translate('terminal.writeup.quick.success'), {
+        description: `"${selectedText.slice(0, 60)}${selectedText.length > 60 ? '...' : ''}" -> "${writeUpName}"`,
+      });
+
+      this.dismissSelection();
+      this.selectedText = '';
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : this.i18n.translate('terminal.writeup.quick.unknown');
+      toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+        description: message,
+      });
+    }
+  }
+
+  private pickMostRecentWriteUp(writeUps: WriteUpMetadata[]): WriteUpMetadata | null {
+    if (!writeUps.length) {
+      return null;
+    }
+
+    return [...writeUps].sort((a, b) => {
+      const aTime = new Date(a.updatedAt).getTime();
+      const bTime = new Date(b.updatedAt).getTime();
+      return bTime - aTime;
+    })[0] ?? null;
+  }
+
+  private async createQuickWriteUp(name: string): Promise<{ id: string; name: string } | null> {
+    try {
+      const sessionId = await this.sessionStore.ensureActiveSession();
+      const safeName = name.trim().slice(0, 32) || this.i18n.translate('terminal.writeup.quick.defaultName');
+      const created = await this.writeUpClientService.create(sessionId, safeName);
+
+      if (!created.success || !created.writeUpId) {
+        toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+          description: this.i18n.translate('terminal.writeup.quick.createError'),
+        });
+        return null;
+      }
+
+      await this.writeUpStore.refreshAllWriteUps(0, 6, false);
+      return { id: created.writeUpId, name: safeName };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : this.i18n.translate('terminal.writeup.quick.unknown');
+      toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+        description: message,
+      });
+      return null;
+    }
   }
 }
