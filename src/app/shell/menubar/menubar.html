@@ -19,11 +19,13 @@
       >
         <ng-icon hlm name="lucideTriangleAlert" class="h-3.5 w-3.5" />
         {{ 'menu.warning.missingTools' | translate }}
+        {{ 'menu.warning.missingTools' | translate }}
       </button>
     }
   </div>
 
   <div class="ctf-menu-right">
+    <button i18nLanguageSwitcher aria-label="Select language"></button>
     <button i18nLanguageSwitcher aria-label="Select language"></button>
     <button themeToggle aria-label="Toggle theme"></button>
   </div>
@@ -40,6 +42,9 @@
         <button hlmMenuItem (click)="openTargetManager('view')">{{ 'menu.target.configuration' | translate }}</button>
         <button hlmMenuItem (click)="openTargetManager('add')">{{ 'menu.target.add' | translate }}</button>
         <button hlmMenuItem (click)="openTargetManager('delete')">{{ 'menu.target.remove' | translate }}</button>
+        <button hlmMenuItem (click)="openTargetManager('view')">{{ 'menu.target.configuration' | translate }}</button>
+        <button hlmMenuItem (click)="openTargetManager('add')">{{ 'menu.target.add' | translate }}</button>
+        <button hlmMenuItem (click)="openTargetManager('delete')">{{ 'menu.target.remove' | translate }}</button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
@@ -50,11 +55,13 @@
         @if (hasToolsInCategory('PORT_SCANNING')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="portScanning">
             {{ 'menu.scripts.portScanning' | translate }}
+            {{ 'menu.scripts.portScanning' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
         }
         @if (hasToolsInCategory('WEB_DISCOVERY')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webDiscovery">
+            {{ 'menu.scripts.webDiscovery' | translate }}
             {{ 'menu.scripts.webDiscovery' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
@@ -62,11 +69,13 @@
         @if (hasToolsInCategory('WEB_VULN_SCAN')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="webVuln">
             {{ 'menu.scripts.webVulnScan' | translate }}
+            {{ 'menu.scripts.webVulnScan' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
         }
         @if (hasToolsInCategory('REVERSE_SHELL')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="revshell">
+            {{ 'menu.scripts.reverseShell' | translate }}
             {{ 'menu.scripts.reverseShell' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
@@ -74,11 +83,13 @@
         @if (hasToolsInCategory('EXPLOIT')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="exploit">
             {{ 'menu.scripts.exploit' | translate }}
+            {{ 'menu.scripts.exploit' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
         }
         @if (hasToolsInCategory('RECON')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="recon">
+            {{ 'menu.scripts.recon' | translate }}
             {{ 'menu.scripts.recon' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
@@ -86,11 +97,13 @@
         @if (hasToolsInCategory('HTTP_PROBING')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="httpProbing">
             {{ 'menu.scripts.httpProbing' | translate }}
+            {{ 'menu.scripts.httpProbing' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
         }
         @if (hasToolsInCategory('PASSWORD_ATTACK')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="passwordAttack">
+            {{ 'menu.scripts.passwordAttack' | translate }}
             {{ 'menu.scripts.passwordAttack' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
@@ -98,11 +111,13 @@
         @if (hasToolsInCategory('LATERAL_MOVEMENT')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="lateralMovement">
             {{ 'menu.scripts.lateralMovement' | translate }}
+            {{ 'menu.scripts.lateralMovement' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
         }
         @if (hasToolsInCategory('TUNNELING')) {
           <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="tunneling">
+            {{ 'menu.scripts.tunneling' | translate }}
             {{ 'menu.scripts.tunneling' | translate }}
             <hlm-menu-item-sub-indicator />
           </button>
@@ -113,6 +128,7 @@
 
       <hlm-menu-group>
         <button hlmMenuItem align="start" side="right" [brnMenuTriggerFor]="customscripts">
+          {{ 'menu.scripts.customScripts' | translate }}
           {{ 'menu.scripts.customScripts' | translate }}
           <hlm-menu-item-sub-indicator />
         </button>
@@ -210,15 +226,18 @@
       }
       @for (script of recentCustomScripts; track script.id) {
         <button hlmMenuItem (click)="openCommandRunner(script.id)">{{ script.name }}</button>
+        <button hlmMenuItem (click)="openCommandRunner(script.id)">{{ script.name }}</button>
       }
       @if (!customScriptsLoading && recentCustomScripts.length === 0) {
         <div class="px-3 py-2 text-sm text-muted-foreground">
+          {{ 'menu.scripts.customScripts.none' | translate }}
           {{ 'menu.scripts.customScripts.none' | translate }}
         </div>
       }
       @if (recentCustomScripts.length > 0) {
         <hlm-menu-separator />
       }
+      <button hlmMenuItem (click)="manageCustomScripts()">{{ 'menu.scripts.customScripts.manage' | translate }}</button>
       <button hlmMenuItem (click)="manageCustomScripts()">{{ 'menu.scripts.customScripts.manage' | translate }}</button>
     </hlm-sub-menu>
   </ng-template>
@@ -293,8 +312,10 @@
       <hlm-menu-group>
         <button hlmMenuItem (click)="openUrl('https://github.com/CTFDeck/ctfdeck-app/wiki')">
           {{ 'menu.documentation.developer' | translate }}
+          {{ 'menu.documentation.developer' | translate }}
         </button>
         <button hlmMenuItem (click)="openUrl('https://github.com/CTFDeck/ctfdeck-app/wiki/USER')">
+          {{ 'menu.documentation.user' | translate }}
           {{ 'menu.documentation.user' | translate }}
         </button>
       </hlm-menu-group>

@@ -37,7 +37,10 @@ import { SessionMetadata } from '../../domains/sessions/models/session-metadata.
 import { SessionStore } from '../../domains/sessions/state/session.store';
 import { WriteUpMetadata } from '../../domains/writeups/models/writeup.model';
 import { WriteUpStore } from '../../domains/writeups/state/writeup.store';
-import { DEFAULT_CHAT_NAME, DEFAULT_WRITEUP_NAME } from '../../shared/constants/default-item-names.constants';
+import {
+  DEFAULT_CHAT_NAME,
+  DEFAULT_WRITEUP_NAME,
+} from '../../shared/constants/default-item-names.constants';
 import { TranslatePipe } from '../menubar/translate.pipe';
 import { ProjectsUiService } from '../menubar/components/projects/projects-ui.service';
 
@@ -113,7 +116,7 @@ export class WorkspaceSidebarComponent {
   }
 
   search = '';
-  
+
   sessions$: Observable<SessionMetadata[]>;
   activeSessionId$: Observable<string | null>;
   sessionsLoading$: Observable<boolean>;
@@ -149,10 +152,10 @@ export class WorkspaceSidebarComponent {
   isScrolling = signal(false);
 
   @ViewChild('scrollContainer', { read: ElementRef }) scrollContainer!: ElementRef;
-  
+
   private scrollTimeout: ReturnType<typeof setTimeout> | null = null;
   private dragScrollInterval: ReturnType<typeof setInterval> | null = null;
-  
+
   protected readonly projectStore = inject(ProjectStore);
 
   constructor() {
@@ -186,7 +189,8 @@ export class WorkspaceSidebarComponent {
   }
 
   async confirmCreateItem(ctx: { close: () => void }): Promise<void> {
-    const defaultName = this.newItemDraft.type === 'session' ? DEFAULT_CHAT_NAME : DEFAULT_WRITEUP_NAME;
+    const defaultName =
+      this.newItemDraft.type === 'session' ? DEFAULT_CHAT_NAME : DEFAULT_WRITEUP_NAME;
     const name = this.newItemDraft.name.trim() || defaultName;
 
     ctx.close();
@@ -365,7 +369,12 @@ export class WorkspaceSidebarComponent {
     }
   }
 
-  openRenameFolderDialog(projectId: string, folderId: string, currentName: string, description = ''): void {
+  openRenameFolderDialog(
+    projectId: string,
+    folderId: string,
+    currentName: string,
+    description = '',
+  ): void {
     this.folderToRenameDraft = { projectId, folderId, name: currentName, description };
     setTimeout(() => this.renameFolderTrigger.nativeElement.click());
   }

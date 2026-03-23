@@ -2,14 +2,19 @@
   <header
     class="editor-header flex items-center justify-between px-6 h-14 border-b border-border/50 sticky top-0 z-10 transition-colors"
   >
+  <header
+    class="editor-header flex items-center justify-between px-6 h-14 border-b border-border/50 sticky top-0 z-10 transition-colors"
+  >
     <div class="flex items-center gap-4">
       <div class="flex items-center gap-3 h-14">
         <div class="title-auto-resizer">
+          <span>{{ name || ('writeup.titlePlaceholder' | translate) }}</span>
           <span>{{ name || ('writeup.titlePlaceholder' | translate) }}</span>
           <input
             [(ngModel)]="name"
             (ngModelChange)="onNameChange()"
             class="h-full"
+            [placeholder]="'writeup.titlePlaceholder' | translate"
             [placeholder]="'writeup.titlePlaceholder' | translate"
             maxlength="32"
             autocomplete="off"
@@ -22,50 +27,71 @@
       <div
         class="flex items-center bg-muted/40 rounded-lg border border-border/40 backdrop-blur-sm h-9 p-1 gap-1"
       >
+      <div
+        class="flex items-center bg-muted/40 rounded-lg border border-border/40 backdrop-blur-sm h-9 p-1 gap-1"
+      >
         <button
+          hlmBtn size="sm"
           hlmBtn size="sm"
           [variant]="mode() === 'edit' ? 'secondary' : 'ghost'"
           (click)="setMode('edit')"
           class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
           [hlmTooltipTrigger]="'writeup.mode.tooltip.write' | translate"
+          [hlmTooltipTrigger]="'writeup.mode.tooltip.write' | translate"
         >
           <ng-icon name="lucideEdit" class="mr-2" />
           {{ 'writeup.mode.write' | translate }}
+          {{ 'writeup.mode.write' | translate }}
         </button>
         <button
+          hlmBtn size="sm"
           hlmBtn size="sm"
           [variant]="mode() === 'split' ? 'secondary' : 'ghost'"
           (click)="setMode('split')"
           class="h-7 text-xs px-3 hidden lg:flex rounded-md transition-all active:scale-95"
           [hlmTooltipTrigger]="'writeup.mode.tooltip.split' | translate"
+          [hlmTooltipTrigger]="'writeup.mode.tooltip.split' | translate"
         >
           <ng-icon name="lucideColumns2" class="mr-2" />
           {{ 'writeup.mode.split' | translate }}
+          {{ 'writeup.mode.split' | translate }}
         </button>
         <button
+          hlmBtn size="sm"
           hlmBtn size="sm"
           [variant]="mode() === 'preview' ? 'secondary' : 'ghost'"
           (click)="setMode('preview')"
           class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
           [hlmTooltipTrigger]="'writeup.mode.tooltip.preview' | translate"
+          [hlmTooltipTrigger]="'writeup.mode.tooltip.preview' | translate"
         >
           <ng-icon name="lucideEye" class="mr-2" />
+          {{ 'writeup.mode.preview' | translate }}
           {{ 'writeup.mode.preview' | translate }}
         </button>
         <div class="w-[1px] h-4 bg-border/40 mx-0.5 opacity-50"></div>
         <button
           hlmBtn size="sm" variant="ghost"
+          hlmBtn size="sm" variant="ghost"
           (click)="exportZip()"
           class="h-7 text-xs px-3 rounded-md transition-all active:scale-95"
           [hlmTooltipTrigger]="'writeup.export.tooltip' | translate"
+          [hlmTooltipTrigger]="'writeup.export.tooltip' | translate"
         >
           <ng-icon name="lucideDownload" class="mr-2" />
+          {{ 'writeup.export' | translate }}
           {{ 'writeup.export' | translate }}
         </button>
       </div>
 
       <div class="w-2"></div>
 
+      <button
+        hlmBtn variant="outline" size="sm"
+        (click)="delete()"
+        class="h-9 w-9 p-0 text-destructive border-border/40 hover:bg-destructive/10 hover:border-destructive/30"
+        [hlmTooltipTrigger]="'writeup.delete.tooltip' | translate"
+      >
       <button
         hlmBtn variant="outline" size="sm"
         (click)="delete()"
@@ -82,13 +108,24 @@
         class="h-9 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
         [hlmTooltipTrigger]="'writeup.save.tooltip' | translate"
       >
+      <button
+        hlmBtn size="sm"
+        (click)="save()"
+        [disabled]="isSaving()"
+        class="h-9 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+        [hlmTooltipTrigger]="'writeup.save.tooltip' | translate"
+      >
         @if (syncState() !== 'saving') {
           <ng-icon name="lucideSave" class="text-base" />
         } @else {
           <div
             class="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"
           ></div>
+          <div
+            class="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"
+          ></div>
         }
+        <span>{{ 'writeup.save' | translate }}</span>
         <span>{{ 'writeup.save' | translate }}</span>
       </button>
     </div>
@@ -304,6 +341,11 @@
             opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
             transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
         "
+        style="
+          transition:
+            opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+            transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        "
       >
         <span class="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></span>
         {{ displayedTag() ?? '' }}
@@ -322,7 +364,11 @@
         <div
           class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none"
         >
+        <div
+          class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none"
+        >
           <ng-icon name="lucideFileText" class="text-64 mb-4" />
+          <p>{{ 'writeup.preview.empty' | translate }}</p>
           <p>{{ 'writeup.preview.empty' | translate }}</p>
         </div>
       }
@@ -337,11 +383,13 @@
           <div class="flex items-center gap-2 text-primary">
             <ng-icon name="lucideCloudUpload" class="text-base animate-bounce" />
             <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saving' | translate }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saving' | translate }}</span>
           </div>
         }
         @case ('saved') {
           <div class="flex items-center gap-2 text-green-500">
             <ng-icon name="lucideCheckCircle2" class="text-base" />
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saved' | translate }}</span>
             <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saved' | translate }}</span>
           </div>
         }
@@ -349,11 +397,13 @@
           <div class="flex items-center gap-2 text-muted-foreground">
             <ng-icon name="lucideCloud" class="text-base opacity-40" />
             <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">{{ 'writeup.sync.unsaved' | translate }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">{{ 'writeup.sync.unsaved' | translate }}</span>
           </div>
         }
         @case ('error') {
           <div class="flex items-center gap-2 text-destructive">
             <ng-icon name="lucideAlertCircle" class="text-base" />
+            <span class="text-[10px] font-bold uppercase tracking-widest">{{ 'writeup.sync.error' | translate }}</span>
             <span class="text-[10px] font-bold uppercase tracking-widest">{{ 'writeup.sync.error' | translate }}</span>
           </div>
         }
@@ -372,11 +422,25 @@
             syncState() === 'unsaved' ? ('writeup.sync.tooltip.unsaved' | translate) :
                                         ('writeup.sync.tooltip.error'   | translate)
           }}</span>
+          <span class="font-bold border-b border-border/40 pb-1 mb-1">{{
+            syncState() === 'saved'
+              ? ('writeup.sync.tooltip.title.saved' | translate)
+              : ('writeup.sync.tooltip.title.other' | translate)
+          }}</span>
+          <span class="text-xs opacity-70">{{
+            syncState() === 'saved'   ? ('writeup.sync.tooltip.saved'   | translate) :
+            syncState() === 'saving'  ? ('writeup.sync.tooltip.saving'  | translate) :
+            syncState() === 'unsaved' ? ('writeup.sync.tooltip.unsaved' | translate) :
+                                        ('writeup.sync.tooltip.error'   | translate)
+          }}</span>
         </div>
       </ng-template>
     </div>
 
     @if (isLoading() && isInitialLoad()) {
+      <div
+        class="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-20 transition-all duration-300"
+      >
       <div
         class="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-20 transition-all duration-300"
       >

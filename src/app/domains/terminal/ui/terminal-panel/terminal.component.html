@@ -168,6 +168,7 @@
           <div class="ls-grid">
             @for (e of line.lsEntries; track e.name) {
               <span class="ls-item" [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
+              <span class="ls-item" [ngClass]="classForPrefix(e.prefix)">{{ e.name }}</span>
             }
           </div>
         } @else {
@@ -188,7 +189,9 @@
       [style.left.px]="selectionMenuPosition.x"
       [style.top.px]="selectionMenuPosition.y"
       [attr.aria-label]="'terminal.ariaOpenSelection' | translate"
+      [attr.aria-label]="'terminal.ariaOpenSelection' | translate"
     >
+      <span class="sr-only">{{ 'terminal.ariaOpenSelection' | translate }}</span>
       <span class="sr-only">{{ 'terminal.ariaOpenSelection' | translate }}</span>
     </button>
 
@@ -223,7 +226,9 @@
 
 <ng-template #selectionMenu>
   <hlm-menu class="w-56 shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 rounded-xl">
+  <hlm-menu class="w-56 shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in fade-in-0 zoom-in-95 rounded-xl">
     <hlm-menu-label class="flex items-center justify-between">
+      <span>{{ 'terminal.selection.title' | translate }}</span>
       <span>{{ 'terminal.selection.title' | translate }}</span>
       <span class="text-[10px] opacity-40 font-mono">TEXT</span>
     </hlm-menu-label>
@@ -231,6 +236,7 @@
     <hlm-menu-group>
       <button hlmMenuItem type="button" (click)="copySelection()">
         <ng-icon name="lucideCopy" hlmMenuIcon class="mr-2" />
+        <span>{{ 'terminal.selection.copy' | translate }}</span>
         <span>{{ 'terminal.selection.copy' | translate }}</span>
         <hlm-menu-shortcut>⌘C</hlm-menu-shortcut>
       </button>
@@ -256,6 +262,7 @@
       >
         <ng-icon name="lucideFileText" hlmMenuIcon class="mr-2" />
         <span>{{ 'terminal.selection.addToWriteUp' | translate }}</span>
+        <span>{{ 'terminal.selection.addToWriteUp' | translate }}</span>
         <hlm-menu-item-sub-indicator />
       </button>
     </hlm-menu-group>
@@ -265,12 +272,15 @@
       <button hlmMenuItem type="button" class="text-muted-foreground" (click)="dismissSelection()">
         <ng-icon name="lucideX" hlmMenuIcon class="mr-2" />
         <span>{{ 'terminal.selection.dismiss' | translate }}</span>
+        <span>{{ 'terminal.selection.dismiss' | translate }}</span>
       </button>
     </hlm-menu-group>
   </hlm-menu>
 </ng-template>
 
 <ng-template #writeupsSubMenu>
+  <hlm-sub-menu class="w-64 max-h-80 overflow-y-auto shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in slide-in-from-right-1 rounded-xl">
+    <hlm-menu-label>{{ 'terminal.writeup.title' | translate }}</hlm-menu-label>
   <hlm-sub-menu class="w-64 max-h-80 overflow-y-auto shadow-2xl border-border/50 bg-background/95 backdrop-blur-sm animate-in slide-in-from-right-1 rounded-xl">
     <hlm-menu-label>{{ 'terminal.writeup.title' | translate }}</hlm-menu-label>
     <hlm-menu-separator />
@@ -285,6 +295,7 @@
       </hlm-menu-group>
     } @else {
       <div class="px-4 py-6 text-center text-xs text-muted-foreground italic">
+        {{ 'terminal.writeup.empty' | translate }}
         {{ 'terminal.writeup.empty' | translate }}
       </div>
     }

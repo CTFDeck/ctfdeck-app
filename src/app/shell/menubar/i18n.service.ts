@@ -1,4 +1,4 @@
-﻿// src/app/shell/menubar/i18n.service.ts
+// src/app/shell/menubar/i18n.service.ts
 import { Injectable, signal } from '@angular/core';
 
 export type SupportedLang = 'fr' | 'en' | 'es';

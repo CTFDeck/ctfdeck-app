@@ -92,6 +92,7 @@ interface BrnMenuTriggerInternals {
     BrnDialogContent,
     BrnDialogClose,
     TranslatePipe,
+    TranslatePipe,
   ],
   providers: [
     provideIcons({
@@ -122,6 +123,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
   private readonly sessionStore = inject(SessionStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly sanitizer = inject(DomSanitizer);
+  readonly i18n = inject(I18nService);
   readonly i18n = inject(I18nService);
 
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
@@ -179,6 +181,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
       this.wsService.isConnected$.subscribe((connected) => {
         this.isConnected = connected;
         if (!connected) {
+          this.addLine('info', this.i18n.translate('terminal.log.disconnected'));
           this.addLine('info', this.i18n.translate('terminal.log.disconnected'));
         }
       }),
@@ -243,11 +246,13 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     if (cmd === 'connect') {
       this.addLine('info', this.i18n.translate('terminal.log.connecting'));
+      this.addLine('info', this.i18n.translate('terminal.log.connecting'));
       this.connect();
       return;
     }
 
     if (cmd === 'disconnect') {
+      this.addLine('info', this.i18n.translate('terminal.log.disconnecting'));
       this.addLine('info', this.i18n.translate('terminal.log.disconnecting'));
       this.wsService.disconnect();
       return;
@@ -255,10 +260,12 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     if (!this.isConnected) {
       this.addLine('error', this.i18n.translate('terminal.log.notConnected'));
+      this.addLine('error', this.i18n.translate('terminal.log.notConnected'));
       return;
     }
 
     if (this.isSessionLoading) {
+      this.addLine('info', this.i18n.translate('terminal.log.sessionLoading'));
       this.addLine('info', this.i18n.translate('terminal.log.sessionLoading'));
       return;
     }
@@ -626,6 +633,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
     if (this.wsService.isConnected$.value) {
       this.addLine('info', this.i18n.translate('terminal.log.connected'));
       this.addLine('info', this.i18n.translate('terminal.log.helpHint'));
+      this.addLine('info', this.i18n.translate('terminal.log.connected'));
+      this.addLine('info', this.i18n.translate('terminal.log.helpHint'));
       this.scrollToBottom();
       this.initializeTerminalState();
       return;
@@ -634,6 +643,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.wsService
       .connect()
       .then(() => {
+        this.addLine('info', this.i18n.translate('terminal.log.connected'));
+        this.addLine('info', this.i18n.translate('terminal.log.helpHint'));
         this.addLine('info', this.i18n.translate('terminal.log.connected'));
         this.addLine('info', this.i18n.translate('terminal.log.helpHint'));
         this.scrollToBottom();
@@ -690,6 +701,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.wsService
       .executeCommandStreaming(
         'ls',
+        (data) => { output += data; },
         (data) => { output += data; },
         () => { /* Ignore */ },
       )

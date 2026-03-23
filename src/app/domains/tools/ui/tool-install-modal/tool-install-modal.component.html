@@ -4,9 +4,15 @@
     role="button" tabindex="0"
     [attr.aria-label]="'tools.modal.ariaClose' | translate"
     (click)="close()" (keydown.enter)="close()" (keydown.space)="close()"
+    role="button" tabindex="0"
+    [attr.aria-label]="'tools.modal.ariaClose' | translate"
+    (click)="close()" (keydown.enter)="close()" (keydown.space)="close()"
   >
     <div
       class="w-full sm:max-w-3xl rounded-t-2xl sm:rounded-2xl border border-border bg-background text-foreground shadow-2xl overflow-hidden flex flex-col max-h-[95dvh] sm:max-h-[calc(100vh-8rem)]"
+      role="dialog" aria-modal="true" tabindex="0"
+      [attr.aria-label]="'tools.modal.ariaDialog' | translate"
+      (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()" (keydown.space)="$event.stopPropagation()"
       role="dialog" aria-modal="true" tabindex="0"
       [attr.aria-label]="'tools.modal.ariaDialog' | translate"
       (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()" (keydown.space)="$event.stopPropagation()"
@@ -46,6 +52,7 @@
         </div>
       </div>
 
+      <!-- Error -->
       @if (errorMessage) {
         <div class="px-5 sm:px-7 pt-3 flex-shrink-0">
           <div class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -54,10 +61,13 @@
         </div>
       }
 
+      <!-- Loading -->
       @if (loadingInventory) {
         <div class="px-5 sm:px-7 py-8 flex-shrink-0">
           <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/20 py-10">
             <hlm-spinner class="mb-3" />
+            <p class="font-medium">{{ 'tools.modal.loading' | translate }}</p>
+            <p class="text-sm text-muted-foreground">{{ 'tools.modal.loadingWait' | translate }}</p>
             <p class="font-medium">{{ 'tools.modal.loading' | translate }}</p>
             <p class="text-sm text-muted-foreground">{{ 'tools.modal.loadingWait' | translate }}</p>
           </div>
@@ -104,17 +114,20 @@
                     @if (tool.version) {
                       <div>
                         <span class="font-semibold text-foreground">{{ 'tools.modal.info.version' | translate }}</span>
+                        <span class="font-semibold text-foreground">{{ 'tools.modal.info.version' | translate }}</span>
                         {{ tool.version }}
                       </div>
                     }
                     @if (tool.installedPath) {
                       <div class="break-all">
                         <span class="font-semibold text-foreground">{{ 'tools.modal.info.path' | translate }}</span>
+                        <span class="font-semibold text-foreground">{{ 'tools.modal.info.path' | translate }}</span>
                         {{ tool.installedPath }}
                       </div>
                     }
                     @if (tool.reason) {
                       <div class="break-all">
+                        <span class="font-semibold text-foreground">{{ 'tools.modal.info.info' | translate }}</span>
                         <span class="font-semibold text-foreground">{{ 'tools.modal.info.info' | translate }}</span>
                         {{ tool.reason }}
                       </div>
@@ -137,6 +150,7 @@
                       @if (progress.progressPercent !== null) {
                         <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
                           <div class="h-full rounded-full bg-primary transition-all duration-300" [style.width.%]="progress.progressPercent"></div>
+                          <div class="h-full rounded-full bg-primary transition-all duration-300" [style.width.%]="progress.progressPercent"></div>
                         </div>
                       }
                       @if (getProgressLabel(tool.id)) {
@@ -151,7 +165,10 @@
 
           @if (installableTools.length === 0) {
             <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card/20 py-12">
+            <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card/20 py-12">
               <ng-icon hlm name="lucidePackageSearch" class="mb-3 text-muted-foreground h-8 w-8" />
+              <p class="font-medium text-foreground">{{ 'tools.modal.empty' | translate }}</p>
+              <p class="text-sm text-muted-foreground">{{ 'tools.modal.emptyDesc' | translate }}</p>
               <p class="font-medium text-foreground">{{ 'tools.modal.empty' | translate }}</p>
               <p class="text-sm text-muted-foreground">{{ 'tools.modal.emptyDesc' | translate }}</p>
             </div>

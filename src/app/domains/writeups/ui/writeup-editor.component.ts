@@ -11,6 +11,8 @@ import morphdom from 'morphdom';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { HlmInputImports } from '@ctfdeck/helm/input';
+import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 import { BrnTooltipImports } from '@spartan-ng/brain/tooltip';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -39,6 +41,16 @@ import {
   lucideListOrdered,
   lucideQuote,
   lucideCode,
+  lucideHeading1,
+  lucideHeading2,
+  lucideHeading3,
+  lucideBold,
+  lucideItalic,
+  lucideLink,
+  lucideList,
+  lucideListOrdered,
+  lucideQuote,
+  lucideCode,
 } from '@ng-icons/lucide';
 import { toast } from 'ngx-sonner';
 import { WriteUpStore } from '../state/writeup.store';
@@ -56,9 +68,12 @@ import { DEFAULT_WRITEUP_NAME } from '../../../shared/constants/default-item-nam
     HlmButtonImports,
     HlmInputImports,
     ...HlmLabelImports,
+    HlmInputImports,
+    ...HlmLabelImports,
     NgIcon,
     ...HlmTooltipImports,
     ...BrnTooltipImports,
+    TranslatePipe,
     TranslatePipe,
   ],
   providers: [
@@ -87,6 +102,16 @@ import { DEFAULT_WRITEUP_NAME } from '../../../shared/constants/default-item-nam
       lucideListOrdered,
       lucideQuote,
       lucideCode,
+      lucideHeading1,
+      lucideHeading2,
+      lucideHeading3,
+      lucideBold,
+      lucideItalic,
+      lucideLink,
+      lucideList,
+      lucideListOrdered,
+      lucideQuote,
+      lucideCode,
     }),
   ],
   templateUrl: './writeup-editor.component.html',
@@ -99,6 +124,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private writeUpStore = inject(WriteUpStore);
   private mediaClient = inject(MediaClientService);
+
+  private readonly i18n = inject(I18nService);
 
   private readonly i18n = inject(I18nService);
 
@@ -119,6 +146,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   readonly syncState = signal<'saved' | 'saving' | 'unsaved' | 'error'>('saved');
   readonly hoveredTag = signal<string | null>(null);
   readonly displayedTag = signal<string | null>(null);
+  readonly showLinkDialog = signal(false);
+  linkText = '';
+  linkUrl = '';
   readonly showLinkDialog = signal(false);
   linkText = '';
   linkUrl = '';
@@ -168,6 +198,10 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         const content = this.markedInstance.parse(token.text) as string;
         return `<li title="Type: List Item">${content}</li>`;
       },
+      listitem: (token: Tokens.ListItem) => {
+        const content = this.markedInstance.parse(token.text) as string;
+        return `<li title="Type: List Item">${content}</li>`;
+      },
       table: (token: Tokens.Table) => {
         let headerHtml = '<thead><tr>';
 
@@ -206,6 +240,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         this.loadWriteUp(id).then(() => {
           /* Ignore */
         });
+        this.loadWriteUp(id).then(() => {
+          /* Ignore */
+        });
       }),
     );
 
@@ -231,6 +268,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.autoSave$.pipe(debounceTime(1000)).subscribe(() => {
+        this.save(true).then(() => {
+          /* Ignore */
+        });
         this.save(true).then(() => {
           /* Ignore */
         });
@@ -323,6 +363,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   async delete(): Promise<void> {
+    if (!this.writeUpId || !confirm(this.i18n.translate('writeup.delete.confirm'))) {
     if (!this.writeUpId || !confirm(this.i18n.translate('writeup.delete.confirm'))) {
       return;
     }
@@ -509,6 +550,50 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
   onPreviewMouseOut(): void {
     this.restoreLastHovered();
+  }
+
+  onEditorKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+      event.preventDefault();
+      this.save().then(() => {
+        /* Ignore */
+      });
+      return;
+    }
+
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    const textarea = this.editor.nativeElement;
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = this.content.substring(0, cursorPos);
+    const lineStart = textBeforeCursor.lastIndexOf('\n') + 1;
+    const currentLine = textBeforeCursor.substring(lineStart);
+
+    const bulletMatch = currentLine.match(/^(\s*)([-*+]|\d+\.?)(\s*)/);
+    if (bulletMatch) {
+      event.preventDefault();
+      const [, indent, marker] = bulletMatch;
+      let newMarker: string;
+
+      if (/^\d+\.?$/.test(marker)) {
+        const num = parseInt(marker.replace('.', ''), 10);
+        newMarker = `${num + 1}.`;
+      } else {
+        newMarker = marker;
+      }
+
+      const insertText = `\n${indent}${newMarker} `;
+      this.content = textBeforeCursor + insertText + this.content.substring(cursorPos);
+
+      setTimeout(() => {
+        const newPos = cursorPos + insertText.length;
+        textarea.selectionStart = newPos;
+        textarea.selectionEnd = newPos;
+        this.onContentChange();
+      });
+    }
   }
 
   onEditorKeydown(event: KeyboardEvent): void {
@@ -777,6 +862,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
   private insertAtCursor(text: string): void {
     const textarea = this.editor.nativeElement;
+    const scrollTop = textarea.scrollTop;
     const scrollTop = textarea.scrollTop;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
