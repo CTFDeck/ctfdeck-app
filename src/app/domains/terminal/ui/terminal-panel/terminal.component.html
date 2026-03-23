@@ -1,15 +1,15 @@
 <div
   class="terminal-container flex flex-col h-full w-full bg-card text-card-foreground overflow-hidden font-mono"
   (click)="focusInput()"
-  (keydown.enter)="focusInput()"
-  (keydown.space)="focusInput(); $event.preventDefault()"
+  (keydown.enter)="onContainerEnter($event)"
+  (keydown.space)="onContainerSpace($event)"
   tabindex="0"
 >
   <div
     class="terminal-header flex items-center px-4 h-14 border-b border-border/50"
     (click)="$event.stopPropagation()"
-    (keydown.enter)="$event.stopPropagation()"
-    (keydown.space)="$event.stopPropagation(); $event.preventDefault()"
+    (keydown.enter)="onHeaderEnter($event)"
+    (keydown.space)="onHeaderSpace($event)"
     tabindex="0"
   >
     <div class="relative inline-block">
@@ -128,7 +128,7 @@
     (mousedown)="onMouseDown($event)"
     (contextmenu)="onContextMenu($event)"
   >
-    @for (line of lines; track line) {
+    @for (line of lines; track line.id) {
       <div
         class="line mb-0.5 break-all"
         [ngClass]="{

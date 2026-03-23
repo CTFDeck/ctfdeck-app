@@ -3,6 +3,7 @@ import { MessageType } from '../../../infrastructure/transport/websocket/websock
 import {
   BinaryReader,
   BinaryWriter,
+  NULL_UUID,
   binarySizeOfString,
   binarySizeOfStrings,
   deserializeMessageIdError,
@@ -84,11 +85,12 @@ export function serializeSessionAddTarget(
   messageId: string,
 ): Uint8Array {
   const w = new BinaryWriter(
-    1 + 16 + 16 + binarySizeOfStrings(address, name, description || '') + 4 + 4,
+    1 + 16 + 16 + 16 + binarySizeOfStrings(address, name, description || '') + 4 + 4,
   );
   w.writeByte(MessageType.SessionAddTarget)
     .writeUuid(messageId)
     .writeUuid(sessionId)
+    .writeUuid(NULL_UUID)
     .writeString(address)
     .writeInt32(port ?? -1)
     .writeString(name)

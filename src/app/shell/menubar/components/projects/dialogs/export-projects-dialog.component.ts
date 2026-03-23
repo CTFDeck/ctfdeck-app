@@ -28,27 +28,6 @@ import { TranslatePipe } from '../../../translate.pipe';
     TranslatePipe,
   ],
   templateUrl: './export-projects-dialog.component.html',
-  styles: [
-    `
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: hsl(var(--border));
-        border-radius: 999px;
-      }
-
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: hsl(var(--border)) transparent;
-      }
-    `,
-  ],
 })
 export class ExportProjectsDialogComponent {
   protected readonly projectsUi = inject(ProjectsUiService);

@@ -28,13 +28,14 @@ import {
   lucideTerminal,
   lucideX,
 } from '@ng-icons/lucide';
-import { BrnSelectImports } from '@spartan-ng/brain/select';
+import { BrnSelect, BrnSelectImports } from '@spartan-ng/brain/select';
 import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
 import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
+import { HlmSelectImports } from '@ctfdeck/helm/select/src';
 
 import { TargetCommandStoreService } from '../../targets/infrastructure/target-command-store.service';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
@@ -75,6 +76,7 @@ import { I18nService } from '../../../shell/menubar/i18n.service';
     CommonModule,
     FormsModule,
     ...BrnSelectImports,
+    ...HlmSelectImports,
     ...BrnDialogImports,
     ...HlmButtonImports,
     ...HlmInputImports,
@@ -83,6 +85,7 @@ import { I18nService } from '../../../shell/menubar/i18n.service';
     ...HlmDialogImports,
     BrnDialogContent,
     BrnDialogTrigger,
+    BrnSelect,
     TranslatePipe,
   ],
   providers: [

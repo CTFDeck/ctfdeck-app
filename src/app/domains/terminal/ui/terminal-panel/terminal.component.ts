@@ -158,6 +158,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
       34: '#61afef',
     },
   });
+  private lineCounter = 0;
 
   constructor() {
     this.serverUrl = this.wsService.getUrl();
@@ -293,6 +294,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
           if (outputLineIndex === -1) {
             outputLineIndex = this.lines.length;
             this.lines.push({
+              id: this.nextLineId('live-output'),
               type: 'output',
               content: '',
               timestamp: new Date(),
@@ -368,6 +370,40 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.currentCommand = this.history.navigate(direction, this.currentCommand);
   }
 
+  onContainerEnter(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.shouldIgnoreContainerKey(event)) {
+      return;
+    }
+
+    this.focusInput(event);
+  }
+
+  onContainerSpace(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.shouldIgnoreContainerKey(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.focusInput(event);
+  }
+
+  onHeaderEnter(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.isTypingTarget(event.target)) {
+      return;
+    }
+
+    event.stopPropagation();
+  }
+
+  onHeaderSpace(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.isTypingTarget(event.target)) {
+      return;
+    }
+
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
   focusInput(event?: Event): void {
     const selection = window.getSelection();
 
@@ -377,7 +413,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     if (event && event.target instanceof HTMLElement) {
       const tag = event.target.tagName.toLowerCase();
-      if (tag === 'input' || tag === 'button' || tag === 'textarea') {
+      if (tag === 'input' || tag === 'button' || tag === 'textarea' || tag === 'select') {
         return;
       }
     }
@@ -690,7 +726,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
     for (const entry of session.history) {
       const prompt = formatPromptFromPath(entry.workingDirectory);
 
+      const ts = new Date(entry.timestamp).getTime();
+
       newLines.push({
+        id: `history-${ts}-cmd-${commands.length}`,
         type: 'command',
         content: `${prompt} ${entry.command}`,
         timestamp: entry.timestamp,
@@ -701,6 +740,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
       if (entry.output) {
         const html = this.ansiConverter.toHtml(entry.output);
         newLines.push({
+          id: `history-${ts}-out-${commands.length}`,
           type: 'output',
           content: this.sanitizer.bypassSecurityTrustHtml(html),
           timestamp: entry.timestamp,
@@ -709,6 +749,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
       if (entry.exitCode !== 0 && !entry.output) {
         newLines.push({
+          id: `history-${ts}-err-${commands.length}`,
           type: 'error',
           content: `Program exited with code ${entry.exitCode}`,
           timestamp: entry.timestamp,
@@ -737,6 +778,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
     }
 
     this.lines.push({
+      id: this.nextLineId(type),
       type,
       content: renderedContent,
       timestamp: new Date(),
@@ -750,9 +792,38 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  private shouldIgnoreContainerKey(event: KeyboardEvent): boolean {
+    if (event.defaultPrevented) {
+      return true;
+    }
+
+    if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
+      return true;
+    }
+
+    return this.isTypingTarget(event.target);
+  }
+
+  private isTypingTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (target.isContentEditable) {
+      return true;
+    }
+
+    return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'));
+  }
+
   private scrollToBottom(): void {
     try {
       this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
     } catch { /* Ignore */ }
+  }
+
+  private nextLineId(prefix: string): string {
+    this.lineCounter += 1;
+    return `${prefix}-${this.lineCounter}`;
   }
 }

@@ -60,15 +60,18 @@ export class ProjectsDialogHostComponent {
       setTimeout(() => {
         if (dialog === 'new') {
           this.newProjectTrigger?.nativeElement.click();
+          this.newProjectTrigger?.nativeElement.blur();
           return;
         }
 
         if (dialog === 'import') {
           this.importProjectsTrigger?.nativeElement.click();
+          this.importProjectsTrigger?.nativeElement.blur();
           return;
         }
 
         this.exportProjectsTrigger?.nativeElement.click();
+        this.exportProjectsTrigger?.nativeElement.blur();
       });
     });
   }

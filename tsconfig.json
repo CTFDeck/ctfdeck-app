@@ -79,6 +79,12 @@
       ],
       "@ctfdeck/helm/table": [
         "./libs/ui/table/src/index.ts"
+      ],
+      "@ctfdeck/helm/select": [
+        "./libs/ui/select/src/index.ts"
+      ],
+      "@ctfdeck/helm/form-field": [
+        "./libs/ui/form-field/src/index.ts"
       ]
     }
   },

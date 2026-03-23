@@ -13,7 +13,7 @@
 </hlm-dialog-header>
 
 @if (isSingleMode()) {
-  <div class="overflow-y-scroll [scrollbar-gutter:stable] flex-1 min-h-0 py-4 pr-2 space-y-4 custom-scrollbar">
+  <div class="overflow-y-scroll [scrollbar-gutter:stable] flex-1 min-h-0 py-4 pr-2 space-y-4">
       <div class="grid gap-2">
         <label hlmLabel for="single-export-filename">{{ 'projects.dialog.export.single.filename.label' | translate }}</label>
         <input hlmInput id="single-export-filename" [(ngModel)]="singleExportDraft.filename" [placeholder]="'projects.dialog.export.single.filename.placeholder' | translate" />
@@ -49,7 +49,7 @@
       </div>
   </div>
 } @else {
-  <div class="overflow-y-scroll [scrollbar-gutter:stable] flex-1 min-h-0 py-4 pr-2 pb-8 space-y-4 custom-scrollbar">
+  <div class="overflow-y-scroll [scrollbar-gutter:stable] flex-1 min-h-0 py-4 pr-2 pb-8 space-y-4">
       <div class="grid gap-2">
         <label hlmLabel for="global-export-suffix">{{ 'projects.dialog.export.global.suffix.label' | translate }}</label>
         <input hlmInput id="global-export-suffix" [(ngModel)]="globalExportDraft.suffix" [placeholder]="'projects.dialog.export.global.suffix.placeholder' | translate" />
