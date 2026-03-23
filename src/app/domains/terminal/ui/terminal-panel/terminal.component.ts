@@ -16,6 +16,7 @@ import AnsiToHtml from 'ansi-to-html';
 
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
+import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmMenuImports, HlmSubMenu } from '@ctfdeck/helm/menu';
@@ -77,6 +78,7 @@ interface BrnMenuTriggerInternals {
     CommonModule,
     FormsModule,
     NgIcon,
+    ...HlmIconImports,
     HlmButtonImports,
     BrnMenuTrigger,
     ...HlmMenuImports,
@@ -110,6 +112,7 @@ interface BrnMenuTriggerInternals {
 })
 export class TerminalComponent implements OnInit, OnDestroy {
   private static readonly MAX_AUTO_CHAT_NAME_LENGTH = 60;
+  private static readonly MAX_CHAT_TITLE_LENGTH = 32;
 
   private readonly wsService = inject(WebSocketService);
   private readonly sessionStore = inject(SessionStore);
@@ -125,13 +128,13 @@ export class TerminalComponent implements OnInit, OnDestroy {
   lines: TerminalLine[] = [];
   currentCommand = '';
   isConnected = false;
+  chatName = '';
 
   prompt = '$';
   private lastPwd = '';
 
   autocompleteSuggestions: LsEntry[] = [];
 
-  showServerSelection = false;
   serverUrl = '';
   savedServers: string[] = ['ws://localhost:42712', 'wss://echo.websocket.org'];
   isSessionLoading = false;
@@ -145,6 +148,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
   private readonly history = new TerminalHistory();
   public readonly autocomplete = new TerminalAutocomplete();
   private activeSession: SessionData | null = null;
+  private chatNameSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private suppressChatNameChangeHandler = false;
 
   private readonly writeUpStore = inject(WriteUpStore);
   private readonly writeUpClientService = inject(WriteUpClientService);
@@ -164,13 +169,6 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.serverUrl = this.wsService.getUrl();
   }
 
-  toggleServerSelection(event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    this.showServerSelection = !this.showServerSelection;
-  }
-
   ngOnInit(): void {
     this.subscriptions.add(
       this.wsService.isConnected$.subscribe((connected) => {
@@ -184,6 +182,9 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
         this.activeSession = session;
+        this.suppressChatNameChangeHandler = true;
+        this.chatName = session?.name ?? '';
+        this.suppressChatNameChangeHandler = false;
         this.loadSessionHistory(session);
       }),
     );
@@ -204,6 +205,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.chatNameSaveTimer) {
+      clearTimeout(this.chatNameSaveTimer);
+    }
+
     this.subscriptions.unsubscribe();
   }
 
@@ -356,6 +361,22 @@ export class TerminalComponent implements OnInit, OnDestroy {
   onInput(): void {
     this.autocompleteSuggestions = this.autocomplete.getSuggestions(this.currentCommand);
     this.cdr.detectChanges();
+  }
+
+  onChatNameChange(): void {
+    if (this.suppressChatNameChangeHandler) {
+      return;
+    }
+
+    if (this.chatName.length > TerminalComponent.MAX_CHAT_TITLE_LENGTH) {
+      this.chatName = this.chatName.slice(0, TerminalComponent.MAX_CHAT_TITLE_LENGTH);
+    }
+
+    this.scheduleChatRename();
+  }
+
+  onChatNameBlur(): void {
+    this.flushChatRename();
   }
 
   clearAutocompleteSuggestions(): void {
@@ -692,6 +713,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
         ...session,
         name: nextName,
       };
+      this.chatName = nextName;
     } catch (error: unknown) {
       console.warn('Auto-rename chat failed:', error);
     }
@@ -820,6 +842,43 @@ export class TerminalComponent implements OnInit, OnDestroy {
     try {
       this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
     } catch { /* Ignore */ }
+  }
+
+  private scheduleChatRename(): void {
+    if (this.chatNameSaveTimer) {
+      clearTimeout(this.chatNameSaveTimer);
+    }
+
+    this.chatNameSaveTimer = setTimeout(() => {
+      this.flushChatRename();
+    }, 350);
+  }
+
+  private flushChatRename(): void {
+    if (!this.activeSession) {
+      return;
+    }
+
+    if (this.chatNameSaveTimer) {
+      clearTimeout(this.chatNameSaveTimer);
+      this.chatNameSaveTimer = null;
+    }
+
+    const trimmed = this.chatName.trim().slice(0, TerminalComponent.MAX_CHAT_TITLE_LENGTH);
+    const fallbackName = this.activeSession.name || 'Chat';
+    const nextName = trimmed || fallbackName;
+
+    if (nextName === this.activeSession.name) {
+      this.chatName = nextName;
+      return;
+    }
+
+    this.chatName = nextName;
+    void this.sessionStore.renameSession(
+      this.activeSession.id,
+      nextName,
+      this.activeSession.description || '',
+    );
   }
 
   private nextLineId(prefix: string): string {

@@ -29,17 +29,17 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2 border-b border-border px-5 sm:px-7 py-2.5 sm:py-3 bg-card/30 flex-shrink-0">
-        <button hlmBtn variant="outline" size="sm" type="button" (click)="refresh()" [disabled]="loadingInventory || installing">
-          <ng-icon hlm name="lucideRefreshCw" class="mr-2 inline-flex items-center justify-center align-middle" style="width: 14px; height: 14px" />
-          <span class="align-middle">{{ 'tools.modal.refresh' | translate }}</span>
+        <button hlmBtn variant="outline" size="sm" type="button" class="inline-flex items-center justify-center gap-2 leading-none" (click)="refresh()" [disabled]="loadingInventory || installing">
+          <ng-icon hlm size="sm" name="lucideRefreshCw" class="align-middle flex-shrink-0" />
+          <span class="leading-none">{{ 'tools.modal.refresh' | translate }}</span>
         </button>
-        <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleAll(true)" [disabled]="installing">
-          <ng-icon hlm name="lucideCheckCheck" class="mr-2 inline-flex items-center justify-center align-middle" style="width: 14px; height: 14px" />
-          <span class="align-middle">{{ 'tools.modal.selectAll' | translate }}</span>
+        <button hlmBtn variant="outline" size="sm" type="button" class="inline-flex items-center justify-center gap-2 leading-none" (click)="toggleAll(true)" [disabled]="installing">
+          <ng-icon hlm size="sm" name="lucideCheckCheck" class="align-middle flex-shrink-0" />
+          <span class="leading-none">{{ 'tools.modal.selectAll' | translate }}</span>
         </button>
-        <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleAll(false)" [disabled]="installing">
-          <ng-icon hlm name="lucideListX" class="mr-2 inline-flex items-center justify-center align-middle" style="width: 14px; height: 14px" />
-          <span class="align-middle">{{ 'tools.modal.clear' | translate }}</span>
+        <button hlmBtn variant="outline" size="sm" type="button" class="inline-flex items-center justify-center gap-2 leading-none" (click)="toggleAll(false)" [disabled]="installing">
+          <ng-icon hlm size="sm" name="lucideListX" class="align-middle flex-shrink-0" />
+          <span class="leading-none">{{ 'tools.modal.clear' | translate }}</span>
         </button>
         <div class="ml-auto inline-flex items-center rounded-full border border-border/70 bg-background/60 px-2.5 py-0.5 text-[11px] text-muted-foreground font-semibold">
           {{ getSelectedCount() }} {{ 'tools.modal.selected' | translate }}
@@ -164,13 +164,13 @@
           {{ getSelectedCount() }} {{ 'tools.modal.selectedCount' | translate }}
         </div>
         <div class="flex items-center gap-2">
-          <button hlmBtn variant="secondary" size="sm" class="flex-1 sm:flex-none" type="button" (click)="dismiss()" [disabled]="installing">
-            <ng-icon hlm name="lucideClock3" class="mr-2 inline-flex items-center justify-center align-middle" style="width: 14px; height: 14px" />
-            <span class="align-middle">{{ 'tools.modal.later' | translate }}</span>
+          <button hlmBtn variant="secondary" size="sm" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 leading-none" type="button" (click)="dismiss()" [disabled]="installing">
+            <ng-icon hlm size="sm" name="lucideClock3" class="align-middle flex-shrink-0" />
+            <span class="leading-none">{{ 'tools.modal.later' | translate }}</span>
           </button>
-          <button hlmBtn size="sm" class="flex-1 sm:flex-none" type="button" (click)="installSelected()" [disabled]="installing || getSelectedCount() === 0">
-            <ng-icon hlm name="lucideDownload" class="mr-2 inline-flex items-center justify-center align-middle" style="width: 14px; height: 14px" />
-            <span class="align-middle">{{ 'tools.modal.install' | translate }}</span>
+          <button hlmBtn size="sm" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 leading-none" type="button" (click)="installSelected()" [disabled]="installing || getSelectedCount() === 0">
+            <ng-icon hlm size="sm" name="lucideDownload" class="align-middle flex-shrink-0" />
+            <span class="leading-none">{{ 'tools.modal.install' | translate }}</span>
           </button>
         </div>
       </div>

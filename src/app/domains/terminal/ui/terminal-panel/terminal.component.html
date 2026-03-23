@@ -6,47 +6,70 @@
   tabindex="0"
 >
   <div
-    class="terminal-header flex items-center px-4 h-14 border-b border-border/50"
+    class="terminal-header flex items-center justify-between px-4 sm:px-6 h-14 border-b border-border/50 gap-3 font-sans"
     (click)="$event.stopPropagation()"
     (keydown.enter)="onHeaderEnter($event)"
     (keydown.space)="onHeaderSpace($event)"
     tabindex="0"
   >
-    <div class="relative inline-block">
+    <div class="flex items-center gap-3 h-14 min-w-0">
+      <div class="title-auto-resizer">
+        <span>{{ chatName || ('sidebar.newChat' | translate) }}</span>
+        <input
+          [(ngModel)]="chatName"
+          (ngModelChange)="onChatNameChange()"
+          (blur)="onChatNameBlur()"
+          class="h-full"
+          [placeholder]="'sidebar.newChat' | translate"
+          maxlength="32"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <div class="relative inline-block shrink-0">
       <hlm-dialog>
         <button
           brnDialogTrigger
           hlmBtn
           type="button"
-          [variant]="'outline'"
+          variant="outline"
+          size="sm"
+          class="h-9 px-3 gap-2 text-xs font-medium max-w-[60vw] sm:max-w-none"
           [class.border-red-400]="!isConnected"
           [class.text-red-500]="!isConnected"
           [class.bg-red-50]="!isConnected"
-          size="sm"
-          class="h-7 px-3 gap-2 text-xs font-medium"
-          (click)="toggleServerSelection($event)"
+          (click)="$event.stopPropagation()"
         >
           <div
             class="status-indicator"
             [class.bg-green-500]="isConnected"
             [class.bg-red-500]="!isConnected"
           ></div>
-          <span class="status-text text-xs text-muted-foreground">{{
-            isConnected
-              ? ('terminal.connection.connectedTo' | translate) + serverUrl
-              : ('terminal.connection.disconnected' | translate)
-          }}</span>
-          <ng-icon name="lucideSettings" size="xs" class="ml-1 opacity-50" />
+          <div class="min-w-0 flex items-center gap-1.5">
+            @if (isConnected) {
+              <span class="text-[11px] text-muted-foreground whitespace-nowrap">{{ 'terminal.connection.connectedTo' | translate }}</span>
+            }
+            <span class="text-xs truncate max-w-[160px] sm:max-w-[260px]">{{ isConnected ? serverUrl : ('terminal.connection.disconnected' | translate) }}</span>
+          </div>
+          <ng-icon hlm size="sm" name="lucideSettings" class="opacity-60" />
         </button>
 
-        <hlm-dialog-content *brnDialogContent="let ctx" class="sm:max-w-[450px]">
+        <hlm-dialog-content *brnDialogContent="let ctx" class="sm:max-w-[520px] border border-border/60 bg-background/95 backdrop-blur-sm">
           <hlm-dialog-header>
-            <h3 hlmDialogTitle>{{ 'terminal.connection.dialogTitle' | translate }}</h3>
-            <p hlmDialogDescription>{{ 'terminal.connection.dialogDescription' | translate }}</p>
+            <div class="flex items-start gap-3">
+              <div class="h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <ng-icon hlm size="sm" name="lucideGlobe" class="text-primary" />
+              </div>
+              <div>
+                <h3 hlmDialogTitle>{{ 'terminal.connection.dialogTitle' | translate }}</h3>
+                <p hlmDialogDescription>{{ 'terminal.connection.dialogDescription' | translate }}</p>
+              </div>
+            </div>
           </hlm-dialog-header>
 
           <div class="grid gap-4 py-4">
-            <div class="flex flex-col gap-2">
+            <div class="rounded-lg border border-border/60 bg-card/60 p-3 space-y-2">
               <label hlmLabel for="url">{{ 'terminal.connection.urlLabel' | translate }}</label>
               <div class="flex gap-2">
                 <input
@@ -54,16 +77,17 @@
                   hlmInput
                   [(ngModel)]="serverUrl"
                   placeholder="ws://localhost:42712"
-                  class="flex-1"
+                  class="flex-1 font-mono text-xs sm:text-sm"
                 />
                 <button
                   hlmBtn
                   type="button"
                   variant="secondary"
+                  class="h-9 w-9 p-0 shrink-0 inline-flex items-center justify-center leading-none"
                   [attr.aria-label]="'terminal.connection.ariaSave' | translate"
                   (click)="saveServer()"
                 >
-                  <ng-icon name="lucideSave" size="sm" />
+                  <ng-icon hlm size="sm" name="lucideSave" class="align-middle" />
                   <span class="sr-only">{{ 'terminal.connection.ariaSave' | translate }}</span>
                 </button>
               </div>
@@ -71,33 +95,33 @@
 
             @if (savedServers.length > 0) {
               <div class="space-y-2">
-                <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {{ 'terminal.connection.savedServers' | translate }}
                 </h4>
-                <div class="grid gap-1 max-h-40 overflow-y-auto pr-1">
+                <div class="grid gap-2 max-h-52 overflow-y-auto pr-1">
                   @for (server of savedServers; track server) {
                     <div
-                      class="flex items-center justify-between p-2 rounded-md border border-transparent hover:border-border hover:bg-muted/50 transition-all cursor-pointer group"
+                      class="flex items-center justify-between p-2.5 rounded-md border border-border/60 hover:border-primary/30 hover:bg-muted/50 transition-all cursor-pointer group"
                       (click)="selectServer(server)"
                       (keydown.enter)="selectServer(server)"
                       (keydown.space)="selectServer(server); $event.preventDefault()"
                       tabindex="0"
                       role="button"
                     >
-                      <div class="flex items-center gap-2 overflow-hidden">
-                        <ng-icon name="lucideGlobe" size="xs" class="text-muted-foreground" />
-                        <span class="text-xs truncate">{{ server }}</span>
+                      <div class="flex items-center gap-2 overflow-hidden min-w-0">
+                        <ng-icon hlm size="sm" name="lucideServer" class="text-muted-foreground flex-shrink-0" />
+                        <span class="text-xs sm:text-sm truncate font-mono">{{ server }}</span>
                       </div>
                       <button
                         hlmBtn
                         type="button"
                         size="icon"
                         variant="ghost"
-                        class="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        class="h-7 w-7 opacity-70 sm:opacity-0 sm:group-hover:opacity-100"
                         [attr.aria-label]="'terminal.connection.ariaRemove' | translate"
                         (click)="removeServer(server, $event)"
                       >
-                        <ng-icon name="lucideTrash2" size="xs" class="text-destructive" />
+                        <ng-icon hlm size="sm" name="lucideTrash2" class="text-destructive" />
                         <span class="sr-only">{{ 'terminal.connection.ariaRemove' | translate }}</span>
                       </button>
                     </div>
@@ -108,12 +132,13 @@
           </div>
 
           <hlm-dialog-footer>
-            <button hlmBtn type="button" variant="outline" brnDialogClose>
-              {{ 'terminal.connection.cancel' | translate }}
+            <button hlmBtn type="button" variant="outline" brnDialogClose class="h-9 px-3 gap-2 inline-flex items-center justify-center leading-none">
+              <ng-icon hlm size="sm" name="lucideX" class="align-middle flex-shrink-0" />
+              <span class="leading-none">{{ 'terminal.connection.cancel' | translate }}</span>
             </button>
-            <button hlmBtn type="button" (click)="reconnect(); ctx.close()" class="gap-2">
-              <ng-icon name="lucideZap" size="sm" />
-              {{ 'terminal.connection.connect' | translate }}
+            <button hlmBtn type="button" (click)="reconnect(); ctx.close()" class="h-9 px-3 gap-2 inline-flex items-center justify-center leading-none">
+              <ng-icon hlm size="sm" name="lucideZap" class="align-middle flex-shrink-0" />
+              <span class="leading-none">{{ 'terminal.connection.connect' | translate }}</span>
             </button>
           </hlm-dialog-footer>
         </hlm-dialog-content>
