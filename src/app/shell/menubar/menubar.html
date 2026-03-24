@@ -5,6 +5,7 @@
 
   <div class="ctf-menu-center">
     <hlm-menu-bar class="w-fit border-none">
+      <button hlmMenuBarItem [brnMenuTriggerFor]="projects">{{ 'menu.projects' | translate }}</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="target">{{ 'menu.target' | translate }}</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">{{ 'menu.scripts' | translate }}</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">{{ 'menu.documentation' | translate }}</button>
@@ -26,6 +27,12 @@
     <button i18nLanguageSwitcher aria-label="Select language"></button>
     <button themeToggle aria-label="Toggle theme"></button>
   </div>
+
+  <ng-template #projects>
+    <hlm-menu variant="menubar" class="w-56">
+      <ctf-projects-menu />
+    </hlm-menu>
+  </ng-template>
 
   <ng-template #target>
     <hlm-menu variant="menubar" class="w-56">
@@ -293,4 +300,6 @@
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
+
+  <ctf-projects-dialog-host />
 </div>

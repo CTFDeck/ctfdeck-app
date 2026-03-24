@@ -185,8 +185,7 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  open(mode: 'view' | 'add' | 'delete'): void {
-    this.mode = mode;
+  open(_mode: 'view' | 'add' | 'delete'): void {
     void this.sessionStore.refreshActiveSession();
   }
 

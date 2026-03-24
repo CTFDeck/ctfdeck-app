@@ -11,44 +11,44 @@
       [attr.aria-label]="'tools.modal.ariaDialog' | translate"
       (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()" (keydown.space)="$event.stopPropagation()"
     >
-      <!-- Header -->
-      <div class="border-b border-border bg-accent/20 px-5 sm:px-8 py-4 sm:py-6 flex-shrink-0">
+      <div class="border-b border-border bg-accent/20 px-5 sm:px-7 py-3 sm:py-4 flex-shrink-0">
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
-            <div class="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm">
-              <ng-icon hlm name="lucideWrench" class="h-5 w-5" />
+            <div class="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary shadow-sm">
+              <ng-icon hlm name="lucideWrench" class="h-4 w-4" />
             </div>
             <div>
-              <h3 class="text-lg sm:text-2xl font-semibold tracking-tight">{{ 'tools.modal.title' | translate }}</h3>
-              <p class="text-sm text-muted-foreground">{{ 'tools.modal.subtitle' | translate }}</p>
+              <h3 class="text-base sm:text-xl font-semibold tracking-tight">{{ 'tools.modal.title' | translate }}</h3>
+              <p class="text-xs sm:text-sm text-muted-foreground">{{ 'tools.modal.subtitle' | translate }}</p>
             </div>
           </div>
-          <button hlmBtn variant="ghost" size="icon" class="h-9 w-9 shrink-0" type="button" (click)="close()" [disabled]="installing">
-            <ng-icon hlm name="lucideX" class="h-4 w-4" />
+          <button hlmBtn variant="ghost" size="icon" class="h-8 w-8 shrink-0" type="button" (click)="close()" [disabled]="installing">
+            <ng-icon hlm name="lucideX" style="width: 14px; height: 14px" />
           </button>
         </div>
       </div>
 
-      <!-- Toolbar -->
-      <div class="flex flex-wrap items-center gap-2 border-b border-border px-5 sm:px-8 py-3 sm:py-4 bg-card/30 flex-shrink-0">
-        <button hlmBtn variant="outline" size="sm" type="button" (click)="refresh()" [disabled]="loadingInventory || installing">
-          <ng-icon hlm name="lucideRefreshCw" class="mr-2 h-4 w-4" />
-          {{ 'tools.modal.refresh' | translate }}
+      <div class="flex flex-wrap items-center gap-2 border-b border-border px-5 sm:px-7 py-2.5 sm:py-3 bg-card/30 flex-shrink-0">
+        <button hlmBtn variant="outline" size="sm" type="button" class="inline-flex items-center justify-center gap-2 leading-none" (click)="refresh()" [disabled]="loadingInventory || installing">
+          <ng-icon hlm size="sm" name="lucideRefreshCw" class="align-middle flex-shrink-0" />
+          <span class="leading-none">{{ 'tools.modal.refresh' | translate }}</span>
         </button>
-        <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleAll(true)" [disabled]="installing">
-          {{ 'tools.modal.selectAll' | translate }}
+        <button hlmBtn variant="outline" size="sm" type="button" class="inline-flex items-center justify-center gap-2 leading-none" (click)="toggleAll(true)" [disabled]="installing">
+          <ng-icon hlm size="sm" name="lucideCheckCheck" class="align-middle flex-shrink-0" />
+          <span class="leading-none">{{ 'tools.modal.selectAll' | translate }}</span>
         </button>
-        <button hlmBtn variant="outline" size="sm" type="button" (click)="toggleAll(false)" [disabled]="installing">
-          {{ 'tools.modal.clear' | translate }}
+        <button hlmBtn variant="outline" size="sm" type="button" class="inline-flex items-center justify-center gap-2 leading-none" (click)="toggleAll(false)" [disabled]="installing">
+          <ng-icon hlm size="sm" name="lucideListX" class="align-middle flex-shrink-0" />
+          <span class="leading-none">{{ 'tools.modal.clear' | translate }}</span>
         </button>
-        <div class="ml-auto text-xs text-muted-foreground font-medium">
+        <div class="ml-auto inline-flex items-center rounded-full border border-border/70 bg-background/60 px-2.5 py-0.5 text-[11px] text-muted-foreground font-semibold">
           {{ getSelectedCount() }} {{ 'tools.modal.selected' | translate }}
         </div>
       </div>
 
       <!-- Error -->
       @if (errorMessage) {
-        <div class="px-5 sm:px-8 pt-4 flex-shrink-0">
+        <div class="px-5 sm:px-7 pt-3 flex-shrink-0">
           <div class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {{ errorMessage }}
           </div>
@@ -57,7 +57,7 @@
 
       <!-- Loading -->
       @if (loadingInventory) {
-        <div class="px-5 sm:px-8 py-10 flex-shrink-0">
+        <div class="px-5 sm:px-7 py-8 flex-shrink-0">
           <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/20 py-10">
             <hlm-spinner class="mb-3" />
             <p class="font-medium">{{ 'tools.modal.loading' | translate }}</p>
@@ -65,14 +65,17 @@
           </div>
         </div>
       } @else {
-        <div class="overflow-y-auto px-5 sm:px-8 py-4 sm:py-6 space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0">
+        <div class="overflow-y-scroll [scrollbar-gutter:stable] px-5 sm:px-7 py-3 sm:py-4 space-y-3 flex-1 min-h-0">
           @for (tool of installableTools; track tool.id) {
-            <div class="group rounded-xl border border-border bg-card/40 p-3 sm:p-4 transition-all hover:bg-accent/40">
-              <div class="flex items-start gap-3 sm:gap-4">
+            <div
+              class="group rounded-lg border border-border/80 bg-card/40 p-3 transition-all hover:bg-accent/40"
+              [ngClass]="selectedToolIds[tool.id] ? 'ring-1 ring-primary/35 border-primary/40' : ''"
+            >
+              <div class="flex items-start gap-3">
                 <div class="pt-1 shrink-0">
                   <input
                     type="checkbox"
-                    class="h-4 w-4 rounded border-border"
+                    class="h-4 w-4 rounded border-border accent-primary"
                     [checked]="selectedToolIds[tool.id]"
                     (change)="selectedToolIds[tool.id] = !selectedToolIds[tool.id]"
                     [disabled]="!isSelectable(tool) || installing"
@@ -80,26 +83,26 @@
                 </div>
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
-                    <h4 class="text-sm sm:text-base font-bold tracking-tight text-foreground">{{ tool.displayName }}</h4>
-                    <code class="rounded border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-mono text-muted-foreground">{{ tool.id }}</code>
+                    <h4 class="text-sm font-semibold tracking-tight text-foreground">{{ tool.displayName }}</h4>
+                    <code class="rounded border border-border/60 bg-muted/40 px-2 py-0.5 text-[9px] font-mono text-muted-foreground">{{ tool.id }}</code>
                     @if (tool.isInstalled) {
-                      <span class="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                      <span class="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary">
                         {{ 'tools.modal.badge.installed' | translate }}
                       </span>
                     } @else if (tool.isInstallable) {
-                      <span class="inline-flex items-center rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">
+                      <span class="inline-flex items-center rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[9px] font-semibold text-yellow-600 dark:text-yellow-400">
                         {{ 'tools.modal.badge.missing' | translate }}
                       </span>
                     } @else {
-                      <span class="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                      <span class="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[9px] font-semibold text-muted-foreground">
                         {{ 'tools.modal.badge.notInstallable' | translate }}
                       </span>
                     }
                   </div>
 
-                  <p class="mt-1.5 text-sm text-muted-foreground">{{ tool.description }}</p>
+                  <p class="mt-1 text-xs text-muted-foreground">{{ tool.description }}</p>
 
-                  <div class="mt-2 sm:mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
+                  <div class="mt-2 flex flex-col gap-1 text-[11px] text-muted-foreground">
                     @if (tool.version) {
                       <div>
                         <span class="font-semibold text-foreground">{{ 'tools.modal.info.version' | translate }}</span>
@@ -121,16 +124,16 @@
                   </div>
 
                   @if (!tool.isInstalled && progressByToolId[tool.id]; as progress) {
-                    <div class="mt-3 sm:mt-4 rounded-lg border border-border bg-background/60 p-3">
+                    <div class="mt-3 rounded-lg border border-border bg-background/60 p-2.5">
                       <div class="mb-2 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2 text-sm font-medium">
+                        <div class="flex items-center gap-2 text-xs font-medium">
                           @if (progress.state !== toolInstallState.Success && progress.state !== toolInstallState.Failed) {
                             <hlm-spinner size="sm" />
                           }
                           {{ getStateLabel(progress.state) }}
                         </div>
                         @if (progress.progressPercent !== null) {
-                          <div class="text-xs text-muted-foreground">{{ progress.progressPercent }}%</div>
+                          <div class="text-[11px] text-muted-foreground">{{ progress.progressPercent }}%</div>
                         }
                       </div>
                       @if (progress.progressPercent !== null) {
@@ -139,7 +142,7 @@
                         </div>
                       }
                       @if (getProgressLabel(tool.id)) {
-                        <p class="mt-2 text-xs text-muted-foreground">{{ getProgressLabel(tool.id) }}</p>
+                        <p class="mt-2 text-[11px] text-muted-foreground">{{ getProgressLabel(tool.id) }}</p>
                       }
                     </div>
                   }
@@ -158,18 +161,18 @@
         </div>
       }
 
-      <!-- Footer -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border bg-accent/10 px-5 sm:px-8 py-4 sm:py-5 flex-shrink-0">
-        <div class="text-sm text-muted-foreground text-center sm:text-left">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border bg-accent/10 px-5 sm:px-7 py-3 sm:py-4 flex-shrink-0">
+        <div class="text-xs text-muted-foreground text-center sm:text-left font-medium">
           {{ getSelectedCount() }} {{ 'tools.modal.selectedCount' | translate }}
         </div>
         <div class="flex items-center gap-2">
-          <button hlmBtn variant="secondary" class="flex-1 sm:flex-none" type="button" (click)="dismiss()" [disabled]="installing">
-            {{ 'tools.modal.later' | translate }}
+          <button hlmBtn variant="secondary" size="sm" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 leading-none" type="button" (click)="dismiss()" [disabled]="installing">
+            <ng-icon hlm size="sm" name="lucideClock3" class="align-middle flex-shrink-0" />
+            <span class="leading-none">{{ 'tools.modal.later' | translate }}</span>
           </button>
-          <button hlmBtn class="flex-1 sm:flex-none" type="button" (click)="installSelected()" [disabled]="installing || getSelectedCount() === 0">
-            <ng-icon hlm name="lucideDownload" class="mr-2 h-4 w-4" />
-            {{ 'tools.modal.install' | translate }}
+          <button hlmBtn size="sm" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 leading-none" type="button" (click)="installSelected()" [disabled]="installing || getSelectedCount() === 0">
+            <ng-icon hlm size="sm" name="lucideDownload" class="align-middle flex-shrink-0" />
+            <span class="leading-none">{{ 'tools.modal.install' | translate }}</span>
           </button>
         </div>
       </div>

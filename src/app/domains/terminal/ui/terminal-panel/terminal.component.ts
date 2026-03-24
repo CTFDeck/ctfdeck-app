@@ -16,13 +16,16 @@ import AnsiToHtml from 'ansi-to-html';
 
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
+import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
 import { HlmMenuImports, HlmSubMenu } from '@ctfdeck/helm/menu';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideClock3,
   lucideCopy,
   lucideFileText,
+  lucideFolderOpen,
   lucideGlobe,
   lucideMoreHorizontal,
   lucidePlus,
@@ -56,6 +59,7 @@ import { WriteUpClientService } from '../../../writeups/infrastructure/writeup-c
 import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
 import { TranslatePipe } from '../../../../shell/menubar/translate.pipe';
 import { I18nService } from '../../../../shell/menubar/i18n.service';
+import { DEFAULT_CHAT_NAME } from '../../../../shared/constants/default-item-names.constants';
 
 interface MenuTriggerLike {
   open(): void;
@@ -76,6 +80,7 @@ interface BrnMenuTriggerInternals {
     CommonModule,
     FormsModule,
     NgIcon,
+    ...HlmIconImports,
     HlmButtonImports,
     BrnMenuTrigger,
     ...HlmMenuImports,
@@ -90,10 +95,12 @@ interface BrnMenuTriggerInternals {
   ],
   providers: [
     provideIcons({
+      lucideClock3,
       lucideServer,
       lucidePlus,
       lucideTrash2,
       lucideFileText,
+      lucideFolderOpen,
       lucideSettings,
       lucideX,
       lucideSave,
@@ -108,6 +115,9 @@ interface BrnMenuTriggerInternals {
   styleUrls: ['./terminal.component.css'],
 })
 export class TerminalComponent implements OnInit, OnDestroy {
+  private static readonly MAX_AUTO_CHAT_NAME_LENGTH = 60;
+  private static readonly MAX_CHAT_TITLE_LENGTH = 32;
+
   private readonly wsService = inject(WebSocketService);
   private readonly sessionStore = inject(SessionStore);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -122,13 +132,13 @@ export class TerminalComponent implements OnInit, OnDestroy {
   lines: TerminalLine[] = [];
   currentCommand = '';
   isConnected = false;
+  chatName = '';
 
   prompt = '$';
   private lastPwd = '';
 
   autocompleteSuggestions: LsEntry[] = [];
 
-  showServerSelection = false;
   serverUrl = '';
   savedServers: string[] = ['ws://localhost:42712', 'wss://echo.websocket.org'];
   isSessionLoading = false;
@@ -136,11 +146,15 @@ export class TerminalComponent implements OnInit, OnDestroy {
   selectedText = '';
   selectionMenuPosition = { x: 0, y: 0 };
 
-  writeUps$ = inject(WriteUpStore).writeUps$;
+  writeUps$ = inject(WriteUpStore).allWriteUps$;
+  private allWriteUps: WriteUpMetadata[] = [];
 
   private readonly subscriptions = new Subscription();
   private readonly history = new TerminalHistory();
   public readonly autocomplete = new TerminalAutocomplete();
+  private activeSession: SessionData | null = null;
+  private chatNameSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private suppressChatNameChangeHandler = false;
 
   private readonly writeUpStore = inject(WriteUpStore);
   private readonly writeUpClientService = inject(WriteUpClientService);
@@ -154,16 +168,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
       34: '#61afef',
     },
   });
+  private lineCounter = 0;
 
   constructor() {
     this.serverUrl = this.wsService.getUrl();
-  }
-
-  toggleServerSelection(event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-    this.showServerSelection = !this.showServerSelection;
   }
 
   ngOnInit(): void {
@@ -178,6 +186,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {
+        this.activeSession = session;
+        this.suppressChatNameChangeHandler = true;
+        this.chatName = session?.name ?? '';
+        this.suppressChatNameChangeHandler = false;
         this.loadSessionHistory(session);
       }),
     );
@@ -194,10 +206,21 @@ export class TerminalComponent implements OnInit, OnDestroy {
       }),
     );
 
+    this.subscriptions.add(
+      this.writeUps$.subscribe((writeUps) => {
+        this.allWriteUps = writeUps;
+      }),
+    );
+
+    void this.writeUpStore.refreshAllWriteUps(0, 6, false);
     this.connect();
   }
 
   ngOnDestroy(): void {
+    if (this.chatNameSaveTimer) {
+      clearTimeout(this.chatNameSaveTimer);
+    }
+
     this.subscriptions.unsubscribe();
   }
 
@@ -242,6 +265,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     try {
       await this.sessionStore.ensureActiveSession();
+      await this.autoRenameChatFromFirstCommand(cmd);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.addLine('error', `Session error: ${message}`);
@@ -287,6 +311,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
           if (outputLineIndex === -1) {
             outputLineIndex = this.lines.length;
             this.lines.push({
+              id: this.nextLineId('live-output'),
               type: 'output',
               content: '',
               timestamp: new Date(),
@@ -350,6 +375,22 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  onChatNameChange(): void {
+    if (this.suppressChatNameChangeHandler) {
+      return;
+    }
+
+    if (this.chatName.length > TerminalComponent.MAX_CHAT_TITLE_LENGTH) {
+      this.chatName = this.chatName.slice(0, TerminalComponent.MAX_CHAT_TITLE_LENGTH);
+    }
+
+    this.scheduleChatRename();
+  }
+
+  onChatNameBlur(): void {
+    this.flushChatRename();
+  }
+
   clearAutocompleteSuggestions(): void {
     if (this.autocompleteSuggestions.length > 0) {
       this.autocompleteSuggestions = [];
@@ -362,6 +403,40 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.currentCommand = this.history.navigate(direction, this.currentCommand);
   }
 
+  onContainerEnter(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.shouldIgnoreContainerKey(event)) {
+      return;
+    }
+
+    this.focusInput(event);
+  }
+
+  onContainerSpace(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.shouldIgnoreContainerKey(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.focusInput(event);
+  }
+
+  onHeaderEnter(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.isTypingTarget(event.target)) {
+      return;
+    }
+
+    event.stopPropagation();
+  }
+
+  onHeaderSpace(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.isTypingTarget(event.target)) {
+      return;
+    }
+
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
   focusInput(event?: Event): void {
     const selection = window.getSelection();
 
@@ -371,7 +446,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     if (event && event.target instanceof HTMLElement) {
       const tag = event.target.tagName.toLowerCase();
-      if (tag === 'input' || tag === 'button' || tag === 'textarea') {
+      if (tag === 'input' || tag === 'button' || tag === 'textarea' || tag === 'select') {
         return;
       }
     }
@@ -429,6 +504,8 @@ export class TerminalComponent implements OnInit, OnDestroy {
   }
 
   onContextMenu(event: MouseEvent): void {
+    void this.writeUpStore.refreshAllWriteUps(0, 6, false);
+
     const selection = window.getSelection();
     const currentText = selection?.toString().trim();
 
@@ -492,35 +569,52 @@ export class TerminalComponent implements OnInit, OnDestroy {
   }
 
   async appendToWriteUp(writeUp: WriteUpMetadata): Promise<void> {
+    await this.appendSelectionToWriteUpById(writeUp.id, writeUp.name);
+  }
+
+  hasProjectContext(): boolean {
+    return Boolean(this.activeSession?.projectId);
+  }
+
+  async addToRecentWriteUpQuick(): Promise<void> {
     if (!this.selectedText) {
       return;
     }
 
-    try {
-      const { success, writeUp: fullWriteUp } = await this.writeUpClientService.load(writeUp.id);
+    await this.writeUpStore.refreshAllWriteUps(0, 6, false);
 
-      if (success && fullWriteUp) {
-        const appended = `\n\n\`\`\`bash\n${this.selectedText}\n\`\`\`\n`;
-        const newContent = fullWriteUp.content + appended;
-        const saveOk = await this.writeUpStore.saveActiveWriteUp(newContent, fullWriteUp.name);
+    const recent = this.pickMostRecentWriteUp(this.allWriteUps);
+    if (recent) {
+      await this.appendSelectionToWriteUpById(recent.id, recent.name);
+      return;
+    }
 
-        if (!saveOk) {
-          await this.writeUpClientService.update(writeUp.id, fullWriteUp.name, newContent);
-        }
+    const created = await this.createQuickWriteUp(this.i18n.translate('terminal.writeup.quick.recentName'));
+    if (created) {
+      await this.appendSelectionToWriteUpById(created.id, created.name);
+    }
+  }
 
-        toast.success('Added to write-up!', {
-          description: `Content appended to "${writeUp.name}"`,
-        });
+  async addToProjectWriteUpQuick(): Promise<void> {
+    if (!this.selectedText || !this.activeSession?.projectId) {
+      return;
+    }
 
-        this.dismissSelection();
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Failed to append to write-up', {
-        description: message,
-      });
-    } finally {
-      this.selectedText = '';
+    await this.writeUpStore.refreshAllWriteUps(0, 6, false);
+
+    const projectWriteUps = this.allWriteUps.filter(
+      (writeUp) => writeUp.projectId === this.activeSession?.projectId,
+    );
+    const recentProject = this.pickMostRecentWriteUp(projectWriteUps);
+
+    if (recentProject) {
+      await this.appendSelectionToWriteUpById(recentProject.id, recentProject.name);
+      return;
+    }
+
+    const created = await this.createQuickWriteUp(this.i18n.translate('terminal.writeup.quick.projectName'));
+    if (created) {
+      await this.appendSelectionToWriteUpById(created.id, created.name);
     }
   }
 
@@ -623,6 +717,52 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.autocomplete.updateCache(lsOutput);
   }
 
+  private async autoRenameChatFromFirstCommand(command: string): Promise<void> {
+    const activeSessionId = this.sessionStore.getActiveSessionId();
+    if (!activeSessionId) {
+      return;
+    }
+
+    let session = this.activeSession;
+    if (!session || session.id !== activeSessionId) {
+      session = await this.sessionStore.getSessionData(activeSessionId);
+      this.activeSession = session;
+    }
+
+    if (!session || !this.isDefaultChatName(session.name) || session.history.length > 0) {
+      return;
+    }
+
+    const nextName = this.buildChatNameFromCommand(command);
+    if (!nextName || nextName === session.name.trim()) {
+      return;
+    }
+
+    try {
+      await this.sessionStore.renameSession(session.id, nextName, session.description || '');
+      this.activeSession = {
+        ...session,
+        name: nextName,
+      };
+      this.chatName = nextName;
+    } catch (error: unknown) {
+      console.warn('Auto-rename chat failed:', error);
+    }
+  }
+
+  private isDefaultChatName(name: string): boolean {
+    return name.trim().toLowerCase() === DEFAULT_CHAT_NAME.toLowerCase();
+  }
+
+  private buildChatNameFromCommand(command: string): string {
+    const normalized = command.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    return normalized.slice(0, TerminalComponent.MAX_AUTO_CHAT_NAME_LENGTH).trim();
+  }
+
   private loadSessionHistory(session: SessionData | null): void {
     if (!session) {
       this.lines = [];
@@ -639,7 +779,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
     for (const entry of session.history) {
       const prompt = formatPromptFromPath(entry.workingDirectory);
 
+      const ts = new Date(entry.timestamp).getTime();
+
       newLines.push({
+        id: `history-${ts}-cmd-${commands.length}`,
         type: 'command',
         content: `${prompt} ${entry.command}`,
         timestamp: entry.timestamp,
@@ -650,6 +793,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
       if (entry.output) {
         const html = this.ansiConverter.toHtml(entry.output);
         newLines.push({
+          id: `history-${ts}-out-${commands.length}`,
           type: 'output',
           content: this.sanitizer.bypassSecurityTrustHtml(html),
           timestamp: entry.timestamp,
@@ -658,6 +802,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
       if (entry.exitCode !== 0 && !entry.output) {
         newLines.push({
+          id: `history-${ts}-err-${commands.length}`,
           type: 'error',
           content: `Program exited with code ${entry.exitCode}`,
           timestamp: entry.timestamp,
@@ -686,6 +831,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
     }
 
     this.lines.push({
+      id: this.nextLineId(type),
       type,
       content: renderedContent,
       timestamp: new Date(),
@@ -699,9 +845,152 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  private shouldIgnoreContainerKey(event: KeyboardEvent): boolean {
+    if (event.defaultPrevented) {
+      return true;
+    }
+
+    if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
+      return true;
+    }
+
+    return this.isTypingTarget(event.target);
+  }
+
+  private isTypingTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (target.isContentEditable) {
+      return true;
+    }
+
+    return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'));
+  }
+
   private scrollToBottom(): void {
     try {
       this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
     } catch { /* Ignore */ }
+  }
+
+  private scheduleChatRename(): void {
+    if (this.chatNameSaveTimer) {
+      clearTimeout(this.chatNameSaveTimer);
+    }
+
+    this.chatNameSaveTimer = setTimeout(() => {
+      this.flushChatRename();
+    }, 350);
+  }
+
+  private flushChatRename(): void {
+    if (!this.activeSession) {
+      return;
+    }
+
+    if (this.chatNameSaveTimer) {
+      clearTimeout(this.chatNameSaveTimer);
+      this.chatNameSaveTimer = null;
+    }
+
+    const trimmed = this.chatName.trim().slice(0, TerminalComponent.MAX_CHAT_TITLE_LENGTH);
+    const fallbackName = this.activeSession.name || 'Chat';
+    const nextName = trimmed || fallbackName;
+
+    if (nextName === this.activeSession.name) {
+      this.chatName = nextName;
+      return;
+    }
+
+    this.chatName = nextName;
+    void this.sessionStore.renameSession(
+      this.activeSession.id,
+      nextName,
+      this.activeSession.description || '',
+    );
+  }
+
+  private nextLineId(prefix: string): string {
+    this.lineCounter += 1;
+    return `${prefix}-${this.lineCounter}`;
+  }
+
+  private async appendSelectionToWriteUpById(writeUpId: string, writeUpName: string): Promise<void> {
+    const selectedText = this.selectedText;
+    if (!selectedText) {
+      return;
+    }
+
+    try {
+      const { success, writeUp: fullWriteUp } = await this.writeUpClientService.load(writeUpId);
+
+      if (!success || !fullWriteUp) {
+        toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+          description: this.i18n.translate('terminal.writeup.quick.loadError'),
+        });
+        return;
+      }
+
+      const appended = `\n\n\`\`\`bash\n${selectedText}\n\`\`\`\n`;
+      const newContent = fullWriteUp.content + appended;
+      const updated = await this.writeUpClientService.update(writeUpId, fullWriteUp.name, newContent);
+
+      if (!updated) {
+        toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+          description: this.i18n.translate('terminal.writeup.quick.updateError'),
+        });
+        return;
+      }
+
+      toast.success(this.i18n.translate('terminal.writeup.quick.success'), {
+        description: `"${selectedText.slice(0, 60)}${selectedText.length > 60 ? '...' : ''}" -> "${writeUpName}"`,
+      });
+
+      this.dismissSelection();
+      this.selectedText = '';
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : this.i18n.translate('terminal.writeup.quick.unknown');
+      toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+        description: message,
+      });
+    }
+  }
+
+  private pickMostRecentWriteUp(writeUps: WriteUpMetadata[]): WriteUpMetadata | null {
+    if (!writeUps.length) {
+      return null;
+    }
+
+    return [...writeUps].sort((a, b) => {
+      const aTime = new Date(a.updatedAt).getTime();
+      const bTime = new Date(b.updatedAt).getTime();
+      return bTime - aTime;
+    })[0] ?? null;
+  }
+
+  private async createQuickWriteUp(name: string): Promise<{ id: string; name: string } | null> {
+    try {
+      const sessionId = await this.sessionStore.ensureActiveSession();
+      const safeName = name.trim().slice(0, 32) || this.i18n.translate('terminal.writeup.quick.defaultName');
+      const created = await this.writeUpClientService.create(sessionId, safeName);
+
+      if (!created.success || !created.writeUpId) {
+        toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+          description: this.i18n.translate('terminal.writeup.quick.createError'),
+        });
+        return null;
+      }
+
+      await this.writeUpStore.refreshAllWriteUps(0, 6, false);
+      return { id: created.writeUpId, name: safeName };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : this.i18n.translate('terminal.writeup.quick.unknown');
+      toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
+        description: message,
+      });
+      return null;
+    }
   }
 }

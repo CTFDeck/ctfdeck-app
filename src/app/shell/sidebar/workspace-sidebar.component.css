@@ -52,6 +52,11 @@
   --_sb-thumb-opacity: 0;
 }
 
+.ctf-chat-sidebar ng-scrollbar[hlm].ctf-collapsed-scroll {
+  --scrollbar-thickness: 0;
+  --scrollbar-offset: 0;
+}
+
 .ctf-chat-sidebar ng-scrollbar[hlm] > * {
   min-height: 0;
 }
@@ -112,211 +117,8 @@
   background-color: var(--sidebar-accent);
 }
 
-.ctf-chat-sidebar .ctf-item-group button:hover {
-  background-color: var(--sidebar-accent);
-}
-
-.ctf-chat-sidebar .border-l {
-  border-left-width: 1px;
-  border-left-style: solid;
-  border-left-color: var(--sidebar-border);
-}
-
-.ctf-chat-sidebar .group\/item:hover .ctf-item-actions {
-  opacity: 1;
-}
-
-.ctf-chat-sidebar .group\/item .ctf-item-actions {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  padding-right: 0.5rem;
-  background: linear-gradient(to right, transparent, var(--sidebar-accent) 40%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.1s ease;
-}
-
-.ctf-chat-sidebar .group\/item:hover .ctf-item-actions {
-  pointer-events: auto;
-}
-
-.ctf-chat-sidebar .truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.ctf-chat-sidebar .ctf-item-group {
-  min-width: 0;
-  overflow: hidden;
-  position: relative;
-}
-
-.ctf-chat-sidebar .ctf-item-actions {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  padding-right: 6px;
-  background: transparent;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 180ms ease;
-}
-
-.ctf-chat-sidebar .ctf-item-group:hover .ctf-item-actions {
-  opacity: 1;
-  pointer-events: auto;
-  background: transparent;
-}
-
-.ctf-chat-sidebar .ctf-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 5px;
-  border: none;
-  background: transparent;
-  color: var(--sidebar-foreground);
-  opacity: 0.55;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    opacity 130ms ease,
-    background 130ms ease,
-    color 130ms ease,
-    transform 130ms ease;
-}
-
-.ctf-chat-sidebar .ctf-action-btn:hover {
-  opacity: 1;
-  background: color-mix(in srgb, var(--foreground) 10%, transparent);
-  transform: scale(1.1);
-}
-
-.ctf-chat-sidebar .ctf-action-btn.ctf-action-destroy:hover {
-  color: var(--destructive);
-  background: color-mix(in srgb, var(--destructive) 12%, transparent);
-}
-
 .ctf-chat-sidebar .flex-col {
   min-width: 0;
-}
-
-.ctf-chat-sidebar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--sidebar-border);
-  pointer-events: none;
-}
-
-.ctf-chat-sidebar hlm-sidebar-header {
-  position: relative;
-  z-index: 5;
-  background: var(--sidebar);
-}
-
-.ctf-chat-sidebar hlm-sidebar-separator {
-  margin-left: 0;
-  margin-right: 0;
-  width: 100%;
-}
-
-.ctf-chat-sidebar ng-scrollbar[hlm]::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.ctf-chat-sidebar ng-scrollbar[hlm]::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ctf-chat-sidebar ng-scrollbar[hlm]::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb, rgba(100, 100, 110, 0.5));
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-  transition:
-    background-color 0.16s ease,
-    transform 0.16s ease,
-    opacity 0.16s ease;
-  opacity: var(--_sb-thumb-opacity, 0);
-}
-
-.ctf-chat-sidebar ng-scrollbar[hlm]:hover::-webkit-scrollbar-thumb {
-  opacity: 0.95;
-  transform: scale(1.03);
-}
-
-.ctf-chat-sidebar ng-scrollbar[hlm]:hover {
-  --_sb-thumb-opacity: 0.95;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ctf-chat-sidebar ng-scrollbar[hlm]::-webkit-scrollbar-thumb {
-    transition: none;
-  }
-}
-
-.ctf-chat-sidebar .ctf-mode-switcher button {
-  flex: 1;
-  border-radius: calc(0.5rem - 0.25rem);
-}
-
-.ctf-chat-sidebar button.bg-accent {
-  background: var(--background);
-  color: var(--primary);
-  font-weight: 600;
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    0 0 0 1px var(--sidebar-border);
-}
-
-.ctf-chat-sidebar button[hlmBtn] {
-  transition: all 0.2s ease;
-}
-
-@keyframes drop-success-pulse {
-  0% {
-    background-color: transparent;
-  }
-  15% {
-    background-color: color-mix(in srgb, #22c55e 25%, transparent);
-    box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-.ctf-drop-success span,
-.ctf-drop-success ng-icon {
-  color: #22c55e !important;
-  transition: color 0.3s ease;
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
 }
 
 .ctf-scroll-indicator {
@@ -372,22 +174,4 @@
 .ctf-is-dragging .ctf-item-actions {
   opacity: 0 !important;
   pointer-events: none !important;
-}
-
-.animate-folder-progress {
-  width: 0;
-  animation: folder-progress 450ms linear forwards;
-  box-shadow: 0 0 8px var(--primary);
-  border-radius: 0 99px 99px 0;
-  z-index: 10;
-  pointer-events: none;
-}
-
-@keyframes folder-progress {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
 }

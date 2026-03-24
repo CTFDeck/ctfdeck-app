@@ -3,6 +3,7 @@ import { MessageType } from '../../../infrastructure/transport/websocket/websock
 import {
   BinaryReader,
   BinaryWriter,
+  NULL_UUID,
   binarySizeOfString,
   binarySizeOfStrings,
   deserializeMessageIdError,
@@ -38,9 +39,18 @@ export function serializeSessionLoad(sessionId: string, messageId: string): Uint
   return w.buffer;
 }
 
-export function serializeSessionList(offset: number, limit: number, messageId: string, unassignedOnly = false): Uint8Array {
+export function serializeSessionList(
+  offset: number,
+  limit: number,
+  messageId: string,
+  unassignedOnly = false,
+): Uint8Array {
   const w = new BinaryWriter(1 + 16 + 4 + 4 + 1);
-  w.writeByte(MessageType.SessionList).writeUuid(messageId).writeInt32(offset).writeInt32(limit).writeBoolean(unassignedOnly);
+  w.writeByte(MessageType.SessionList)
+    .writeUuid(messageId)
+    .writeInt32(offset)
+    .writeInt32(limit)
+    .writeBoolean(unassignedOnly);
   return w.buffer;
 }
 
@@ -50,9 +60,18 @@ export function serializeSessionDelete(sessionId: string, messageId: string): Ui
   return w.buffer;
 }
 
-export function serializeSessionUpdate(sessionId: string, name: string, description: string, messageId: string): Uint8Array {
+export function serializeSessionUpdate(
+  sessionId: string,
+  name: string,
+  description: string,
+  messageId: string,
+): Uint8Array {
   const w = new BinaryWriter(1 + 16 + 16 + binarySizeOfStrings(name, description));
-  w.writeByte(MessageType.SessionUpdate).writeUuid(messageId).writeUuid(sessionId).writeString(name).writeString(description);
+  w.writeByte(MessageType.SessionUpdate)
+    .writeUuid(messageId)
+    .writeUuid(sessionId)
+    .writeString(name)
+    .writeString(description);
   return w.buffer;
 }
 
@@ -65,15 +84,31 @@ export function serializeSessionAddTarget(
   description: string,
   messageId: string,
 ): Uint8Array {
-  const w = new BinaryWriter(1 + 16 + 16 + binarySizeOfStrings(address, name, description || '') + 4 + 4);
-  w.writeByte(MessageType.SessionAddTarget).writeUuid(messageId).writeUuid(sessionId)
-    .writeString(address).writeInt32(port ?? -1).writeString(name).writeString(description || '').writeInt32(type);
+  const w = new BinaryWriter(
+    1 + 16 + 16 + 16 + binarySizeOfStrings(address, name, description || '') + 4 + 4,
+  );
+  w.writeByte(MessageType.SessionAddTarget)
+    .writeUuid(messageId)
+    .writeUuid(sessionId)
+    .writeUuid(NULL_UUID)
+    .writeString(address)
+    .writeInt32(port ?? -1)
+    .writeString(name)
+    .writeString(description || '')
+    .writeInt32(type);
   return w.buffer;
 }
 
-export function serializeSessionDeleteTarget(sessionId: string, targetId: string, messageId: string): Uint8Array {
+export function serializeSessionDeleteTarget(
+  sessionId: string,
+  targetId: string,
+  messageId: string,
+): Uint8Array {
   const w = new BinaryWriter(1 + 16 + 16 + 16);
-  w.writeByte(MessageType.SessionDeleteTarget).writeUuid(messageId).writeUuid(sessionId).writeUuid(targetId);
+  w.writeByte(MessageType.SessionDeleteTarget)
+    .writeUuid(messageId)
+    .writeUuid(sessionId)
+    .writeUuid(targetId);
   return w.buffer;
 }
 
@@ -87,9 +122,18 @@ export function serializeSessionEditTarget(
   description: string,
   messageId: string,
 ): Uint8Array {
-  const w = new BinaryWriter(1 + 16 + 16 + 16 + binarySizeOfStrings(address, name, description || '') + 4 + 4);
-  w.writeByte(MessageType.SessionEditTarget).writeUuid(messageId).writeUuid(sessionId).writeUuid(targetId)
-    .writeString(address).writeInt32(port ?? -1).writeString(name).writeString(description || '').writeInt32(type);
+  const w = new BinaryWriter(
+    1 + 16 + 16 + 16 + binarySizeOfStrings(address, name, description || '') + 4 + 4,
+  );
+  w.writeByte(MessageType.SessionEditTarget)
+    .writeUuid(messageId)
+    .writeUuid(sessionId)
+    .writeUuid(targetId)
+    .writeString(address)
+    .writeInt32(port ?? -1)
+    .writeString(name)
+    .writeString(description || '')
+    .writeInt32(type);
   return w.buffer;
 }
 
@@ -151,7 +195,8 @@ export function deserializeSessionListResult(data: Uint8Array): {
   totalCount: number;
   sessions: SessionMetadata[];
 } {
-  if (data.byteLength < 25) throw new Error(`SessionListResult too short: ${data.byteLength} bytes`);
+  if (data.byteLength < 25)
+    throw new Error(`SessionListResult too short: ${data.byteLength} bytes`);
 
   const reader = new BinaryReader(data, 1);
   const messageId = reader.readUuid();
@@ -163,31 +208,48 @@ export function deserializeSessionListResult(data: Uint8Array): {
   const sessions: SessionMetadata[] = [];
 
   for (let i = 0; i < count; i++) {
-    if (reader.currentOffset + 16 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (id)`);
+    if (reader.currentOffset + 16 > data.byteLength)
+      throw new Error(`SessionListResult truncated at session ${i} (id)`);
     const id = reader.readUuid();
 
-    if (reader.currentOffset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (nameLen)`);
+    if (reader.currentOffset + 4 > data.byteLength)
+      throw new Error(`SessionListResult truncated at session ${i} (nameLen)`);
     const nameLen = reader.view.getInt32(reader.currentOffset, true);
-    if (nameLen < 0 || reader.currentOffset + 4 + nameLen > data.byteLength) throw new Error(`SessionListResult invalid nameLen=${nameLen} at session ${i}`);
+    if (nameLen < 0 || reader.currentOffset + 4 + nameLen > data.byteLength)
+      throw new Error(`SessionListResult invalid nameLen=${nameLen} at session ${i}`);
     const name = reader.readString();
 
-    if (reader.currentOffset + 4 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (descLen)`);
+    if (reader.currentOffset + 4 > data.byteLength)
+      throw new Error(`SessionListResult truncated at session ${i} (descLen)`);
     const descLen = reader.view.getInt32(reader.currentOffset, true);
-    if (descLen < 0 || reader.currentOffset + 4 + descLen > data.byteLength) throw new Error(`SessionListResult invalid descLen=${descLen} at session ${i}`);
+    if (descLen < 0 || reader.currentOffset + 4 + descLen > data.byteLength)
+      throw new Error(`SessionListResult invalid descLen=${descLen} at session ${i}`);
     const description = reader.readString();
 
-    if (reader.currentOffset + 16 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (timestamps)`);
+    if (reader.currentOffset + 16 > data.byteLength)
+      throw new Error(`SessionListResult truncated at session ${i} (timestamps)`);
     const createdAt = ticksToDate(reader.readBigInt64());
     const updatedAt = ticksToDate(reader.readBigInt64());
 
-    if (reader.currentOffset + 8 > data.byteLength) throw new Error(`SessionListResult truncated at session ${i} (counts)`);
+    if (reader.currentOffset + 8 > data.byteLength)
+      throw new Error(`SessionListResult truncated at session ${i} (counts)`);
     const historyCount = reader.readInt32();
     const targetCount = reader.readInt32();
 
     const projectId = reader.readNullableUuid();
     const folderId = reader.readNullableUuid();
 
-    sessions.push({ id, name, description, projectId, folderId, createdAt, updatedAt, historyCount, targetCount });
+    sessions.push({
+      id,
+      name,
+      description,
+      projectId,
+      folderId,
+      createdAt,
+      updatedAt,
+      historyCount,
+      targetCount,
+    });
   }
 
   return { messageId, totalCount, sessions };
@@ -206,10 +268,12 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
   const description = reader.readString();
   const createdAt = ticksToDate(reader.readBigInt64());
   const updatedAt = ticksToDate(reader.readBigInt64());
+
+  const historyCount = reader.readInt32();
+  const targetCount = reader.readInt32();
   const projectId = reader.readNullableUuid();
   const folderId = reader.readNullableUuid();
 
-  const historyCount = reader.readInt32();
   const history: SessionHistoryEntry[] = [];
 
   for (let i = 0; i < historyCount; i++) {
@@ -222,7 +286,6 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
     history.push({ id: entryId, timestamp, workingDirectory, command, output, exitCode });
   }
 
-  const targetCount = reader.readInt32();
   const targets: SessionTarget[] = [];
 
   for (let i = 0; i < targetCount; i++) {
@@ -232,10 +295,21 @@ export function deserializeSessionLoadResult(data: Uint8Array): {
     const targetName = reader.readString();
     const targetDescription = reader.readString();
     const type = reader.readInt32();
-    targets.push({ id: targetId, address, port: portRaw === -1 ? null : portRaw, name: targetName, description: targetDescription, type });
+    targets.push({
+      id: targetId,
+      address,
+      port: portRaw === -1 ? null : portRaw,
+      name: targetName,
+      description: targetDescription,
+      type,
+    });
   }
 
-  return { messageId, success, session: { id, name, description, projectId, folderId, createdAt, updatedAt, history, targets } };
+  return {
+    messageId,
+    success,
+    session: { id, name, description, projectId, folderId, createdAt, updatedAt, history, targets },
+  };
 }
 
 export function deserializeSessionOperationError(data: Uint8Array): {

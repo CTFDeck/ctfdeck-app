@@ -1,11 +1,13 @@
 import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subscription, combineLatest, map } from 'rxjs';
+import { toast } from 'ngx-sonner';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { SessionStore } from '../../sessions/state/session.store';
 import { WriteUpStore } from '../../writeups/state/writeup.store';
 import { ProjectHierarchy, FolderHierarchy } from '../models/project-hierarchy.model';
 import { ProjectData, ProjectMetadata } from '../models/project.model';
 import { ProjectClientService } from '../infrastructure/project-client.service';
+import { ProjectExportMetadata } from '../infrastructure/project.websocket.protocol';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectStore implements OnDestroy {
@@ -24,6 +26,9 @@ export class ProjectStore implements OnDestroy {
 
   private projectDataCacheSubject = new BehaviorSubject<Map<string, ProjectData>>(new Map());
   readonly projectDataCache$ = this.projectDataCacheSubject.asObservable();
+
+  private availableExportsSubject = new BehaviorSubject<ProjectExportMetadata[]>([]);
+  readonly availableExports$ = this.availableExportsSubject.asObservable();
 
   private subscriptions = new Subscription();
 
@@ -151,13 +156,21 @@ export class ProjectStore implements OnDestroy {
     name: string,
     description = '',
   ): Promise<{ success: boolean; projectId: string }> {
-    const result = await this.projectClient.create(name, description);
+    try {
+      const result = await this.projectClient.create(name, description);
 
-    if (result.success) {
-      await this.loadProjects();
+      if (result.success) {
+        toast.success('Project created', { description: `Project "${name}" is ready.` });
+        await this.loadProjects();
+      } else {
+        toast.error('Failed to create project');
+      }
+
+      return result;
+    } catch (error) {
+      this.showError('Project creation failed', error);
+      return { success: false, projectId: '' };
     }
-
-    return result;
   }
 
   async addFolder(
@@ -165,33 +178,97 @@ export class ProjectStore implements OnDestroy {
     name: string,
     parentId: string | null = null,
   ): Promise<{ success: boolean; folderId: string }> {
-    const result = await this.projectClient.addFolder(projectId, name, parentId);
+    try {
+      const result = await this.projectClient.addFolder(projectId, name, parentId);
 
-    if (result.success) {
-      await this.loadProjectDetails(projectId);
+      if (result.success) {
+        toast.success('Folder added', { description: `Folder "${name}" was created.` });
+        await this.loadProjectDetails(projectId);
+      } else {
+        toast.error('Failed to add folder');
+      }
+
+      return result;
+    } catch (error) {
+      this.showError('Failed to add folder', error);
+      return { success: false, folderId: '' };
     }
-
-    return result;
   }
 
   async renameFolder(projectId: string, folderId: string, name: string): Promise<boolean> {
-    const result = await this.projectClient.renameFolder(projectId, folderId, name);
+    try {
+      const result = await this.projectClient.renameFolder(projectId, folderId, name);
 
-    if (result) {
-      await this.loadProjectDetails(projectId);
+      if (result) {
+        toast.success('Folder renamed');
+        await this.loadProjectDetails(projectId);
+      } else {
+        toast.error('Failed to rename folder');
+      }
+
+      return result;
+    } catch (error) {
+      this.showError('Failed to rename folder', error);
+      return false;
     }
+  }
 
-    return result;
+  async updateProject(projectId: string, name: string, description: string): Promise<boolean> {
+    try {
+      const result = await this.projectClient.update(projectId, name, description);
+
+      if (result) {
+        toast.success('Project updated');
+        await this.loadProjects();
+        await this.loadProjectDetails(projectId);
+      } else {
+        toast.error('Failed to update project');
+      }
+
+      return result;
+    } catch (error) {
+      this.showError('Failed to update project', error);
+      return false;
+    }
+  }
+
+  async deleteProject(projectId: string): Promise<boolean> {
+    try {
+      const result = await this.projectClient.delete(projectId);
+
+      if (result) {
+        toast.success('Project deleted');
+        await this.loadProjects();
+        const nextCache = new Map(this.projectDataCacheSubject.value);
+        nextCache.delete(projectId);
+        this.projectDataCacheSubject.next(nextCache);
+      } else {
+        toast.error('Failed to delete project');
+      }
+
+      return result;
+    } catch (error) {
+      this.showError('Failed to delete project', error);
+      return false;
+    }
   }
 
   async deleteFolder(projectId: string, folderId: string): Promise<boolean> {
-    const result = await this.projectClient.deleteFolder(projectId, folderId);
+    try {
+      const result = await this.projectClient.deleteFolder(projectId, folderId);
 
-    if (result) {
-      await this.loadProjectDetails(projectId);
+      if (result) {
+        toast.success('Folder deleted');
+        await this.loadProjectDetails(projectId);
+      } else {
+        toast.error('Failed to delete folder');
+      }
+
+      return result;
+    } catch (error) {
+      this.showError('Failed to delete folder', error);
+      return false;
     }
-
-    return result;
   }
 
   async assignSession(
@@ -199,16 +276,123 @@ export class ProjectStore implements OnDestroy {
     sessionId: string,
     folderId: string | null,
   ): Promise<boolean> {
-    const result = await this.projectClient.assignSession(projectId, sessionId, folderId);
+    try {
+      const result = await this.projectClient.assignSession(projectId, sessionId, folderId);
 
-    if (result) {
-      await this.loadProjectDetails(projectId);
-      await Promise.all([
-        this.sessionStore.refreshSessions(true, 0, 12, true),
-        this.sessionStore.refreshSessions(true, 0, 50, false),
-      ]);
+      if (result) {
+        toast.success('Item moved');
+        await this.loadProjectDetails(projectId);
+        await Promise.all([
+          this.sessionStore.refreshSessions(true, 0, 12, true),
+          this.sessionStore.refreshSessions(true, 0, 50, false),
+        ]);
+      } else {
+        toast.error('Failed to move item');
+      }
+
+      return result;
+    } catch (error) {
+      this.showError('Failed to move item', error);
+      return false;
+    }
+  }
+
+  async exportProject(
+    projectId: string,
+    path: string,
+    options: {
+      history: boolean;
+      targets: boolean;
+      writeups: boolean;
+      media: boolean;
+      scripts: boolean;
+    },
+    silent = false,
+  ): Promise<boolean> {
+    try {
+      const success = await this.projectClient.export(projectId, path, options);
+
+      if (success && !silent) {
+        toast.success('Project exported', { description: `Saved to ${path}` });
+      } else if (!success && !silent) {
+        toast.error('Export failed');
+      }
+
+      return success;
+    } catch (error) {
+      if (silent) {
+        console.error('[ProjectStore] Export failed:', error);
+      } else {
+        this.showError('Export failed', error);
+      }
+      return false;
+    }
+  }
+
+  async importProject(path: string): Promise<boolean> {
+    try {
+      const result = await this.projectClient.importProject(path);
+
+      if (result.success) {
+        toast.success('Project imported');
+        await this.loadProjects();
+      } else {
+        toast.error('Import failed');
+      }
+
+      return result.success;
+    } catch (error) {
+      this.showError('Import failed', error);
+      return false;
+    }
+  }
+
+  async loadAvailableExports(): Promise<void> {
+    try {
+      const exports = await this.projectClient.listExports();
+      this.availableExportsSubject.next(exports);
+    } catch (error) {
+      console.error('[ProjectStore] Failed to load available exports:', error);
+    }
+  }
+
+  async importProjects(paths: string[]): Promise<boolean> {
+    if (paths.length === 0) return true;
+    
+    let allSuccess = true;
+    for (const path of paths) {
+      try {
+        const result = await this.projectClient.importProject(path);
+        if (!result.success) {
+          allSuccess = false;
+          console.error(`[ProjectStore] Failed to import ${path}`);
+          toast.error(`Failed to import ${path}`);
+        }
+      } catch (error) {
+        allSuccess = false;
+        console.error(`[ProjectStore] Import failed for ${path}:`, error);
+        this.showError(`Import failed for ${path}`, error);
+      }
     }
 
-    return result;
+    if (allSuccess) {
+      toast.success(paths.length > 1 ? `Successfully imported ${paths.length} projects` : 'Project imported');
+    }
+    
+    await this.loadProjects();
+    return allSuccess;
+  }
+
+  private showError(title: string, error: unknown): void {
+    const message = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error';
+    const isConflict = message.toLowerCase().includes('already exists');
+
+    if (isConflict) {
+      console.warn(`[ProjectStore] ${title}:`, error);
+      toast.warning(title, { description: message });
+    } else {
+      console.error(`[ProjectStore] ${title}:`, error);
+      toast.error(title, { description: message });
+    }
   }
 }

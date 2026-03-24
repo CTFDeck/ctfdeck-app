@@ -1,6 +1,7 @@
 :host {
   display: block;
   height: 100%;
+  min-height: 0;
 }
 
 ::ng-deep [data-slot='dialog-close'] {

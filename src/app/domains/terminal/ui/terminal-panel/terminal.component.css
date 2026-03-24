@@ -12,6 +12,47 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
+.title-auto-resizer {
+  display: inline-grid;
+  align-items: center;
+  justify-items: start;
+  position: relative;
+  min-width: 120px;
+  max-width: min(680px, 72vw);
+}
+
+.title-auto-resizer span {
+  grid-area: 1 / 1 / 2 / 2;
+  visibility: hidden;
+  white-space: pre;
+  font-size: 1.125rem;
+  font-weight: 700;
+  padding: 4px 6px;
+}
+
+.title-auto-resizer input {
+  grid-area: 1 / 1 / 2 / 2;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-align: left;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.title-auto-resizer input:hover {
+  background-color: color-mix(in srgb, var(--muted), transparent 40%);
+}
+
+.title-auto-resizer input:focus {
+  background-color: color-mix(in srgb, var(--muted), transparent 20%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary), transparent 80%);
+}
+
 @keyframes fadeIn {
   0% {
     opacity: 0;

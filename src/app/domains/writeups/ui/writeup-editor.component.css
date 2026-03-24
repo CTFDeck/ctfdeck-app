@@ -80,7 +80,42 @@ textarea {
   transform: scale(0.95);
 }
 
+.editor-splitter {
+  position: relative;
+  width: 8px;
+  min-width: 8px;
+  cursor: col-resize;
+  background: transparent;
+  flex: 0 0 8px;
+  z-index: 25;
+}
+
+.editor-splitter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--border), transparent 20%);
+  transition: background-color 0.15s ease;
+}
+
+.editor-splitter:hover::before,
+.editor-splitter:focus-visible::before,
+.editor-splitter.is-resizing::before {
+  width: 2px;
+  background: color-mix(in srgb, var(--primary), transparent 25%);
+}
+
+.editor-splitter:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--primary), transparent 94%);
+}
+
 .overflow-y-auto::-webkit-scrollbar {
+  width: 10px;
   width: 10px;
 }
 
@@ -90,12 +125,18 @@ textarea {
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--muted-foreground), transparent 40%);
+  background: color-mix(in srgb, var(--muted-foreground), transparent 40%);
   border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted-foreground), transparent 20%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
   background: color-mix(in srgb, var(--muted-foreground), transparent 20%);
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -134,6 +175,19 @@ textarea {
 :host ::ng-deep .markdown-body strong {
   font-weight: 700;
   color: color-mix(in srgb, var(--primary), transparent 10%);
+}
+
+:host ::ng-deep .markdown-body a {
+  color: color-mix(in srgb, var(--primary), var(--foreground) 20%);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary), transparent 50%);
+  text-underline-offset: 2px;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .markdown-body a:hover {
+  color: var(--primary);
+  text-decoration-color: var(--primary);
 }
 
 :host ::ng-deep .markdown-body a {
@@ -217,10 +271,25 @@ textarea {
 
 :host ::ng-deep .markdown-body ol {
   list-style-type: decimal;
+  display: block;
+}
+
+:host ::ng-deep .markdown-body ul {
+  list-style-type: disc;
+}
+
+:host ::ng-deep .markdown-body ol {
+  list-style-type: decimal;
 }
 
 :host ::ng-deep .markdown-body li {
   margin-bottom: 0.5rem;
+  display: list-item !important;
+}
+
+:host ::ng-deep .markdown-body li > p {
+  display: block;
+  margin: 0;
   display: list-item !important;
 }
 

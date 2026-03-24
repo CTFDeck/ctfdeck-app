@@ -11,7 +11,11 @@ import { ProjectData, ProjectMetadata } from '../models/project.model';
 import {
   deserializeProjectAddFolderResult,
   deserializeProjectCreateResult,
+  deserializeProjectExportResult,
+  deserializeProjectImportResult,
   deserializeProjectListResult,
+  deserializeProjectListExportsResult,
+  ProjectExportMetadata,
   deserializeProjectLoadResult,
   deserializeProjectOperationError,
   deserializeProjectOperationResult,
@@ -21,7 +25,10 @@ import {
   serializeProjectCreate,
   serializeProjectDelete,
   serializeProjectDeleteFolder,
+  serializeProjectExport,
+  serializeProjectImport,
   serializeProjectList,
+  serializeProjectListExports,
   serializeProjectLoad,
   serializeProjectRenameFolder,
   serializeProjectUpdate,
@@ -36,6 +43,7 @@ interface PendingProjectResult {
   project?: ProjectData | null;
   folderId?: string;
   error?: string;
+  exports?: ProjectExportMetadata[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -76,7 +84,14 @@ export class ProjectClientService {
         case MessageType.ProjectDeleteFolderResult:
         case MessageType.ProjectRenameFolderResult:
         case MessageType.ProjectAssignSessionResult:
+        case MessageType.ProjectExportResult:
           result = deserializeProjectOperationResult(data);
+          break;
+        case MessageType.ProjectImportResult:
+          result = deserializeProjectImportResult(data);
+          break;
+        case MessageType.ProjectListExportsResult:
+          result = deserializeProjectListExportsResult(data);
           break;
         case MessageType.ProjectOperationError:
           result = deserializeProjectOperationError(data);
@@ -193,6 +208,46 @@ export class ProjectClientService {
       messageId,
       serializeProjectAssignSession(projectId, sessionId, folderId, messageId),
       (r) => Boolean(r.success),
+    );
+  }
+
+  export(projectId: string, path: string, options: { history: boolean; targets: boolean; writeups: boolean; media: boolean; scripts: boolean }): Promise<boolean> {
+    const messageId = generateUUID();
+    const flags = 
+        (options.history ? 1 : 0) |
+        (options.targets ? 2 : 0) |
+        (options.writeups ? 4 : 0) |
+        (options.media ? 8 : 0) |
+        (options.scripts ? 16 : 0);
+
+    return createWebSocketRequest(
+      this.pending,
+      this.ws,
+      messageId,
+      serializeProjectExport(projectId, path, flags, messageId),
+      (r) => Boolean(r.success),
+    );
+  }
+
+  importProject(path: string): Promise<{ success: boolean; projectId: string }> {
+    const messageId = generateUUID();
+    return createWebSocketRequest(
+      this.pending,
+      this.ws,
+      messageId,
+      serializeProjectImport(path, messageId),
+      (r) => ({ success: Boolean(r.success), projectId: r.projectId ?? '' }),
+    );
+  }
+
+  listExports(): Promise<ProjectExportMetadata[]> {
+    const messageId = generateUUID();
+    return createWebSocketRequest(
+      this.pending,
+      this.ws,
+      messageId,
+      serializeProjectListExports(messageId),
+      (r) => r.exports ?? [],
     );
   }
 }

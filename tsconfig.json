@@ -73,6 +73,18 @@
       ],
       "@ctfdeck/helm/spinner": [
         "./libs/ui/spinner/src/index.ts"
+      ],
+      "@ctfdeck/helm/checkbox": [
+        "./libs/ui/checkbox/src/index.ts"
+      ],
+      "@ctfdeck/helm/table": [
+        "./libs/ui/table/src/index.ts"
+      ],
+      "@ctfdeck/helm/select": [
+        "./libs/ui/select/src/index.ts"
+      ],
+      "@ctfdeck/helm/form-field": [
+        "./libs/ui/form-field/src/index.ts"
       ]
     }
   },

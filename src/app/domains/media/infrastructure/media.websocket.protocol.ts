@@ -77,16 +77,28 @@ export function deserializeMediaLoadResult(data: Uint8Array): {
     return { messageId, success, media: null };
   }
 
+  // Backend wire format:
+  // type(1) + messageId(16) + success(1) + mediaId(16) + dataLen(int32) + data
   const id = reader.readUuid();
-  const fileName = reader.readString();
-  const mimeType = reader.readString();
   const dataLen = reader.readInt32();
-  const mediaData = data.subarray(reader.currentOffset, reader.currentOffset + dataLen);
+
+  if (dataLen < 0) {
+    throw new Error(`Invalid media payload length: ${dataLen}`);
+  }
+
+  const start = reader.currentOffset;
+  const end = start + dataLen;
+  if (end > data.length) {
+    throw new Error(`Truncated media payload: expected ${dataLen} bytes, have ${data.length - start}`);
+  }
+
+  const mediaData = data.subarray(start, end);
 
   return {
     messageId,
     success,
-    media: { id, fileName, mimeType, data: mediaData, createdAt: new Date() },
+    // MediaLoadResult currently does not include filename/mimetype metadata.
+    media: { id, fileName: id, mimeType: 'application/octet-stream', data: mediaData, createdAt: new Date() },
   };
 }
 

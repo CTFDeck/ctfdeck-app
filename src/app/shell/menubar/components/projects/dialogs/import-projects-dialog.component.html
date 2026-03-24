@@ -1,0 +1,109 @@
+<hlm-dialog-header>
+  <h2 hlmDialogTitle class="flex items-center gap-2">
+    <ng-icon name="lucideUpload" class="text-primary h-5 w-5" />
+    <span>{{ 'projects.dialog.import.title' | translate }}</span>
+  </h2>
+  <p hlmDialogDescription>{{ 'projects.dialog.import.description' | translate }}</p>
+</hlm-dialog-header>
+
+<div class="py-4 w-full">
+  <label hlmLabel class="mb-2 block text-xs font-semibold">{{ 'projects.dialog.import.availableExports' | translate }}</label>
+
+  <ng-scrollbar hlm class="max-h-[min(60vh,500px)] border rounded-md bg-muted/10 overflow-hidden">
+    @if (groupedExports$ | async; as groups) {
+      @if (groups.fresh.length > 0 || groups.imported.length > 0) {
+        @if (groups.fresh.length > 0) {
+          <div class="px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/30 border-b">
+            {{ 'projects.dialog.import.newExports' | translate }}
+          </div>
+          <ng-container *ngTemplateOutlet="exportTable; context: { exports: groups.fresh }"></ng-container>
+        }
+
+        @if (groups.imported.length > 0) {
+          <button
+            type="button"
+            (click)="showImported.set(!showImported())"
+            class="w-full flex items-center justify-between px-2 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/30 hover:bg-muted/50 transition-colors mt-0 border-y first:border-t-0"
+          >
+            <span class="flex items-center gap-2">
+              <ng-icon [name]="showImported() ? 'lucideChevronDown' : 'lucideChevronRight'" class="h-3 w-3" />
+              {{ 'projects.dialog.import.alreadyImported' | translate }} ({{ groups.imported.length }})
+            </span>
+          </button>
+
+          @if (showImported()) {
+            <ng-container
+              *ngTemplateOutlet="exportTable; context: { exports: groups.imported, isImported: true }"
+            ></ng-container>
+          }
+        }
+      } @else {
+        <div class="py-20 text-center text-muted-foreground text-sm flex flex-col items-center gap-2">
+          <ng-icon name="lucideUpload" class="h-8 w-8 opacity-20" />
+          <span>{{ 'projects.dialog.import.empty' | translate }}</span>
+        </div>
+      }
+    } @else {
+      <div class="py-20 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
+        <div class="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full"></div>
+        {{ 'projects.dialog.import.loading' | translate }}
+      </div>
+    }
+  </ng-scrollbar>
+</div>
+
+<hlm-dialog-footer>
+  <button hlmBtn type="button" variant="ghost" (click)="dialogCtx.close()">{{ 'dialog.cancel' | translate }}</button>
+  <button hlmBtn type="button" (click)="confirmImport()" [disabled]="projectsUi.importSelection().size === 0">
+    <ng-icon name="lucideUpload" class="mr-2 h-4 w-4" />
+    {{ 'projects.dialog.import.confirm' | translate }} {{ projectsUi.importSelection().size ? '(' + projectsUi.importSelection().size + ')' : '' }}
+  </button>
+</hlm-dialog-footer>
+
+<ng-template #exportTable let-exports="exports" let-isImported="isImported">
+  <table hlmTable class="w-full border-none">
+    <thead hlmTHead>
+      <tr hlmTr class="hover:bg-transparent border-b h-9">
+        <th hlmTh class="w-10 px-2 text-center">
+          <hlm-checkbox [checked]="areAllSelected(exports)" (changed)="toggleAllExports(exports)" />
+        </th>
+        <th hlmTh class="flex-1 min-w-[150px] text-[10px] uppercase font-bold tracking-tight">{{ 'projects.dialog.table.projectName' | translate }}</th>
+        <th hlmTh class="w-14 text-center text-[10px] uppercase font-bold tracking-tight">{{ 'projects.dialog.table.chats' | translate }}</th>
+        <th hlmTh class="w-14 text-center text-[10px] uppercase font-bold tracking-tight">{{ 'projects.dialog.table.reports' | translate }}</th>
+        <th hlmTh class="w-20 text-right text-[10px] uppercase font-bold tracking-tight px-3">{{ 'projects.dialog.table.size' | translate }}</th>
+        <th hlmTh class="w-24 text-right text-[10px] uppercase font-bold tracking-tight px-4">{{ 'projects.dialog.table.date' | translate }}</th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (export of exports; track export.filename) {
+        <tr
+          hlmTr
+          (click)="toggleExportSelection(export.filename)"
+          class="cursor-pointer hover:bg-muted/50 border-b last:border-0 h-10 group"
+        >
+          <td hlmTd class="w-10 px-2" (click)="$event.stopPropagation()">
+            <hlm-checkbox
+              [checked]="isSelected(export.filename)"
+              (changed)="toggleExportSelection(export.filename)"
+            />
+          </td>
+          <td hlmTd class="flex-1 truncate">
+            <div class="flex items-center gap-2 max-w-full">
+              <span class="font-medium truncate text-xs">{{ export.filename.replace('.json', '') }}</span>
+              @if (isImported) {
+                <span
+                  class="shrink-0 px-1 py-0.5 rounded-[4px] text-[8px] bg-primary/10 text-primary uppercase font-bold tracking-tighter border border-primary/20"
+                  >{{ 'projects.dialog.import.badgeImported' | translate }}</span
+                >
+              }
+            </div>
+          </td>
+          <td hlmTd class="w-14 text-center text-[10px] text-muted-foreground">{{ export.sessionCount }}</td>
+          <td hlmTd class="w-14 text-center text-[10px] text-muted-foreground">{{ export.writeUpCount }}</td>
+          <td hlmTd class="w-20 text-right text-[10px] text-muted-foreground px-3">{{ formatSize(export.sizeBytes) }}</td>
+          <td hlmTd class="w-24 text-right text-[9px] text-muted-foreground leading-tight px-4">{{ export.exportedAt | date:'MM/dd HH:mm' }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</ng-template>

@@ -37,7 +37,6 @@ export class App {
   selectedToolId = '';
 
   @ViewChild('targetManager', { static: false }) targetManager?: TargetManagerComponent;
-
   openTargetManager(mode: 'view' | 'add' | 'delete') {
     this.targetManagerMode = mode;
     this.targetManagerVisible = true;

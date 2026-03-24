@@ -8,6 +8,7 @@ import type { SessionTarget } from '../models/session-target.model';
 import type { TerminalEvent } from '../models/terminal-event.model';
 import { ACTIVE_SESSION_KEY } from '../infrastructure/session.constants';
 import { SessionClientService } from '../infrastructure/session-client.service';
+import { DEFAULT_CHAT_NAME } from '../../../shared/constants/default-item-names.constants';
 
 @Injectable({ providedIn: 'root' })
 export class SessionStore implements OnDestroy {
@@ -184,7 +185,7 @@ export class SessionStore implements OnDestroy {
     return result.sessionId;
   }
 
-  async ensureActiveSession(defaultName = 'New chat'): Promise<string> {
+  async ensureActiveSession(defaultName = DEFAULT_CHAT_NAME): Promise<string> {
     const activeId = this.activeSessionIdSubject.value;
 
     if (activeId) {

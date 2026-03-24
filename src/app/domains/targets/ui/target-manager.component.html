@@ -1,231 +1,242 @@
-<div class="p-8 bg-background text-foreground">
-  <div class="mb-8 flex items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <ng-icon hlm name="lucideTarget" size="lg" class="text-primary" />
-      <div>
-        <h3 class="text-2xl font-semibold tracking-tight">{{ 'target.title' | translate }}</h3>
-        <p class="text-sm text-muted-foreground">{{ 'target.subtitle' | translate }}</p>
+<div class="h-full min-h-0 flex flex-col bg-background text-foreground p-4 sm:p-8 overflow-hidden">
+  <div class="flex-1 min-h-0 overflow-y-scroll [scrollbar-gutter:stable] pr-1 sm:pr-2">
+    <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="flex items-start sm:items-center gap-3">
+        <ng-icon hlm name="lucideTarget" size="lg" class="text-primary" />
+        <div>
+          <h3 class="text-xl sm:text-2xl font-semibold tracking-tight">{{ 'target.title' | translate }}</h3>
+          <p class="text-sm text-muted-foreground">{{ 'target.subtitle' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-1 items-start sm:items-end min-w-0 sm:min-w-[200px] w-full sm:w-auto">
+        <label
+          hlmLabel
+          for="active-session-select"
+          class="text-[10px] uppercase tracking-wider text-muted-foreground font-bold"
+        >
+          {{ 'target.activeSession' | translate }}
+        </label>
+        <brn-select
+          id="active-session-select"
+          class="inline-block w-full"
+          [(ngModel)]="activeSessionId"
+          (ngModelChange)="switchSession($event)"
+        >
+          <hlm-select-trigger class="w-full h-9 text-xs">
+            <hlm-select-value />
+          </hlm-select-trigger>
+          <hlm-select-content class="max-h-[320px] overflow-y-scroll [scrollbar-gutter:stable]">
+            @for (session of sessions$ | async; track session.id) {
+              <hlm-option [value]="session.id" class="text-xs">{{ session.name }}</hlm-option>
+            }
+          </hlm-select-content>
+        </brn-select>
       </div>
     </div>
 
-    <div class="flex flex-col gap-1 items-end min-w-[200px]">
-      <label
-        hlmLabel
-        for="active-session-select"
-        class="text-[10px] uppercase tracking-wider text-muted-foreground font-bold"
-      >
-        {{ 'target.activeSession' | translate }}
-      </label>
-      <brn-select
-        id="active-session-select"
-        class="inline-block w-full"
-        [(ngModel)]="activeSessionId"
-        (ngModelChange)="switchSession($event)"
-      >
-        <hlm-select-trigger class="w-full h-9 text-xs">
-          <hlm-select-value />
-        </hlm-select-trigger>
-        <hlm-select-content>
-          @for (session of sessions$ | async; track session.id) {
-            <hlm-option [value]="session.id" class="text-xs">{{ session.name }}</hlm-option>
-          }
-        </hlm-select-content>
-      </brn-select>
-    </div>
-  </div>
-
-  <div hlmButtonGroup class="w-full flex mb-6">
-    <button hlmBtn [variant]="mode === 'view' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('view')">
-      {{ 'target.tab.view' | translate }}
-    </button>
-    <button hlmBtn [variant]="mode === 'add' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('add')">
-      {{ 'target.tab.add' | translate }}
-    </button>
-    <button hlmBtn [variant]="mode === 'delete' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('delete')">
-      {{ 'target.tab.delete' | translate }}
-    </button>
-  </div>
-
-  <hlm-tabs [tab]="mode" class="w-full">
-
-    <!-- View tab -->
-    <div hlmTabsContent="view" class="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
-      @if (targets.length === 0) {
-        <div class="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl border-border bg-card/30">
-          <p class="text-muted-foreground font-medium">
-            {{ 'target.empty' | translate }} "{{ (activeSession$ | async)?.name }}"
-          </p>
-        </div>
-      }
-
-      @for (target of targets; track target.id) {
-        <div class="group relative flex items-center gap-4 p-3 rounded-lg border border-border bg-card/40 hover:bg-accent/50 transition-all">
-          <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-sm">
-            <ng-icon hlm [name]="getTargetIcon(target.type)" size="sm" />
-          </div>
-
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <h4 class="font-bold text-sm truncate uppercase tracking-tight text-foreground">{{ target.name }}</h4>
-              <code class="px-1.5 py-px rounded bg-muted/50 text-[10px] font-mono border border-border/50 text-muted-foreground">
-                {{ target.address }}{{ target.port ? ':' + target.port : '' }}
-              </code>
-            </div>
-            <div class="flex items-center gap-2 mt-1 overflow-hidden">
-              <div class="flex-shrink-0 flex flex-wrap gap-1">
-                @for (sessionName of getSessionsForTarget(target); track sessionName) {
-                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-primary/5 text-primary/80 border border-primary/10 whitespace-nowrap">
-                    {{ sessionName }}
-                  </span>
-                }
-              </div>
-              @if (target.description) {
-                <p class="flex-1 min-w-0 text-[11px] text-muted-foreground truncate italic opacity-80" [title]="target.description">
-                  • {{ target.description }}
-                </p>
-              }
-            </div>
-          </div>
-
-          <div class="flex gap-1 pr-1">
-            <button
-              hlmBtn size="icon" variant="ghost"
-              class="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-              type="button"
-              [attr.aria-label]="'target.aria.edit' | translate"
-              (click)="startEditing(target)"
-            >
-              <ng-icon hlm name="lucidePencil" size="sm" />
-            </button>
-            <button
-              hlmBtn size="icon" variant="ghost"
-              class="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              type="button"
-              [attr.aria-label]="'target.aria.delete' | translate"
-              (click)="deleteOneTarget(target)"
-            >
-              <ng-icon hlm name="lucideTrash2" size="sm" />
-            </button>
-          </div>
-        </div>
-      }
-    </div>
-
-    <!-- Add tab -->
-    <div hlmTabsContent="add" class="space-y-6 pt-2 animate-in fade-in duration-300">
-      <div class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div class="grid gap-2">
-            <label hlmLabel for="add-name">{{ 'target.add.nameLabel' | translate }}</label>
-            <input hlmInput id="add-name" [(ngModel)]="addForm.name" [placeholder]="'target.add.namePlaceholder' | translate" />
-          </div>
-          <div class="grid gap-2">
-            <label hlmLabel for="add-type">{{ 'target.add.typeLabel' | translate }}</label>
-            <brn-select id="add-type" class="inline-block" [placeholder]="'target.add.typePlaceholder' | translate" [(ngModel)]="addForm.type">
-              <hlm-select-trigger class="w-full"><hlm-select-value /></hlm-select-trigger>
-              <hlm-select-content>
-                @for (type of targetTypes; track type.value) {
-                  <hlm-option [value]="type.value">{{ type.label }}</hlm-option>
-                }
-              </hlm-select-content>
-            </brn-select>
-          </div>
-        </div>
-
-        <div class="grid gap-2">
-          <label hlmLabel for="add-sessions">{{ 'target.add.sessionsLabel' | translate }}</label>
-          <brn-select id="add-sessions" class="inline-block" [multiple]="true" [placeholder]="'target.add.sessionsPlaceholder' | translate" [(ngModel)]="addForm.sessionIds">
-            <hlm-select-trigger class="w-full"><hlm-select-value /></hlm-select-trigger>
-            <hlm-select-content>
-              @for (session of sessions$ | async; track session.id) {
-                <hlm-option [value]="session.id">{{ session.name }}</hlm-option>
-              }
-            </hlm-select-content>
-          </brn-select>
-          <p class="text-[0.8rem] text-muted-foreground">{{ 'target.add.sessionsHint' | translate }}</p>
-        </div>
-
-        <div class="grid grid-cols-3 gap-4">
-          <div class="col-span-2 grid gap-2">
-            <label hlmLabel for="add-host">{{ 'target.add.hostLabel' | translate }}</label>
-            <input hlmInput id="add-host" [(ngModel)]="addForm.address" [placeholder]="'target.add.hostPlaceholder' | translate" />
-          </div>
-          <div class="grid gap-2">
-            <label hlmLabel for="add-port">{{ 'target.add.portLabel' | translate }}</label>
-            <input hlmInput id="add-port" type="number" [(ngModel)]="addForm.port" placeholder="80" />
-          </div>
-        </div>
-
-        <div class="grid gap-2">
-          <label hlmLabel for="add-desc">{{ 'target.add.descLabel' | translate }}</label>
-          <textarea hlmInput id="add-desc" [(ngModel)]="addForm.description" [placeholder]="'target.add.descPlaceholder' | translate" rows="2"></textarea>
-        </div>
-      </div>
-      <button hlmBtn class="w-full h-11" type="button" (click)="addTarget()">
-        {{ 'target.add.submit' | translate }}
+    <div hlmButtonGroup class="w-full flex mb-4 sm:mb-6">
+      <button hlmBtn [variant]="mode === 'view' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('view')">
+        {{ 'target.tab.view' | translate }}
+      </button>
+      <button hlmBtn [variant]="mode === 'add' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('add')">
+        {{ 'target.tab.add' | translate }}
+      </button>
+      <button hlmBtn [variant]="mode === 'delete' ? 'default' : 'outline'" class="flex-1 h-10" (click)="setMode('delete')">
+        {{ 'target.tab.delete' | translate }}
       </button>
     </div>
 
-    <!-- Delete tab -->
-    <div hlmTabsContent="delete" class="space-y-4 pt-2">
-      <div class="rounded-md border border-border overflow-hidden">
+    <hlm-tabs [tab]="mode" class="w-full">
+      <div hlmTabsContent="view" class="space-y-4">
+        @if (targets.length === 0) {
+          <div class="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl border-border bg-card/30">
+            <p class="text-muted-foreground font-medium">
+              {{ 'target.empty' | translate }} "{{ (activeSession$ | async)?.name }}"
+            </p>
+          </div>
+        }
+
         @for (target of targets; track target.id) {
-          <div
-            (click)="toggleSelection(target.id)"
-            (keydown.enter)="toggleSelection(target.id)"
-            (keydown.space)="toggleSelection(target.id); $event.preventDefault()"
-            [class.bg-accent]="selectedIds.has(target.id)"
-            class="flex items-center gap-3 p-4 border-b border-border last:border-0 cursor-pointer hover:bg-accent/50 transition-colors"
-            tabindex="0"
-            role="button"
-            [attr.aria-pressed]="selectedIds.has(target.id)"
-          >
-            <div class="h-4 w-4 rounded border border-primary flex items-center justify-center" [class.bg-primary]="selectedIds.has(target.id)">
-              @if (selectedIds.has(target.id)) {
-                <div class="text-[10px] text-primary-foreground">✔</div>
-              }
+          <div class="group relative flex items-start sm:items-center gap-3 sm:gap-4 p-3 rounded-lg border border-border bg-card/40 hover:bg-accent/50 transition-all">
+            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-sm">
+              <ng-icon hlm [name]="getTargetIcon(target.type)" size="sm" />
             </div>
-            <span class="font-medium">{{ target.name }}</span>
-            <span class="text-xs text-muted-foreground ml-auto font-mono">{{ target.address }}</span>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="font-bold text-sm truncate uppercase tracking-tight text-foreground">{{ target.name }}</h4>
+                <code class="max-w-full px-1.5 py-px rounded bg-muted/50 text-[10px] font-mono border border-border/50 text-muted-foreground break-all">
+                  {{ target.address }}{{ target.port ? ':' + target.port : '' }}
+                </code>
+              </div>
+
+              <div class="flex items-center gap-2 mt-1 overflow-hidden">
+                <div class="flex-shrink-0 flex flex-wrap gap-1">
+                  @for (sessionName of getSessionsForTarget(target); track sessionName) {
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-primary/5 text-primary/80 border border-primary/10 whitespace-nowrap">
+                      {{ sessionName }}
+                    </span>
+                  }
+                </div>
+
+                @if (target.description) {
+                  <p class="flex-1 min-w-0 text-[11px] text-muted-foreground truncate italic opacity-80" [title]="target.description">
+                    � {{ target.description }}
+                  </p>
+                }
+              </div>
+            </div>
+
+            <div class="flex gap-1 pr-1">
+              <button
+                hlmBtn
+                size="icon"
+                variant="ghost"
+                class="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                type="button"
+                [attr.aria-label]="'target.aria.edit' | translate"
+                (click)="startEditing(target)"
+              >
+                <ng-icon hlm name="lucidePencil" size="sm" />
+              </button>
+              <button
+                hlmBtn
+                size="icon"
+                variant="ghost"
+                class="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                type="button"
+                [attr.aria-label]="'target.aria.delete' | translate"
+                (click)="deleteOneTarget(target)"
+              >
+                <ng-icon hlm name="lucideTrash2" size="sm" />
+              </button>
+            </div>
           </div>
         }
       </div>
-      <button
-        hlmBtn variant="destructive" class="w-full" type="button"
-        [disabled]="selectedIds.size === 0"
-        (click)="deleteSelected()"
-      >
-        {{ 'target.delete.button' | translate }} ({{ selectedIds.size }})
-      </button>
-    </div>
 
-  </hlm-tabs>
+      <div hlmTabsContent="add" class="space-y-6 pt-2 animate-in fade-in duration-300">
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid gap-2">
+              <label hlmLabel for="add-name">{{ 'target.add.nameLabel' | translate }}</label>
+              <input hlmInput id="add-name" [(ngModel)]="addForm.name" [placeholder]="'target.add.namePlaceholder' | translate" />
+            </div>
+            <div class="grid gap-2">
+              <label hlmLabel for="add-type">{{ 'target.add.typeLabel' | translate }}</label>
+              <brn-select id="add-type" class="inline-block" [placeholder]="'target.add.typePlaceholder' | translate" [(ngModel)]="addForm.type">
+                <hlm-select-trigger class="w-full"><hlm-select-value /></hlm-select-trigger>
+                <hlm-select-content class="max-h-[320px] overflow-y-scroll [scrollbar-gutter:stable]">
+                  @for (type of targetTypes; track type.value) {
+                    <hlm-option [value]="type.value">{{ type.label }}</hlm-option>
+                  }
+                </hlm-select-content>
+              </brn-select>
+            </div>
+          </div>
 
-  <div class="mt-10 pt-4 border-t border-border flex justify-end">
+          <div class="grid gap-2">
+            <label hlmLabel for="add-sessions">{{ 'target.add.sessionsLabel' | translate }}</label>
+            <brn-select id="add-sessions" class="inline-block" [multiple]="true" [placeholder]="'target.add.sessionsPlaceholder' | translate" [(ngModel)]="addForm.sessionIds">
+              <hlm-select-trigger class="w-full"><hlm-select-value /></hlm-select-trigger>
+              <hlm-select-content class="max-h-[320px] overflow-y-scroll [scrollbar-gutter:stable]">
+                @for (session of sessions$ | async; track session.id) {
+                  <hlm-option [value]="session.id">{{ session.name }}</hlm-option>
+                }
+              </hlm-select-content>
+            </brn-select>
+            <p class="text-[0.8rem] text-muted-foreground">{{ 'target.add.sessionsHint' | translate }}</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-2 grid gap-2">
+              <label hlmLabel for="add-host">{{ 'target.add.hostLabel' | translate }}</label>
+              <input hlmInput id="add-host" [(ngModel)]="addForm.address" [placeholder]="'target.add.hostPlaceholder' | translate" />
+            </div>
+            <div class="grid gap-2">
+              <label hlmLabel for="add-port">{{ 'target.add.portLabel' | translate }}</label>
+              <input hlmInput id="add-port" type="number" [(ngModel)]="addForm.port" placeholder="80" />
+            </div>
+          </div>
+
+          <div class="grid gap-2">
+            <label hlmLabel for="add-desc">{{ 'target.add.descLabel' | translate }}</label>
+            <textarea hlmInput id="add-desc" [(ngModel)]="addForm.description" [placeholder]="'target.add.descPlaceholder' | translate" rows="2"></textarea>
+          </div>
+        </div>
+
+        <button hlmBtn class="w-full h-11" type="button" (click)="addTarget()">
+          {{ 'target.add.submit' | translate }}
+        </button>
+      </div>
+
+      <div hlmTabsContent="delete" class="space-y-4 pt-2">
+        <div class="rounded-md border border-border overflow-hidden">
+          @for (target of targets; track target.id) {
+            <div
+              (click)="toggleSelection(target.id)"
+              (keydown.enter)="toggleSelection(target.id)"
+              (keydown.space)="toggleSelection(target.id); $event.preventDefault()"
+              [class.bg-accent]="selectedIds.has(target.id)"
+              class="flex items-center gap-3 p-4 border-b border-border last:border-0 cursor-pointer hover:bg-accent/50 transition-colors"
+              tabindex="0"
+              role="button"
+              [attr.aria-pressed]="selectedIds.has(target.id)"
+            >
+              <div class="h-4 w-4 rounded border border-primary flex items-center justify-center" [class.bg-primary]="selectedIds.has(target.id)">
+                @if (selectedIds.has(target.id)) {
+                  <div class="text-[10px] text-primary-foreground">?</div>
+                }
+              </div>
+              <span class="font-medium min-w-0 truncate">{{ target.name }}</span>
+              <span class="text-xs text-muted-foreground ml-auto font-mono truncate max-w-[45%]">{{ target.address }}</span>
+            </div>
+          }
+        </div>
+
+        <button
+          hlmBtn
+          variant="destructive"
+          class="w-full"
+          type="button"
+          [disabled]="selectedIds.size === 0"
+          (click)="deleteSelected()"
+        >
+          {{ 'target.delete.button' | translate }} ({{ selectedIds.size }})
+        </button>
+      </div>
+    </hlm-tabs>
+  </div>
+
+  <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border bg-background/95 backdrop-blur-sm flex justify-end shrink-0">
     <button hlmBtn variant="secondary" type="button" (click)="closeEvent.emit()">
       {{ 'target.close' | translate }}
     </button>
   </div>
 </div>
 
-<!-- Edit dialog -->
 <hlm-dialog>
   <button
-    #editTrigger brnDialogTrigger class="hidden" type="button"
+    #editTrigger
+    brnDialogTrigger
+    class="hidden"
+    type="button"
     [attr.aria-label]="'target.edit.aria' | translate"
   >
     Open edit target dialog
   </button>
-  <hlm-dialog-content *brnDialogContent="let ctx" [showCloseButton]="false" class="border border-border bg-background text-foreground shadow-lg rounded-xl p-0 max-w-[450px] w-full overflow-hidden flex flex-col">
-    <hlm-dialog-header class="p-6 border-b border-border bg-accent/30">
+
+  <hlm-dialog-content *brnDialogContent="let ctx" [showCloseButton]="false" class="border border-border bg-background text-foreground shadow-lg rounded-xl p-0 max-w-[450px] w-full max-h-[90dvh] overflow-hidden flex flex-col">
+    <hlm-dialog-header class="p-4 sm:p-6 border-b border-border bg-accent/30">
       <div class="flex items-center gap-3">
         <ng-icon hlm name="lucidePencil" class="text-primary" />
         <h3 hlmDialogTitle class="text-xl font-bold">{{ 'target.edit.title' | translate }}</h3>
       </div>
     </hlm-dialog-header>
 
-    <div class="p-6 space-y-4">
-      <div class="grid grid-cols-2 gap-4">
+    <div class="p-4 sm:p-6 space-y-4 overflow-y-auto [scrollbar-gutter:stable] flex-1 min-h-0">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="grid gap-2">
           <label hlmLabel for="edit-name">{{ 'target.edit.nameLabel' | translate }}</label>
           <input hlmInput id="edit-name" [(ngModel)]="editForm.name" [placeholder]="'target.edit.namePlaceholder' | translate" />
@@ -234,7 +245,7 @@
           <label hlmLabel for="edit-type">{{ 'target.edit.typeLabel' | translate }}</label>
           <brn-select id="edit-type" class="inline-block" [placeholder]="'target.edit.typePlaceholder' | translate" [(ngModel)]="editForm.type">
             <hlm-select-trigger class="w-full"><hlm-select-value /></hlm-select-trigger>
-            <hlm-select-content>
+            <hlm-select-content class="max-h-[320px] overflow-y-scroll [scrollbar-gutter:stable]">
               @for (type of targetTypes; track type.value) {
                 <hlm-option [value]="type.value">{{ type.label }}</hlm-option>
               }
@@ -247,7 +258,7 @@
         <label hlmLabel for="edit-session">{{ 'target.edit.sessionLabel' | translate }}</label>
         <brn-select id="edit-session" class="inline-block" [placeholder]="'target.edit.sessionPlaceholder' | translate" [(ngModel)]="editForm.sessionId">
           <hlm-select-trigger class="w-full"><hlm-select-value /></hlm-select-trigger>
-          <hlm-select-content>
+          <hlm-select-content class="max-h-[320px] overflow-y-scroll [scrollbar-gutter:stable]">
             @for (session of sessions$ | async; track session.id) {
               <hlm-option [value]="session.id">{{ session.name }}</hlm-option>
             }
@@ -256,8 +267,8 @@
         <p class="text-[0.7rem] text-muted-foreground italic">{{ 'target.edit.sessionHint' | translate }}</p>
       </div>
 
-      <div class="grid grid-cols-3 gap-4">
-        <div class="col-span-2 grid gap-2">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="sm:col-span-2 grid gap-2">
           <label hlmLabel for="edit-host">{{ 'target.edit.hostLabel' | translate }}</label>
           <input hlmInput id="edit-host" [(ngModel)]="editForm.address" placeholder="10.0.0.5" />
         </div>
@@ -273,7 +284,7 @@
       </div>
     </div>
 
-    <hlm-dialog-footer class="p-6 border-t border-border bg-accent/10">
+    <hlm-dialog-footer class="p-4 sm:p-6 border-t border-border bg-accent/10">
       <div class="flex w-full justify-between items-center">
         <button hlmBtn variant="ghost" type="button" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
         <button hlmBtn type="button" (click)="saveEdit(ctx)">{{ 'dialog.save' | translate }}</button>
@@ -282,14 +293,17 @@
   </hlm-dialog-content>
 </hlm-dialog>
 
-<!-- Delete single dialog -->
 <hlm-alert-dialog>
   <button
-    #deleteSingleTrigger brnAlertDialogTrigger class="hidden" type="button"
+    #deleteSingleTrigger
+    brnAlertDialogTrigger
+    class="hidden"
+    type="button"
     [attr.aria-label]="'target.deleteSingle.aria' | translate"
   >
     Open delete target confirmation
   </button>
+
   <hlm-alert-dialog-content *brnAlertDialogContent="let ctx" class="max-w-[400px]">
     <hlm-alert-dialog-header>
       <h3 hlmAlertDialogTitle>{{ 'target.deleteSingle.title' | translate }}</h3>
@@ -300,6 +314,7 @@
         <span class="font-bold text-foreground">"{{ (activeSession$ | async)?.name }}"</span>?
       </p>
     </hlm-alert-dialog-header>
+
     <hlm-alert-dialog-footer>
       <button hlmBtn variant="ghost" type="button" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
       <button hlmBtn variant="destructive" type="button" (click)="confirmDeleteOne(ctx)">{{ 'target.deleteSingle.confirm' | translate }}</button>
@@ -307,14 +322,17 @@
   </hlm-alert-dialog-content>
 </hlm-alert-dialog>
 
-<!-- Delete bulk dialog -->
 <hlm-alert-dialog>
   <button
-    #deleteBulkTrigger brnAlertDialogTrigger class="hidden" type="button"
+    #deleteBulkTrigger
+    brnAlertDialogTrigger
+    class="hidden"
+    type="button"
     [attr.aria-label]="'target.deleteBulk.aria' | translate"
   >
     Open bulk delete confirmation
   </button>
+
   <hlm-alert-dialog-content *brnAlertDialogContent="let ctx" class="max-w-[400px]">
     <hlm-alert-dialog-header>
       <h3 hlmAlertDialogTitle>{{ 'target.deleteBulk.title' | translate }}</h3>
@@ -325,6 +343,7 @@
         <span class="font-bold text-foreground">"{{ (activeSession$ | async)?.name }}"</span>?
       </p>
     </hlm-alert-dialog-header>
+
     <hlm-alert-dialog-footer>
       <button hlmBtn variant="ghost" type="button" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
       <button hlmBtn variant="destructive" type="button" (click)="confirmDeleteSelected(ctx)">{{ 'target.deleteBulk.confirm' | translate }}</button>

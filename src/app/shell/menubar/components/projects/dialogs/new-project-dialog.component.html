@@ -1,0 +1,38 @@
+<hlm-dialog-header>
+  <h2 hlmDialogTitle class="flex items-center gap-2">
+    <ng-icon name="lucideLayoutGrid" class="text-primary h-5 w-5" />
+    <span>{{ 'sidebar.dialog.newProject.title' | translate }}</span>
+  </h2>
+  <p hlmDialogDescription>{{ 'sidebar.dialog.newProject.description' | translate }}</p>
+</hlm-dialog-header>
+
+<div class="grid gap-4 py-4">
+  <div class="grid gap-2">
+    <label hlmLabel for="new-project-name">{{ 'sidebar.dialog.newProject.label' | translate }}</label>
+    <input
+      hlmInput
+      id="new-project-name"
+      [(ngModel)]="draft.name"
+      [placeholder]="'sidebar.dialog.newProject.placeholder' | translate"
+      (keyup.enter)="createProject()"
+    />
+  </div>
+
+  <div class="grid gap-2">
+    <label hlmLabel for="new-project-description">{{ 'sidebar.dialog.newProject.descriptionLabel' | translate }}</label>
+    <textarea
+      hlmInput
+      id="new-project-description"
+      [(ngModel)]="draft.description"
+      [placeholder]="'sidebar.dialog.newProject.descriptionPlaceholder' | translate"
+    ></textarea>
+  </div>
+</div>
+
+<hlm-dialog-footer>
+  <button hlmBtn type="button" variant="ghost" (click)="dialogCtx.close()">{{ 'dialog.cancel' | translate }}</button>
+  <button hlmBtn type="button" (click)="createProject()">
+    <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" />
+    {{ 'dialog.createProject' | translate }}
+  </button>
+</hlm-dialog-footer>

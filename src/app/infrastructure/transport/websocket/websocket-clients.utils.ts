@@ -54,7 +54,15 @@ export function createWebSocketRequest<T extends PendingWebSocketResult, R>(
   resolve: (result: T) => R,
 ): Promise<R> {
   return new Promise<R>((res, rej) => {
+    const requestTimeout = setTimeout(() => {
+      if (pending.has(messageId)) {
+        pending.delete(messageId);
+        rej(new Error('WebSocket request timeout after 30s'));
+      }
+    }, 30_000);
+
     pending.set(messageId, (result) => {
+      clearTimeout(requestTimeout);
       if (result.error) {
         rej(new Error(result.error));
         return;
@@ -68,6 +76,7 @@ export function createWebSocketRequest<T extends PendingWebSocketResult, R>(
     });
 
     sendWhenWebSocketReady(ws, buffer).catch((error) => {
+      clearTimeout(requestTimeout);
       pending.delete(messageId);
       rej(error);
     });

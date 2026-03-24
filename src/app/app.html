@@ -17,17 +17,14 @@
 
   @if (targetManagerVisible) {
     <div
-      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-      tabindex="0"
-      role="button"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
       [attr.aria-label]="'app.ariaCloseTargetManager' | translate"
       (click)="$event.target === $event.currentTarget && closeTargetManager()"
-      (keydown.enter)="closeTargetManager()"
-      (keydown.space)="closeTargetManager(); $event.preventDefault()"
     >
-      <div class="bg-slate-900 border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <div class="bg-slate-900 border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl h-[95dvh] sm:h-[90vh] max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         <app-target-manager
           #targetManager
+          class="flex-1 min-h-0"
           [mode]="targetManagerMode"
           (closeEvent)="closeTargetManager()"
         ></app-target-manager>
@@ -37,15 +34,11 @@
 
   @if (commandRunnerVisible) {
     <div
-      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-      tabindex="0"
-      role="button"
+      class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-start justify-center sm:pt-16 p-0 sm:p-4 overflow-y-auto"
       [attr.aria-label]="'app.ariaCloseCommandRunner' | translate"
       (click)="$event.target === $event.currentTarget && closeCommandRunner()"
-      (keydown.enter)="closeCommandRunner()"
-      (keydown.space)="closeCommandRunner(); $event.preventDefault()"
     >
-      <div class="bg-background border border-border rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-5xl h-[90dvh] sm:h-[84vh] max-h-[90dvh] sm:max-h-[84vh] overflow-hidden flex flex-col">
         <app-command-runner
           [initialToolId]="selectedToolId"
           (closeEvent)="closeCommandRunner()"

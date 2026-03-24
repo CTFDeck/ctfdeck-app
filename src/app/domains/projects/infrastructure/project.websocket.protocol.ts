@@ -13,7 +13,12 @@ import {
 } from '../../../infrastructure/transport/websocket/websocket-protocol.utils';
 
 export function isProjectResponse(type: number): boolean {
-  return type >= MessageType.ProjectCreateResult && type <= MessageType.ProjectOperationError;
+  return (
+    (type >= MessageType.ProjectCreateResult && type <= MessageType.ProjectOperationError) ||
+    type === MessageType.ProjectExportResult ||
+    type === MessageType.ProjectImportResult ||
+    type === MessageType.ProjectListExportsResult
+  );
 }
 
 export function serializeProjectCreate(name: string, description: string, messageId: string): Uint8Array {
@@ -89,13 +94,48 @@ export function serializeProjectRenameFolder(projectId: string, folderId: string
     .buffer;
 }
 
-export function serializeProjectAssignSession(projectId: string, sessionId: string, folderId: string | null, messageId: string): Uint8Array {
+export function serializeProjectAssignSession(
+  projectId: string,
+  sessionId: string,
+  folderId: string | null,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + 16 + 16)
     .writeByte(MessageType.ProjectAssignSession)
     .writeUuid(messageId)
     .writeUuid(projectId)
-    .writeUuid(sessionId)
     .writeNullableUuid(folderId)
+    .writeUuid(sessionId)
+    .buffer;
+}
+
+export function serializeProjectExport(
+  projectId: string,
+  path: string,
+  flags: number,
+  messageId: string,
+): Uint8Array {
+  return new BinaryWriter(1 + 16 + 16 + binarySizeOfString(path) + 1)
+    .writeByte(MessageType.ProjectExport)
+    .writeUuid(messageId)
+    .writeUuid(projectId)
+    .writeString(path)
+    .writeByte(flags)
+    .buffer;
+}
+
+export function serializeProjectImport(path: string, messageId: string): Uint8Array {
+  return new BinaryWriter(1 + 16 + binarySizeOfString(path))
+    .writeByte(MessageType.ProjectImport)
+    .writeUuid(messageId)
+    .writeString(path)
+    .buffer;
+}
+
+export function serializeProjectListExports(messageId: string): Uint8Array {
+  return new BinaryWriter(1 + 16)
+    .writeByte(MessageType.ProjectListExports)
+    .writeUuid(messageId)
     .buffer;
 }
 
@@ -180,9 +220,59 @@ export function deserializeProjectAddFolderResult(data: Uint8Array): {
   return { messageId, success, folderId };
 }
 
+export function deserializeProjectExportResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+} {
+  return deserializeMessageIdSuccess(data);
+}
+
+export function deserializeProjectImportResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+  projectId: string;
+} {
+  const { messageId, success, entityId: projectId } = deserializeMessageIdSuccessUuid(data);
+  return { messageId, success, projectId };
+}
+
 export function deserializeProjectOperationError(data: Uint8Array): {
   messageId: string;
   error: string;
 } {
   return deserializeMessageIdError(data);
+}
+
+export interface ProjectExportMetadata {
+  filename: string;
+  sizeBytes: number;
+  sessionCount: number;
+  writeUpCount: number;
+  exportedAt: number;
+  projectId: string;
+  isAlreadyImported: boolean;
+}
+
+export function deserializeProjectListExportsResult(data: Uint8Array): {
+  messageId: string;
+  exports: ProjectExportMetadata[];
+} {
+  const reader = new BinaryReader(data, 1);
+  const messageId = reader.readUuid();
+  const count = reader.readInt32();
+  const exports: ProjectExportMetadata[] = [];
+
+  for (let i = 0; i < count; i++) {
+    exports.push({
+      filename: reader.readString(),
+      sizeBytes: Number(reader.readBigInt64()),
+      sessionCount: reader.readInt32(),
+      writeUpCount: reader.readInt32(),
+      exportedAt: Number(reader.readBigInt64()),
+      projectId: reader.readUuid(),
+      isAlreadyImported: reader.readBoolean(),
+    });
+  }
+
+  return { messageId, exports };
 }
