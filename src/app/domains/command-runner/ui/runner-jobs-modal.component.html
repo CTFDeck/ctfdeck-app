@@ -1,0 +1,158 @@
+@if (visible) {
+  <div
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-start justify-center sm:pt-16 p-0 sm:p-4"
+    (click)="$event.target === $event.currentTarget && close()"
+  >
+    <div class="bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-4xl h-[92dvh] sm:h-[85vh] flex flex-col overflow-hidden">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-muted/30 shrink-0">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+          <ng-icon hlm name="lucideTerminal" class="text-primary shrink-0" size="sm" />
+          <h3 class="text-base sm:text-lg font-semibold truncate">
+            {{ 'runner.jobs.title' | translate }}
+          </h3>
+          @if (jobs.length > 0) {
+            <span class="text-xs px-2 py-0.5 rounded-full bg-muted border border-border text-muted-foreground shrink-0">
+              {{ jobs.length }}
+            </span>
+          }
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          @if (jobs.length > 0) {
+            <button hlmBtn size="sm" variant="ghost" class="text-xs hidden sm:flex" (click)="clearCompleted()">
+              {{ 'runner.jobs.clearCompleted' | translate }}
+            </button>
+          }
+          <button hlmBtn size="icon" variant="ghost" class="h-8 w-8" (click)="close()">
+            <ng-icon hlm name="lucideX" size="sm" />
+          </button>
+        </div>
+      </div>
+
+      @if (jobs.length === 0) {
+        <!-- Empty state -->
+        <div class="flex-1 flex flex-col items-center justify-center text-center px-6 py-12">
+          <ng-icon hlm name="lucideTerminal" class="text-muted-foreground mb-4" size="xl" />
+          <p class="text-muted-foreground text-sm">
+            {{ 'runner.jobs.empty' | translate }}
+          </p>
+          <p class="text-muted-foreground/60 text-xs mt-1">
+            {{ 'runner.jobs.emptyHint' | translate }}
+          </p>
+        </div>
+      } @else {
+        <div class="flex flex-1 min-h-0 overflow-hidden">
+
+          <!-- Sidebar -->
+          <div class="w-full sm:w-56 md:w-64 shrink-0 border-r border-border flex flex-col overflow-hidden"
+               [class.hidden]="selectedJob && jobs.length > 0"
+               [class.sm:flex]="true"
+               [class.flex-col]="true">
+
+            <div class="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+              @for (job of jobs; track trackByJobId($index, job)) {
+                <button
+                  class="w-full text-left px-3 py-3 border-b border-border/50 transition-colors hover:bg-muted/50 flex items-start gap-2"
+                  [class.bg-muted]="selectedJobId === job.id"
+                  (click)="selectJob(job.id)"
+                >
+                  <ng-icon
+                    hlm
+                    [name]="statusIcon(job.status)"
+                    [class]="statusClass(job.status) + ' shrink-0 mt-0.5'"
+                    size="sm"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium truncate">{{ job.label }}</div>
+                    <div class="text-xs text-muted-foreground font-mono truncate">{{ job.command }}</div>
+                    <div class="mt-1 flex items-center gap-1.5">
+                      <span
+                        class="text-[10px] px-1.5 py-0.5 rounded border font-medium"
+                        [class]="statusBadgeClass(job.status)"
+                      >
+                        {{ ('runner.status.' + job.status) | translate }}
+                      </span>
+                      <span class="text-[10px] text-muted-foreground/70">{{ duration(job) }}</span>
+                    </div>
+                  </div>
+                </button>
+              }
+            </div>
+
+            <div class="p-3 border-t border-border sm:hidden">
+              <button hlmBtn size="sm" variant="outline" class="w-full text-xs" (click)="clearCompleted()">
+                {{ 'runner.jobs.clearCompleted' | translate }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Output -->
+          @if (selectedJob) {
+            <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
+
+              <div class="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border bg-muted/20 shrink-0 gap-2">
+                
+                <button
+                  hlmBtn size="sm" variant="ghost" class="sm:hidden h-7 px-2 text-xs"
+                  (click)="selectedJobId = null"
+                >
+                  ← {{ 'runner.jobs.back' | translate }}
+                </button>
+
+                <div class="flex items-center gap-2 min-w-0 flex-1">
+                  <ng-icon
+                    hlm
+                    [name]="statusIcon(selectedJob.status)"
+                    [class]="statusClass(selectedJob.status) + ' shrink-0'"
+                    size="sm"
+                  />
+                  <code class="text-xs font-mono text-foreground truncate flex-1">
+                    {{ selectedJob.command }}
+                  </code>
+                  @if (selectedJob.exitCode !== undefined) {
+                    <span class="text-xs text-muted-foreground shrink-0">
+                      {{ 'runner.jobs.exit' | translate }} {{ selectedJob.exitCode }}
+                    </span>
+                  }
+                </div>
+
+                <div class="flex items-center gap-1 shrink-0">
+                  @if (selectedJob.status === 'running') {
+                    <button hlmBtn size="sm" variant="destructive" class="h-7 px-2 text-xs gap-1"
+                      (click)="stopJob(selectedJob.id)">
+                      <ng-icon hlm name="lucideSquare" size="xs" />
+                      <span class="hidden sm:inline">{{ 'runner.run.stop' | translate }}</span>
+                    </button>
+                  }
+
+                  @if (selectedJob.status !== 'running') {
+                    <button hlmBtn size="icon" variant="ghost"
+                      class="h-7 w-7"
+                      [title]="'runner.jobs.remove' | translate"
+                      (click)="removeJob(selectedJob.id)">
+                      <ng-icon hlm name="lucideTrash2" size="xs" />
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div #jobOutput class="flex-1 overflow-y-auto p-3 sm:p-4 font-mono text-sm bg-card">
+                @for (line of selectedJob.outputLines; track $index) {
+                  <div [innerHTML]="line" class="mb-0.5 break-all whitespace-pre-wrap"></div>
+                }
+              </div>
+
+            </div>
+          } @else {
+            <div class="flex-1 hidden sm:flex items-center justify-center text-muted-foreground text-sm">
+              {{ 'runner.jobs.select' | translate }}
+            </div>
+          }
+
+        </div>
+      }
+
+    </div>
+  </div>
+}

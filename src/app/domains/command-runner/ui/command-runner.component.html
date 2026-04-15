@@ -4,6 +4,23 @@
       <ng-icon hlm name="lucideTerminal" class="text-primary text-2xl" />
       <h2 class="text-xl sm:text-2xl font-bold tracking-tight">{{ 'runner.title' | translate }}</h2>
     </div>
+
+    <!-- Jobs button with badge -->
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="relative gap-2"
+      (click)="openJobsModal()"
+    >
+      <ng-icon hlm name="lucideActivity" size="sm" />
+      <span class="hidden sm:inline">Jobs</span>
+      @if (runningJobCount > 0) {
+        <span class="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+          {{ runningJobCount }}
+        </span>
+      }
+    </button>
   </div>
 
   <div class="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] pr-1 sm:pr-2">
@@ -119,45 +136,39 @@
           </div>
         </div>
 
-        <!-- Run / Stop -->
+        <!-- Run -->
         <div class="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-2 sm:gap-3 pt-2">
-          @if (isRunning) {
-            <button hlmBtn variant="destructive" (click)="stopCommand()" class="gap-2 w-full sm:w-auto">
-              <ng-icon hlm name="lucideSquare" class="h-4 w-4" /> {{ 'runner.run.stop' | translate }}
-            </button>
-          }
           <button
             hlmBtn
-            [disabled]="isRunning || !currentCommand || isSessionEnsuring"
+            [disabled]="!currentCommand || isSessionEnsuring"
             (click)="runCommand()"
             class="gap-2 min-w-[120px] w-full sm:w-auto"
           >
-            <ng-icon hlm [name]="isRunning ? 'lucideLoader' : 'lucidePlay'" [class]="isRunning ? 'animate-spin h-4 w-4' : 'h-4 w-4'" />
-            {{ isRunning ? ('runner.run.running' | translate) : ('runner.run.run' | translate) }}
+            <ng-icon hlm name="lucidePlay" class="h-4 w-4" />
+            {{ 'runner.run.run' | translate }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Output -->
-    <div class="min-h-[160px] sm:min-h-[280px] max-h-[40dvh] sm:max-h-[48dvh] flex flex-col rounded-md border border-border bg-card text-card-foreground overflow-hidden font-mono">
-      <div class="flex justify-between items-center px-3 py-2 bg-muted/30 border-b border-border">
-        <span class="text-xs font-medium text-muted-foreground">{{ 'runner.output.title' | translate }}</span>
-        <button class="text-xs text-muted-foreground hover:text-foreground transition-colors" (click)="clearOutput()">
-          {{ 'runner.output.clear' | translate }}
+    <!-- Info banner replacing the output area -->
+    <div class="min-h-[80px] flex items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-muted-foreground text-sm gap-2 px-4 py-6">
+      <ng-icon hlm name="lucideActivity" size="sm" />
+      <span>
+        {{ 'runner.jobs.background' | translate }}
+        <button class="underline underline-offset-2 hover:text-foreground transition-colors" (click)="openJobsModal()">
+          {{ 'runner.jobs.open' | translate }}
         </button>
-      </div>
-      <div #outputContainer class="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] p-3 text-sm leading-relaxed whitespace-pre-wrap">
-        @for (line of outputLines; track $index) {
-          <div [innerHTML]="line" class="mb-0.5 break-all"></div>
-        }
-        @if (outputLines.length === 0) {
-          <div class="text-muted-foreground italic">{{ 'runner.output.ready' | translate }}</div>
-        }
-      </div>
+        {{ 'runner.jobs.description' | translate }}
+      </span>
     </div>
   </div>
 </div>
+
+<!-- Jobs Modal -->
+<app-runner-jobs-modal
+  [(visible)]="showJobsModal"
+/>
 
 <!-- Manage Scripts Modal -->
 @if (showManageScripts) {
