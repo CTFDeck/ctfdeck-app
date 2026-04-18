@@ -27,6 +27,7 @@ import {
   lucideSquare,
   lucideTerminal,
   lucideX,
+  lucideActivity,
 } from '@ng-icons/lucide';
 import { BrnSelect, BrnSelectImports } from '@spartan-ng/brain/select';
 import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
@@ -42,6 +43,8 @@ import { WebSocketService } from '../../../infrastructure/transport/websocket/we
 import { SessionStore } from '../../sessions/state/session.store';
 import { ScriptStore } from '../../scripts/state/script.store';
 import { ToolCatalogStore } from '../../tools/state/tool-catalog.store';
+import { RunnerJobStore } from '../../scripts/state/runner-job.store';
+import { RunnerJobsModalComponent } from './runner-jobs-modal.component';
 import type { SessionTarget } from '../../sessions/models/session-target.model';
 import { ScriptCategory } from '../../scripts/models/script-category.enum';
 import { scriptCategoryName } from '../../scripts/models/script-category-name';
@@ -60,7 +63,6 @@ import {
 } from '../utils/command-runner-template.utils';
 import {
   ansiToSafeHtml,
-  appendErrorToLastOutput,
   createAnsiConverter,
   errorMessageOf,
   toSafeHtml,
@@ -87,6 +89,7 @@ import { I18nService } from '../../../shell/menubar/i18n.service';
     BrnDialogTrigger,
     BrnSelect,
     TranslatePipe,
+    RunnerJobsModalComponent,
   ],
   providers: [
     provideIcons({
@@ -98,6 +101,7 @@ import { I18nService } from '../../../shell/menubar/i18n.service';
       lucideLoader,
       lucideCircleHelp,
       lucidePlus,
+      lucideActivity,
     }),
   ],
   templateUrl: './command-runner.component.html',
@@ -114,9 +118,9 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   private readonly sessionStore = inject(SessionStore);
   private readonly scriptStore = inject(ScriptStore);
   private readonly toolCatalogStore = inject(ToolCatalogStore);
+  private readonly runnerJobStore = inject(RunnerJobStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly sanitizer = inject(DomSanitizer);
-
   private readonly i18n = inject(I18nService);
 
   targets: SessionTarget[] = [];
@@ -124,13 +128,15 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   selectedToolId = '';
   selectedScriptId = '';
   currentCommand = '';
-  isRunning = false;
-  isSessionEnsuring = false;
 
-  outputLines: SafeHtml[] = [];
+  // Jobs modal
+  showJobsModal = false;
+  runningJobCount = 0;
 
+  // Help dialog (unchanged)
   isHelpRunning = false;
   helpOutput: SafeHtml | null = null;
+  private readonly ansiConverter = createAnsiConverter();
 
   tools: ToolCatalogItem[] = [];
   commandOptions: CommandOption[] = [];
@@ -146,7 +152,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
 
   private pendingInitialSelection: string | null = null;
   private readonly subscriptions = new Subscription();
-  private readonly ansiConverter = createAnsiConverter();
+  public isSessionEnsuring = false;
 
   readonly scriptCategoryOptions = [
     { value: ScriptCategory.Recon, label: scriptCategoryName(ScriptCategory.Recon) },
@@ -197,6 +203,13 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
     this.subscriptions.add(
       this.scriptStore.isLoading$.subscribe((loading) => {
         this.customScriptsLoading = loading;
+      }),
+    );
+
+    this.subscriptions.add(
+      this.runnerJobStore.runningCount$.subscribe((count) => {
+        this.runningJobCount = count;
+        this.cdr.detectChanges();
       }),
     );
 
@@ -304,70 +317,29 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
       return;
     }
 
-    this.isRunning = true;
-    this.outputLines = [];
-    this.addLine(`<span class="text-blue-400">Running: ${this.i18n.translate('runner.run.running')} ${this.currentCommand}</span>`);
+    this.isSessionEnsuring = true;
+    this.cdr.detectChanges();
 
     if (!(await this.ensureActiveSession())) {
-      this.isRunning = false;
+      this.isSessionEnsuring = false;
+      this.cdr.detectChanges();
       return;
     }
 
-    let outputLineIndex = -1;
-    let outputBuffer = '';
+    this.isSessionEnsuring = false;
+    this.cdr.detectChanges();
 
-    const renderScheduler = createRenderScheduler(() => {
-      this.renderOutputBuffer(outputLineIndex, outputBuffer);
-    });
+    const label =
+      this.selectedToolId ||
+      this.customScripts.find((s) => s.id === this.selectedScriptId)?.name ||
+      this.currentCommand;
 
-    this.sessionStore.broadcastTerminalEvent({
-      type: 'command',
-      content: `${this.currentCommand}`,
-    });
-
-    this.wsService
-      .executeCommandStreaming(
-        this.currentCommand,
-        (data: string) => {
-          outputBuffer += data;
-
-          if (outputLineIndex === -1) {
-            outputLineIndex = this.outputLines.length;
-            this.outputLines.push(toSafeHtml(this.sanitizer, ''));
-          }
-
-          this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
-          renderScheduler.schedule();
-        },
-        (data: string) => {
-          this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
-          this.appendToLastError(data);
-        },
-      )
-      .then((result) => {
-        if (outputLineIndex >= 0) {
-          this.renderOutputBuffer(outputLineIndex, outputBuffer);
-        }
-
-        this.isRunning = false;
-        this.addLine(`<span class="text-green-400">Done. Exit code: ${result.exitCode}</span>`);
-        this.cdr.detectChanges();
-        void this.sessionStore.refreshActiveSession();
-      })
-      .catch((error: unknown) => {
-        this.isRunning = false;
-        this.addLine(`<span class="text-red-500">Error: ${errorMessageOf(error)}</span>`);
-        this.cdr.detectChanges();
-      });
+    this.runnerJobStore.run(this.currentCommand, label);
+    this.showJobsModal = true;
   }
 
-  stopCommand(): void {
-    this.isRunning = false;
-    this.addLine(`<span class="text-yellow-500">${this.i18n.translate('runner.run.stop')}</span>`);
-  }
-
-  clearOutput(): void {
-    this.outputLines = [];
+  openJobsModal(): void {
+    this.showJobsModal = true;
   }
 
   runHelp(): void {
@@ -527,55 +499,17 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private async ensureActiveSession(): Promise<boolean> {
-    this.isSessionEnsuring = true;
-
     try {
       await this.sessionStore.ensureActiveSession();
       return true;
     } catch (error: unknown) {
-      this.addLine(`<span class="text-red-500">Session error: ${errorMessageOf(error)}</span>`);
+      toast.error('Session error', { description: errorMessageOf(error) });
       return false;
-    } finally {
-      this.isSessionEnsuring = false;
-      this.cdr.detectChanges();
     }
-  }
-
-  private renderOutputBuffer(lineIndex: number, buffer: string): void {
-    if (lineIndex < 0 || lineIndex >= this.outputLines.length) {
-      return;
-    }
-
-    this.outputLines[lineIndex] = ansiToSafeHtml(this.ansiConverter, this.sanitizer, buffer);
-
-    this.cdr.detectChanges();
-    this.scrollToBottom();
   }
 
   private renderHelpOutput(buffer: string): void {
     this.helpOutput = ansiToSafeHtml(this.ansiConverter, this.sanitizer, buffer);
-
     this.cdr.detectChanges();
-  }
-
-  private appendToLastError(data: string): void {
-    this.outputLines = appendErrorToLastOutput(this.outputLines, this.sanitizer, data);
-
-    this.cdr.detectChanges();
-  }
-
-  private addLine(htmlContent: string): void {
-    this.outputLines.push(toSafeHtml(this.sanitizer, htmlContent));
-    this.cdr.detectChanges();
-    this.scrollToBottom();
-  }
-
-  private scrollToBottom(): void {
-    setTimeout(() => {
-      if (this.outputContainer) {
-        this.outputContainer.nativeElement.scrollTop =
-          this.outputContainer.nativeElement.scrollHeight;
-      }
-    }, 0);
   }
 }
