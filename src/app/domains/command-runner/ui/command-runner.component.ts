@@ -368,7 +368,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
           errorBuffer += error;
         },
       )
-      .then(() => {
+      .promise.then(() => {
         this.isHelpRunning = false;
         this.renderHelpOutput(outputBuffer || errorBuffer);
         this.cdr.detectChanges();

@@ -8,6 +8,8 @@ export enum MessageType {
   CommandExecute = 6,
   PasswordRequest = 7,
   PasswordProvide = 8,
+  CommandSignal = 9,
+  CommandInput = 150,
 
   SessionCreate = 10,
   SessionSetActive = 11,

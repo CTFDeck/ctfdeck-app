@@ -100,21 +100,32 @@
                   ← {{ 'runner.jobs.back' | translate }}
                 </button>
 
-                <div class="flex items-center gap-2 min-w-0 flex-1">
-                  <ng-icon
-                    hlm
-                    [name]="statusIcon(selectedJob.status)"
-                    [class]="statusClass(selectedJob.status) + ' shrink-0'"
-                    size="sm"
-                  />
-                  <code class="text-xs font-mono text-foreground truncate flex-1">
-                    {{ selectedJob.command }}
-                  </code>
-                  @if (selectedJob.exitCode !== undefined) {
-                    <span class="text-xs text-muted-foreground shrink-0">
-                      {{ 'runner.jobs.exit' | translate }} {{ selectedJob.exitCode }}
-                    </span>
-                  }
+                <div class="flex items-center gap-4 min-w-0 flex-1">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <ng-icon
+                      hlm
+                      [name]="statusIcon(selectedJob.status)"
+                      [class]="statusClass(selectedJob.status) + ' shrink-0'"
+                      size="sm"
+                    />
+                    <span class="text-sm font-semibold truncate max-w-[200px]">{{ selectedJob.label }}</span>
+                  </div>
+
+                  <div class="hidden md:flex items-center gap-3 text-[10px] text-muted-foreground border-l border-border pl-4">
+                    <div class="flex items-center gap-1">
+                      <ng-icon hlm name="lucideClock" size="xs" />
+                      {{ selectedJob.startedAt | date:'HH:mm:ss' }}
+                    </div>
+                    @if (selectedJob.status !== 'running') {
+                      <span>•</span>
+                      <span>{{ duration(selectedJob) }}</span>
+                    }
+                    @if (selectedJob.exitCode !== undefined) {
+                      <span class="px-1.5 py-0.5 rounded bg-muted border border-border">
+                        {{ 'runner.jobs.exit' | translate }} {{ selectedJob.exitCode }}
+                      </span>
+                    }
+                  </div>
                 </div>
 
                 <div class="flex items-center gap-1 shrink-0">
@@ -127,6 +138,12 @@
                   }
 
                   @if (selectedJob.status !== 'running') {
+                    <button hlmBtn size="sm" variant="outline" class="h-7 px-2 text-xs gap-1"
+                      (click)="restartJob(selectedJob.id)">
+                      <ng-icon hlm name="lucideRotateCw" size="xs" />
+                      <span class="hidden sm:inline">{{ 'runner.run.restart' | translate }}</span>
+                    </button>
+
                     <button hlmBtn size="icon" variant="ghost"
                       class="h-7 w-7"
                       [title]="'runner.jobs.remove' | translate"

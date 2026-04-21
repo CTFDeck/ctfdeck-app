@@ -2,6 +2,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostListener,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -41,6 +42,10 @@ import { BrnDialogClose, BrnDialogContent, BrnDialogTrigger } from '@spartan-ng/
 import { BrnMenuTrigger } from '@spartan-ng/brain/menu';
 
 import { WebSocketService } from '../../../../infrastructure/transport/websocket/websocket.service';
+import { CommandSignalKind } from '../../../../infrastructure/transport/websocket/websocket-command.protocol';
+import { RunnerJobStore } from '../../../scripts/state/runner-job.store';
+import { generateUUID } from '../../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import { toSafeHtml } from '../../../command-runner/utils/command-runner-render.utils';
 import type { FilePrefix } from '../../models/file-prefix.type';
 import type { LsEntry } from '../../models/ls-entry.model';
 import type { TerminalLine } from '../../models/terminal-line.model';
@@ -60,6 +65,8 @@ import type { WriteUpMetadata } from '../../../writeups/models/writeup.model';
 import { TranslatePipe } from '../../../../shell/menubar/translate.pipe';
 import { I18nService } from '../../../../shell/menubar/i18n.service';
 import { DEFAULT_CHAT_NAME } from '../../../../shared/constants/default-item-names.constants';
+import { RunnerJobsModalComponent } from '../../../../domains/command-runner/ui/runner-jobs-modal.component';
+import { lucideActivity } from '@ng-icons/lucide';
 
 interface MenuTriggerLike {
   open(): void;
@@ -92,9 +99,11 @@ interface BrnMenuTriggerInternals {
     BrnDialogContent,
     BrnDialogClose,
     TranslatePipe,
+    RunnerJobsModalComponent,
   ],
   providers: [
     provideIcons({
+      lucideActivity,
       lucideClock3,
       lucideServer,
       lucidePlus,
@@ -122,6 +131,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
   private readonly sessionStore = inject(SessionStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly runnerJobStore = inject(RunnerJobStore);
   readonly i18n = inject(I18nService);
 
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
@@ -142,6 +152,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
   serverUrl = '';
   savedServers: string[] = ['ws://localhost:42712', 'wss://echo.websocket.org'];
   isSessionLoading = false;
+  activeMessageId: string | null = null;
+  activeCommandName: string | null = null;
+  runningJobCount = 0;
+  showJobsModal = false;
 
   selectedText = '';
   selectionMenuPosition = { x: 0, y: 0 };
@@ -212,6 +226,13 @@ export class TerminalComponent implements OnInit, OnDestroy {
       }),
     );
 
+    this.subscriptions.add(
+      this.runnerJobStore.runningCount$.subscribe((count) => {
+        this.runningJobCount = count;
+        this.cdr.detectChanges();
+      }),
+    );
+
     void this.writeUpStore.refreshAllWriteUps(0, 6, false);
     this.connect();
   }
@@ -227,7 +248,15 @@ export class TerminalComponent implements OnInit, OnDestroy {
   async executeCommand(): Promise<void> {
     const cmd = this.currentCommand.trim();
 
-    if (!cmd) {
+    if (!cmd && !this.activeMessageId) {
+      return;
+    }
+
+    if (this.activeMessageId) {
+      this.wsService.sendInput(this.activeMessageId, this.currentCommand + '\n');
+      this.addLine('output', this.currentCommand);
+      this.currentCommand = '';
+      this.scrollToBottom();
       return;
     }
 
@@ -299,32 +328,49 @@ export class TerminalComponent implements OnInit, OnDestroy {
       }
 
       lastRenderTime = now;
+      lastRenderTime = now;
       this.renderOutputBuffer(outputLineIndex, outputBuffer);
     };
 
-    this.wsService
-      .executeCommandStreaming(
-        cmd,
-        (data: string) => {
-          outputBuffer += data;
+    const jobId = generateUUID();
+    let jobOutputLineIndex = -1;
 
-          if (outputLineIndex === -1) {
-            outputLineIndex = this.lines.length;
-            this.lines.push({
-              id: this.nextLineId('live-output'),
-              type: 'output',
-              content: '',
-              timestamp: new Date(),
-            });
-          }
+    const { promise, messageId } = this.wsService.executeCommandStreaming(
+      cmd,
+      (data: string) => {
+        outputBuffer += data;
 
-          scheduleRender();
-        },
-        (data: string) => {
-          errorBuffer += data;
-          this.appendToLastError(data);
-        },
-      )
+        if (outputLineIndex === -1) {
+          outputLineIndex = this.lines.length;
+          this.lines.push({
+            id: this.nextLineId('live-output'),
+            type: 'output',
+            content: '',
+            timestamp: new Date(),
+          });
+        }
+
+        scheduleRender();
+
+        // Update Job Store
+        if (jobOutputLineIndex === -1) {
+          jobOutputLineIndex = this.runnerJobStore.getJobOutputLength(jobId);
+          this.runnerJobStore.appendJobLine(jobId, toSafeHtml(this.sanitizer, ''));
+        }
+        this.runnerJobStore.updateJobOutputLine(jobId, jobOutputLineIndex, outputBuffer);
+      },
+      (data: string) => {
+        errorBuffer += data;
+        this.appendToLastError(data);
+        this.runnerJobStore.appendJobError(jobId, data);
+      },
+    );
+
+    this.activeMessageId = messageId;
+    this.activeCommandName = cmd.split(' ')[0];
+    this.runnerJobStore.createManualJob(jobId, cmd, cmd, messageId);
+
+    promise
       .then((result) => {
         if (outputLineIndex >= 0) {
           this.renderOutputBuffer(outputLineIndex, outputBuffer);
@@ -339,7 +385,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
         }
 
         if (result.exitCode !== 0 && !errorBuffer) {
-          this.addLine('error', `Program exited with code ${result.exitCode}`);
+          this.addLine('error', this.i18n.translate('terminal.log.programExited', { code: result.exitCode }));
         }
 
         if (looksLikeDirectoryChange(cmd)) {
@@ -347,14 +393,26 @@ export class TerminalComponent implements OnInit, OnDestroy {
         }
 
         this.scrollToBottom();
+        this.runnerJobStore.updateJobStatus(jobId, 'completed', result.exitCode);
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
-        this.addLine('error', `Execution failed: ${message}`);
+        this.addLine('error', this.i18n.translate('terminal.log.executionFailed', { message }));
+        this.runnerJobStore.updateJobStatus(jobId, 'error');
+      })
+      .finally(() => {
+        if (this.activeMessageId === messageId) {
+          this.activeMessageId = null;
+          this.activeCommandName = null;
+        }
       });
   }
 
   onTabAutocomplete(event: Event): void {
+    if (this.activeMessageId) {
+      return;
+    }
+
     const keyboardEvent = event as KeyboardEvent;
     keyboardEvent.preventDefault();
 
@@ -371,6 +429,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
   }
 
   onInput(): void {
+    if (this.activeMessageId) {
+      this.clearAutocompleteSuggestions();
+      return;
+    }
     this.autocompleteSuggestions = this.autocomplete.getSuggestions(this.currentCommand);
     this.cdr.detectChanges();
   }
@@ -395,6 +457,45 @@ export class TerminalComponent implements OnInit, OnDestroy {
     if (this.autocompleteSuggestions.length > 0) {
       this.autocompleteSuggestions = [];
       this.cdr.detectChanges();
+    }
+  }
+
+  onKeyDown(event: KeyboardEvent): void {
+    if (event.ctrlKey && event.key === 'c') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.activeMessageId) {
+        this.wsService.sendSignal(this.activeMessageId, CommandSignalKind.Interrupt);
+      } else if (this.currentCommand) {
+        this.currentCommand = '';
+        this.addLine('command', `${this.prompt} ^C`);
+        this.scrollToBottom();
+      }
+      return;
+    }
+
+    if (event.ctrlKey && event.key === 'd') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.activeMessageId) {
+        this.wsService.sendSignal(this.activeMessageId, CommandSignalKind.Eof);
+      } else {
+        toast.info(this.i18n.translate('terminal.signals.eofOnlyOnJobs'));
+      }
+      return;
+    }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onGlobalKeyDown(event: KeyboardEvent): void {
+    if (event.ctrlKey && (event.key === 'd' || event.key === 'D')) {
+      const activeEl = document.activeElement;
+      const isInsideTerminal = this.commandInput?.nativeElement?.contains(activeEl) || 
+                               (activeEl instanceof HTMLElement && activeEl.closest('.terminal-container'));
+      
+      if (isInsideTerminal) {
+        this.onKeyDown(event);
+      }
     }
   }
 
@@ -641,7 +742,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : 'Unknown error';
-        this.addLine('error', `Connection failed: ${message}`);
+        this.addLine('error', this.i18n.translate('terminal.log.connectionFailed', { message }));
       });
   }
 
@@ -652,7 +753,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
         () => { /* Ignore */ },
         () => { /* Ignore */ },
       )
-      .then((result) => {
+      .promise.then((result) => {
         if (result.workingDirectory) {
           this.updatePwd(result.workingDirectory);
         }
@@ -693,7 +794,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
         (data) => { output += data; },
         () => { /* Ignore */ },
       )
-      .then(() => {
+      .promise.then(() => {
         if (output) {
           this.updateLsCache(output);
         }
@@ -992,5 +1093,9 @@ export class TerminalComponent implements OnInit, OnDestroy {
       });
       return null;
     }
+  }
+
+  openJobsModal(): void {
+    this.showJobsModal = true;
   }
 }
