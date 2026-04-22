@@ -11,5 +11,6 @@ export interface RunnerJob {
   exitCode?: number;
   startedAt: Date;
   endedAt?: Date;
+  wsMessageId?: string;
 }
  

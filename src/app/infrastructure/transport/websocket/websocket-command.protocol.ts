@@ -2,6 +2,11 @@
 import { MessageType } from './websocket-message-type.enum';
 import { bytesToUuid, uuidToBytes } from './websocket-uuid.utils';
 import { BinaryReader, toUint8Array } from './websocket-protocol.utils';
+ 
+export enum CommandSignalKind {
+  Interrupt = 0,
+  Eof = 1,
+}
 
 export interface CommandResponse {
   type: MessageType.CompleteResponse;
@@ -56,6 +61,35 @@ export function serializePasswordProvide(messageId: string, password: string): U
   buffer.set(uuidToBytes(messageId), 1);
   view.setInt32(17, passwordBytes.length, true);
   buffer.set(passwordBytes, 21);
+  return buffer;
+}
+
+export function serializeCommandSignal(messageId: string, kind: CommandSignalKind): Uint8Array {
+  const buffer = new Uint8Array(1 + 16 + 1);
+  const view = new DataView(buffer.buffer);
+  view.setUint8(0, MessageType.CommandSignal);
+  buffer.set(uuidToBytes(messageId), 1);
+  view.setUint8(17, kind);
+  return buffer;
+}
+
+export function serializeCommandKill(messageId: string): Uint8Array {
+  const buffer = new Uint8Array(1 + 16);
+  const view = new DataView(buffer.buffer);
+  view.setUint8(0, MessageType.CommandKill);
+  buffer.set(uuidToBytes(messageId), 1);
+  return buffer;
+}
+
+export function serializeCommandInput(messageId: string, input: string): Uint8Array {
+  const encoder = new TextEncoder();
+  const inputBytes = encoder.encode(input);
+  const buffer = new Uint8Array(1 + 16 + 4 + inputBytes.length);
+  const view = new DataView(buffer.buffer);
+  view.setUint8(0, MessageType.CommandInput);
+  buffer.set(uuidToBytes(messageId), 1);
+  view.setUint32(17, inputBytes.length, true);
+  buffer.set(inputBytes, 21);
   return buffer;
 }
 

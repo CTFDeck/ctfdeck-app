@@ -18,7 +18,7 @@ export class TranslatePipe implements PipeTransform {
     });
   }
 
-  transform(key: string): string {
-    return this.i18n.translate(key);
+  transform(key: string, params: Record<string, string | number> = {}): string {
+    return this.i18n.translate(key, params);
   }
 }

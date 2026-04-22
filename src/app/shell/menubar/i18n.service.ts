@@ -393,6 +393,7 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.help.close': 'Close',
     'runner.run.stop': 'Stop',
     'runner.run.running': 'Running...',
+    'runner.run.restart': 'Restart',
     'runner.run.run': 'Run',
     'runner.output.title': 'Terminal Output',
     'runner.output.clear': 'Clear',
@@ -424,6 +425,16 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.jobs.background': 'Commands run in the background.',
     'runner.jobs.open': 'Open jobs',
     'runner.jobs.description': 'to view their progress.',
+    //
+    'terminal.header.jobs': 'Jobs',
+    'terminal.signals.eofOnlyOnJobs': 'Ctrl+D is only available for active jobs.',
+    'terminal.log.connectionFailed': 'Connection failed: {message}',
+    'terminal.log.programExited': 'Program exited with code {code}',
+    'terminal.log.executionFailed': 'Execution failed: {message}',
+    'runner.status.running': 'Running',
+    'runner.status.completed': 'Completed',
+    'runner.status.stopped': 'Stopped',
+    'runner.status.error': 'Error',
   },
   fr: {
     //menubar :
@@ -710,6 +721,7 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.help.close': 'Fermer',
     'runner.run.stop': 'Arrêter',
     'runner.run.running': 'En cours...',
+    'runner.run.restart': 'Relancer',
     'runner.run.run': 'Lancer',
     'runner.output.title': 'Sortie terminal',
     'runner.output.clear': 'Effacer',
@@ -796,6 +808,17 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'projects.dialog.table.date': 'Date',
     'projects.dialog.table.folders': 'Dossiers',
     'projects.dialog.table.lastChanged': 'Derniere modification',
+    //
+    'terminal.header.jobs': 'Tâches',
+    'terminal.signals.eofOnlyOnJobs': 'Ctrl+D est uniquement disponible pour les tâches actives.',
+    'terminal.log.connectionFailed': 'Échec de connexion : {message}',
+    'terminal.log.programExited': 'Le programme s\'est terminé avec le code {code}',
+    'terminal.log.executionFailed': 'Échec de l\'exécution : {message}',
+    'runner.status.running': 'En cours',
+    'runner.status.completed': 'Terminé',
+    'runner.status.stopped': 'Arrêté',
+    'runner.status.error': 'Erreur',
+
     'projects.dialog.import.title': 'Importer un projet',
     'projects.dialog.import.description': 'Importer des projets depuis le dossier d export du serveur.',
     'projects.dialog.import.availableExports': 'Exports disponibles',
@@ -1106,6 +1129,7 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.help.close': 'Cerrar',
     'runner.run.stop': 'Detener',
     'runner.run.running': 'Ejecutando...',
+    'runner.run.restart': 'Reiniciar',
     'runner.run.run': 'Ejecutar',
     'runner.output.title': 'Salida del terminal',
     'runner.output.clear': 'Limpiar',
@@ -1138,6 +1162,15 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.jobs.open': 'Abrir tareas',
     'runner.jobs.description': 'para ver su progreso.',
     //
+    'terminal.header.jobs': 'Tareas',
+    'terminal.signals.eofOnlyOnJobs': 'Ctrl+D solo está disponible para tareas activas.',
+    'terminal.log.connectionFailed': 'Error de conexión: {message}',
+    'terminal.log.programExited': 'El programa terminó con el código {code}',
+    'terminal.log.executionFailed': 'Error de ejecución: {message}',
+    'runner.status.running': 'En curso',
+    'runner.status.completed': 'Completado',
+    'runner.status.stopped': 'Detenido',
+    'runner.status.error': 'Error',
     'sidebar.folder.renameAria': 'Renombrar carpeta',
     'sidebar.folder.deleteAria': 'Eliminar carpeta',
     'sidebar.project.export': 'Exportar proyecto',
@@ -1238,7 +1271,13 @@ export class I18nService {
     document.documentElement.lang = lang;
   }
 
-  translate(key: string): string {
-    return translations[this.currentLang()][key] ?? translations['en'][key] ?? key;
+  translate(key: string, params: Record<string, string | number> = {}): string {
+    let text = translations[this.currentLang()][key] ?? translations['en'][key] ?? key;
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        text = text.replace(new RegExp(`{${k}}`, 'g'), String(v));
+      }
+    }
+    return text;
   }
 }
