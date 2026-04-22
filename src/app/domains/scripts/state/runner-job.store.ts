@@ -59,26 +59,30 @@ export class RunnerJobStore {
  
     this.sessionStore.broadcastTerminalEvent({ type: 'command', content: command });
  
-    this.ws
-      .executeCommandStreaming(
-        command,
-        (data: string) => {
-          outputBuffer += data;
- 
-          if (outputLineIndex === -1) {
-            outputLineIndex = this.getJobOutputLength(jobId);
-            this.appendJobLine(jobId, toSafeHtml(this.sanitizer, ''));
-          }
- 
-          this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
-          renderScheduler.schedule();
-        },
-        (data: string) => {
-          this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
-          this.appendJobError(jobId, data);
-        },
-      )
-      .then((result) => {
+    const { promise, messageId } = this.ws.executeCommandStreaming(
+      command,
+      (data: string) => {
+        outputBuffer += data;
+
+        if (outputLineIndex === -1) {
+          outputLineIndex = this.getJobOutputLength(jobId);
+          this.appendJobLine(jobId, toSafeHtml(this.sanitizer, ''));
+        }
+
+        this.sessionStore.broadcastTerminalEvent({ type: 'output', content: data });
+        renderScheduler.schedule();
+      },
+      (data: string) => {
+        this.sessionStore.broadcastTerminalEvent({ type: 'error', content: data });
+        this.appendJobError(jobId, data);
+      },
+    );
+
+    this.jobsSubject.next(
+      this.jobsSubject.value.map((j) => (j.id === jobId ? { ...j, wsMessageId: messageId } : j)),
+    );
+
+    promise.then((result) => {
         if (outputLineIndex >= 0) {
           this.updateJobOutputLine(jobId, outputLineIndex, outputBuffer);
         }
@@ -126,18 +130,46 @@ export class RunnerJobStore {
     return jobId;
   }
  
+  createManualJob(jobId: string, command: string, label: string, wsMessageId: string): void {
+    const ansiConverter = createAnsiConverter();
+    this.ansiConverters.set(jobId, ansiConverter);
+
+    const job: RunnerJob = {
+      id: jobId,
+      command,
+      label,
+      status: 'running',
+      outputLines: [],
+      startedAt: new Date(),
+      wsMessageId,
+    };
+    this.jobsSubject.next([...this.jobsSubject.value, job]);
+  }
+
   stop(jobId: string): void {
     const job = this.getJob(jobId);
- 
+
     if (!job || job.status !== 'running') {
       return;
     }
- 
+
+    if (job.wsMessageId) {
+      this.ws.killCommand(job.wsMessageId);
+    }
+
     this.updateJobStatus(jobId, 'stopped');
     this.appendJobLine(
       jobId,
       toSafeHtml(this.sanitizer, `<span class="text-yellow-500">⏹ Stopped by user</span>`),
     );
+  }
+
+  restart(jobId: string): string | undefined {
+    const job = this.getJob(jobId);
+    if (job) {
+      return this.run(job.command, job.label);
+    }
+    return undefined;
   }
  
   remove(jobId: string): void {
@@ -153,7 +185,7 @@ export class RunnerJobStore {
     return this.jobsSubject.value.find((j) => j.id === jobId);
   }
  
-  private updateJobStatus(jobId: string, status: RunnerJob['status'], exitCode?: number): void {
+  updateJobStatus(jobId: string, status: RunnerJob['status'], exitCode?: number): void {
     this.jobsSubject.next(
       this.jobsSubject.value.map((j) =>
         j.id === jobId
@@ -163,11 +195,11 @@ export class RunnerJobStore {
     );
   }
  
-  private getJobOutputLength(jobId: string): number {
+  getJobOutputLength(jobId: string): number {
     return this.getJob(jobId)?.outputLines.length ?? 0;
   }
  
-  private appendJobLine(jobId: string, line: ReturnType<typeof toSafeHtml>): void {
+  appendJobLine(jobId: string, line: ReturnType<typeof toSafeHtml>): void {
     this.jobsSubject.next(
       this.jobsSubject.value.map((j) =>
         j.id === jobId ? { ...j, outputLines: [...j.outputLines, line] } : j,
@@ -175,7 +207,7 @@ export class RunnerJobStore {
     );
   }
  
-  private updateJobOutputLine(jobId: string, lineIndex: number, buffer: string): void {
+  updateJobOutputLine(jobId: string, lineIndex: number, buffer: string): void {
     const converter = this.ansiConverters.get(jobId);
  
     if (!converter) {
@@ -201,7 +233,7 @@ export class RunnerJobStore {
     );
   }
  
-  private appendJobError(jobId: string, data: string): void {
+  appendJobError(jobId: string, data: string): void {
     const job = this.getJob(jobId);
  
     if (!job) {

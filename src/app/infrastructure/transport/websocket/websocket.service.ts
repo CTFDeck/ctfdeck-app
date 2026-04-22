@@ -3,10 +3,14 @@ import { BehaviorSubject } from 'rxjs';
 import { SudoPasswordModalStore } from '../../../shell/sudo-password-modal/sudo-password-modal.store';
 import {
   CommandResponse,
+  CommandSignalKind,
   deserializeMessage,
   PasswordRequest,
   serializeCommand,
+  serializeCommandKill,
+  serializeCommandSignal,
   serializePasswordProvide,
+  serializeCommandInput,
   StreamChunk,
   StreamEnd,
   StreamMessage,
@@ -162,15 +166,18 @@ export class WebSocketService {
     command: string,
     onOutput: (data: string) => void,
     onError: (data: string) => void,
-  ): Promise<StreamingResult> {
+  ): { promise: Promise<StreamingResult>; messageId: string } {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return Promise.reject(new Error('WebSocket not connected'));
+      return {
+        promise: Promise.reject(new Error('WebSocket not connected')),
+        messageId: '',
+      };
     }
 
     const messageId = generateUUID();
     const payload = serializeCommand(command, messageId);
 
-    return new Promise<StreamingResult>((resolve, reject) => {
+    const promise = new Promise<StreamingResult>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.streamingCallbacks.delete(messageId);
         this.pending.delete(messageId);
@@ -218,6 +225,35 @@ export class WebSocketService {
         reject(error);
       }
     });
+
+    return { promise, messageId };
+  }
+
+  sendSignal(messageId: string, kind: CommandSignalKind): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const payload = serializeCommandSignal(messageId, kind);
+    this.ws.send(payload);
+  }
+
+  sendInput(messageId: string, input: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const payload = serializeCommandInput(messageId, input);
+    this.ws.send(payload);
+  }
+
+  killCommand(messageId: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const payload = serializeCommandKill(messageId);
+    this.ws.send(payload);
   }
 
   private connectWithRetry(): void {

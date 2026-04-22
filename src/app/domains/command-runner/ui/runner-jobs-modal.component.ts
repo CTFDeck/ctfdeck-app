@@ -26,6 +26,7 @@ import {
   lucideX,
   lucideLoader,
   lucideTerminal,
+  lucideRotateCw,
 } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmIconImports } from '@ctfdeck/helm/icon';
@@ -47,6 +48,7 @@ import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
       lucideX,
       lucideLoader,
       lucideTerminal,
+      lucideRotateCw,
     }),
   ],
   templateUrl: './runner-jobs-modal.component.html',
@@ -106,6 +108,14 @@ export class RunnerJobsModalComponent implements OnInit, OnDestroy, OnChanges {
  
   stopJob(jobId: string): void {
     this.jobStore.stop(jobId);
+  }
+
+  restartJob(jobId: string): void {
+    const newId = this.jobStore.restart(jobId);
+    if (newId) {
+      this.selectedJobId = newId;
+      this.scrollSelectedToBottom();
+    }
   }
  
   removeJob(jobId: string): void {
