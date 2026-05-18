@@ -21,7 +21,7 @@ export function getInstallableVisibleTools(
 
 export function buildVisibleToolIds(tools: ToolStatus[]): Set<string> {
   return new Set(
-    tools.filter((tool) => tool.kind === 'binary' && !tool.isInstalled).map((tool) => tool.id),
+    tools.filter((tool) => tool.kind === 'binary').map((tool) => tool.id),
   );
 }
 
@@ -50,6 +50,8 @@ export function getToolInstallStateLabel(state: ToolInstallState, translate: (ke
       return 'Success';
     case ToolInstallState.Failed:
       return 'Failed';
+    case ToolInstallState.Uninstalling:
+      return 'Uninstalling';
     default:
       return 'Unknown';
   }

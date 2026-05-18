@@ -12,7 +12,7 @@ export const DEFAULT_TOOLTIP_CONTENT_CLASSES =
 	selector: '[hlmTooltipTrigger]',
 	providers: [
 		provideBrnTooltipDefaultOptions({
-			showDelay: 150,
+			showDelay: 250,
 			hideDelay: 0,
 			exitAnimationDuration: 150,
 			tooltipContentClasses: DEFAULT_TOOLTIP_CONTENT_CLASSES,

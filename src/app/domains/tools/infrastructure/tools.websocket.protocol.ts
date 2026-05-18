@@ -21,6 +21,12 @@ export interface ToolInstallAccepted {
   success: boolean;
 }
 
+export interface ToolUninstallAccepted {
+  type: MessageType.ToolUninstallAccepted;
+  messageId: string;
+  success: boolean;
+}
+
 export interface ToolInventoryResult {
   type: MessageType.ToolInventoryResult;
   messageId: string;
@@ -44,6 +50,20 @@ export function serializeToolInstallRequest(toolIds: string[], messageId: string
   const totalSize = 1 + 16 + 4 + toolIds.reduce((sum, id) => sum + binarySizeOfString(id), 0);
   const writer = new BinaryWriter(totalSize)
     .writeByte(MessageType.ToolInstallRequest)
+    .writeUuid(messageId)
+    .writeInt32(toolIds.length);
+
+  for (const toolId of toolIds) {
+    writer.writeString(toolId);
+  }
+
+  return writer.buffer;
+}
+
+export function serializeToolUninstallRequest(toolIds: string[], messageId: string): Uint8Array {
+  const totalSize = 1 + 16 + 4 + toolIds.reduce((sum, id) => sum + binarySizeOfString(id), 0);
+  const writer = new BinaryWriter(totalSize)
+    .writeByte(MessageType.ToolUninstallRequest)
     .writeUuid(messageId)
     .writeInt32(toolIds.length);
 
@@ -131,6 +151,21 @@ export function deserializeToolInstallAccepted(data: ArrayBuffer | Uint8Array): 
   return { type: MessageType.ToolInstallAccepted, messageId, success };
 }
 
+export function deserializeToolUninstallAccepted(data: ArrayBuffer | Uint8Array): ToolUninstallAccepted {
+  const u8 = toUint8Array(data);
+  const reader = new BinaryReader(u8, 0);
+
+  const type = reader.readByte() as MessageType;
+  if (type !== MessageType.ToolUninstallAccepted) {
+    throw new Error(`Expected ToolUninstallAccepted but got ${type}`);
+  }
+
+  const messageId = reader.readUuid();
+  const success = reader.readBoolean();
+
+  return { type: MessageType.ToolUninstallAccepted, messageId, success };
+}
+
 export function deserializeToolInstallProgress(data: ArrayBuffer | Uint8Array): ToolInstallProgress {
   const u8 = toUint8Array(data);
   const reader = new BinaryReader(u8, 0);
@@ -145,11 +180,7 @@ export function deserializeToolInstallProgress(data: ArrayBuffer | Uint8Array): 
   const state = reader.readInt32() as ToolInstallState;
   const message = reader.readStringOrNull();
   const hasProgress = reader.readBoolean();
-  const progressPercent = hasProgress ? reader.view.getFloat64(reader.currentOffset, true) : null;
-
-  if (hasProgress) {
-    reader.offset += 8;
-  }
+  const progressPercent = hasProgress ? reader.readInt32() / 100 : null;
 
   const installedPath = reader.readStringOrNull();
   const error = reader.readStringOrNull();

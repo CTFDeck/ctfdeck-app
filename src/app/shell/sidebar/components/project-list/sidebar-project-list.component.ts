@@ -51,8 +51,8 @@ export class SidebarProjectListComponent {
 
   @Output() openCreateFolder = new EventEmitter<{ projectId: string; parentId: string | null }>();
   @Output() openExportProject = new EventEmitter<{ projectId: string; name: string }>();
-  @Output() openRenameFolder = new EventEmitter<{ projectId: string; folderId: string; name: string; description?: string }>();
-  @Output() openDeleteFolder = new EventEmitter<{ projectId: string; folderId: string; name: string }>();
+  @Output() openRenameFolder = new EventEmitter<{ projectId: string; folderId: string | null; name: string; description?: string }>();
+  @Output() openDeleteFolder = new EventEmitter<{ projectId: string; folderId: string | null; name: string }>();
   @Output() openChat = new EventEmitter<any>();
   @Output() openWriteUp = new EventEmitter<any>();
   @Output() openRenameChat = new EventEmitter<any>();

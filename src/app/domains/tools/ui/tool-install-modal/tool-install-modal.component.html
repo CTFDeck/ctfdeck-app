@@ -123,7 +123,7 @@
                     }
                   </div>
 
-                  @if (!tool.isInstalled && progressByToolId[tool.id]; as progress) {
+                  @if (shouldShowProgress(tool); as progress) {
                     <div class="mt-3 rounded-lg border border-border bg-background/60 p-2.5">
                       <div class="mb-2 flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2 text-xs font-medium">
@@ -147,6 +147,22 @@
                     </div>
                   }
                 </div>
+                @if (tool.isInstalled) {
+                  <div class="shrink-0 self-center">
+                    <button
+                      hlmBtn
+                      variant="ghost"
+                      size="icon"
+                      class="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      type="button"
+                      [disabled]="installing"
+                      (click)="uninstallTool(tool.id)"
+                      [attr.aria-label]="'Uninstall ' + tool.displayName"
+                    >
+                      <ng-icon hlm name="lucideTrash2" class="h-4 w-4" />
+                    </button>
+                  </div>
+                }
               </div>
             </div>
           }

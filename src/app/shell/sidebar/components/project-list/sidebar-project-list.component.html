@@ -30,7 +30,7 @@
         @for (p of projects; track p.id) {
           <div class="flex flex-col">
             <div
-              class="ctf-folder-node group flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+              class="ctf-folder-node group flex items-center gap-2 h-9 px-3 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
               [class.ctf-folder-hovering]="hoveredFolderId() === p.id"
               (click)="toggleProject(p.id)"
               (keydown.enter)="toggleProject(p.id)"
@@ -63,27 +63,40 @@
                 {{ p.name }}
               </span>
 
-              <button
-                type="button"
-                class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
-                (click)="$event.stopPropagation(); openExportProject.emit({ projectId: p.id, name: p.name })"
-                [hlmTooltipTrigger]="'sidebar.project.export' | translate"
-                [attr.aria-label]="'sidebar.project.export' | translate"
-              >
-                <ng-icon name="lucideDownload" class="w-3.5 h-3.5" />
-                <span class="sr-only">{{ 'sidebar.project.export' | translate }}</span>
-              </button>
+              <div class="hidden group-hover:flex items-center gap-0.5 ml-auto">
+                <button
+                  type="button"
+                  class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+                  (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: p.id, parentId: null })"
+                  [hlmTooltipTrigger]="'sidebar.folder.add' | translate"
+                  [attr.aria-label]="'sidebar.folder.add' | translate"
+                >
+                  <ng-icon name="lucideFolderPlus" class="w-3.5 h-3.5" />
+                  <span class="sr-only">{{ 'sidebar.folder.add' | translate }}</span>
+                </button>
 
-              <button
-                type="button"
-                class="opacity-0 group-hover:opacity-100 h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
-                (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: p.id, parentId: null })"
-                [hlmTooltipTrigger]="'sidebar.folder.add' | translate"
-                [attr.aria-label]="'sidebar.folder.add' | translate"
-              >
-                <ng-icon name="lucideFolderPlus" class="w-3.5 h-3.5" />
-                <span class="sr-only">{{ 'sidebar.folder.add' | translate }}</span>
-              </button>
+                <button
+                  type="button"
+                  class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
+                  (click)="$event.stopPropagation(); openRenameFolder.emit({ projectId: p.id, folderId: null, name: p.name })"
+                  [hlmTooltipTrigger]="'sidebar.folder.rename' | translate"
+                  [attr.aria-label]="'sidebar.project.renameAria' | translate"
+                >
+                  <ng-icon name="lucidePencil" class="w-3.5 h-3.5" />
+                  <span class="sr-only">{{ 'sidebar.project.renameAria' | translate }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
+                  (click)="$event.stopPropagation(); openDeleteFolder.emit({ projectId: p.id, folderId: null, name: p.name })"
+                  [hlmTooltipTrigger]="'sidebar.folder.delete' | translate"
+                  [attr.aria-label]="'sidebar.project.deleteAria' | translate"
+                >
+                  <ng-icon name="lucideTrash2" class="w-3.5 h-3.5" />
+                  <span class="sr-only">{{ 'sidebar.project.deleteAria' | translate }}</span>
+                </button>
+              </div>
             </div>
 
             @if (isProjectExpanded(p.id)) {
@@ -126,7 +139,7 @@
   @for (f of folders; track f.id) {
     <div class="flex flex-col">
       <div
-        class="ctf-folder-node group flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
+        class="ctf-folder-node group flex items-center gap-1.5 h-8 px-2 rounded-md hover:bg-accent cursor-pointer transition-colors relative"
         [class.ctf-folder-hovering]="hoveredFolderId() === f.id"
         (click)="toggleFolder(f.id)"
         (keydown.enter)="toggleFolder(f.id)"
@@ -157,7 +170,7 @@
         />
         <span class="text-xs truncate flex-1 font-medium pointer-events-none">{{ f.name }}</span>
 
-        <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 ml-auto">
+        <div class="hidden group-hover:flex items-center gap-0.5 ml-auto">
           @if (depth < 1) {
             <button
               type="button"
@@ -170,11 +183,11 @@
               <span class="sr-only">{{ 'sidebar.folder.addSub' | translate }}</span>
             </button>
           }
-          @if (!f.isSystem) {
+          @if (!f.isSystem || depth > 0) {
             <button
               type="button"
               class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
-              (click)="$event.stopPropagation(); openRenameFolder.emit({ projectId, folderId: f.id, name: f.name })"
+              (click)="$event.stopPropagation(); openRenameFolder.emit({ projectId: projectId, folderId: f.id, name: f.name })"
               [hlmTooltipTrigger]="'sidebar.folder.rename' | translate"
               [attr.aria-label]="'sidebar.folder.renameAria' | translate"
             >
@@ -182,11 +195,11 @@
               <span class="sr-only">{{ 'sidebar.folder.renameAria' | translate }}</span>
             </button>
           }
-          @if (!f.isSystem) {
+          @if (!f.isSystem || depth > 0) {
             <button
               type="button"
               class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
-              (click)="$event.stopPropagation(); openDeleteFolder.emit({ projectId, folderId: f.id, name: f.name })"
+              (click)="$event.stopPropagation(); openDeleteFolder.emit({ projectId: projectId, folderId: f.id, name: f.name })"
               [hlmTooltipTrigger]="'sidebar.folder.delete' | translate"
               [attr.aria-label]="'sidebar.folder.deleteAria' | translate"
             >

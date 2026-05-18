@@ -218,7 +218,7 @@
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
           <ng-icon name="lucidePencil" class="text-primary h-5 w-5" />
-          <span>{{ 'sidebar.dialog.renameFolder.title' | translate }}</span>
+          <span>{{ (folderToRenameDraft.folderId ? 'sidebar.dialog.renameFolder.title' : 'sidebar.project.renameAria') | translate }}</span>
         </h2>
       </hlm-dialog-header>
       <div class="grid gap-4 py-4">
@@ -235,7 +235,7 @@
       </hlm-dialog-footer>
     </hlm-dialog-content>
   </hlm-dialog>
-
+ 
   <!-- Dialog: Delete Folder -->
   <hlm-dialog>
     <button #deleteFolderTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openDeleteFolder' | translate }}</button>
@@ -243,12 +243,14 @@
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
           <ng-icon name="lucideTrash2" class="text-destructive h-5 w-5" />
-          <span>{{ 'sidebar.dialog.deleteFolder.title' | translate }}</span>
+          <span>{{ (folderToDeleteDraft.folderId ? 'sidebar.dialog.deleteFolder.title' : 'sidebar.project.deleteAria') | translate }}</span>
         </h2>
         <p hlmDialogDescription>
           {{ 'sidebar.dialog.deleteFolder.confirm' | translate }}
           <strong>{{ folderToDeleteDraft.name }}</strong>?
-          {{ 'sidebar.dialog.deleteFolder.description' | translate }}
+          @if (folderToDeleteDraft.folderId) {
+            {{ 'sidebar.dialog.deleteFolder.description' | translate }}
+          }
         </p>
       </hlm-dialog-header>
       <hlm-dialog-footer>

@@ -6,4 +6,5 @@ export enum ToolInstallState {
   Verifying = 4,
   Success = 5,
   Failed = 6,
+  Uninstalling = 7,
 }

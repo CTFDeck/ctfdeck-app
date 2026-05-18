@@ -616,7 +616,20 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.replaceSelection(`\`${selectedText}\``, start + 1, start + 1 + selectedText.length);
+    const match = selectedText.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    const leadingSpace = match ? match[1] : '';
+    const coreText = match ? match[2] : '';
+    const trailingSpace = match ? match[3] : '';
+
+    if (coreText) {
+      this.replaceSelection(
+        `${leadingSpace}\`${coreText}\`${trailingSpace}`,
+        start + leadingSpace.length + 1,
+        start + leadingSpace.length + 1 + coreText.length,
+      );
+    } else {
+      this.replaceSelection(`\`${selectedText}\``, start + 1, start + 1 + selectedText.length);
+    }
   }
 
   triggerImageUpload(): void {
@@ -867,11 +880,24 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     const selectedText = this.content.substring(start, end);
 
     if (start !== end) {
-      this.replaceSelection(
-        `${prefix}${selectedText}${suffix}`,
-        start + prefix.length,
-        start + prefix.length + selectedText.length,
-      );
+      const match = selectedText.match(/^(\s*)([\s\S]*?)(\s*)$/);
+      const leadingSpace = match ? match[1] : '';
+      const coreText = match ? match[2] : '';
+      const trailingSpace = match ? match[3] : '';
+
+      if (coreText) {
+        this.replaceSelection(
+          `${leadingSpace}${prefix}${coreText}${suffix}${trailingSpace}`,
+          start + leadingSpace.length + prefix.length,
+          start + leadingSpace.length + prefix.length + coreText.length,
+        );
+      } else {
+        this.replaceSelection(
+          `${prefix}${selectedText}${suffix}`,
+          start + prefix.length,
+          start + prefix.length + selectedText.length,
+        );
+      }
       return;
     }
 
@@ -886,9 +912,21 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     const textarea = this.editor.nativeElement;
     const start = textarea.selectionStart;
     const lineStart = this.content.lastIndexOf('\n', start - 1) + 1;
+    const lineEnd = this.content.indexOf('\n', start);
+    const endOfLine = lineEnd === -1 ? this.content.length : lineEnd;
+    const currentLine = this.content.substring(lineStart, endOfLine);
 
-    this.content = this.content.substring(0, lineStart) + prefix + this.content.substring(lineStart);
-    this.restoreEditorSelection(textarea.scrollTop, start + prefix.length, start + prefix.length, true);
+    const trimmedLine = currentLine.trimStart();
+    const leadingSpacesCount = currentLine.length - trimmedLine.length;
+
+    this.content =
+      this.content.substring(0, lineStart) +
+      prefix +
+      trimmedLine +
+      this.content.substring(endOfLine);
+
+    const newStart = Math.max(lineStart + prefix.length, start - leadingSpacesCount + prefix.length);
+    this.restoreEditorSelection(textarea.scrollTop, newStart, newStart, true);
   }
 
   private replaceSelection(text: string, selectionStart: number, selectionEnd: number): void {
@@ -912,7 +950,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       textarea.selectionStart = selectionStart;
       textarea.selectionEnd = selectionEnd;
       if (updatePreview) {
-        this.updatePreview();
+        this.onContentChange();
       }
     });
   }
