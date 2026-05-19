@@ -19,39 +19,45 @@ export function isCustomScriptResponse(type: number): boolean {
   );
 }
 
-export function serializeCustomScriptCreate(name: string, category: number, template: string, messageId: string): Uint8Array {
+export function serializeCustomScriptCreate(
+  name: string,
+  category: number,
+  template: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + binarySizeOfString(name) + 4 + binarySizeOfString(template))
     .writeByte(MessageType.CustomScriptCreate)
     .writeUuid(messageId)
     .writeString(name)
     .writeInt32(category)
-    .writeString(template)
-    .buffer;
+    .writeString(template).buffer;
 }
 
-export function serializeCustomScriptUpdate(scriptId: string, name: string, category: number, template: string, messageId: string): Uint8Array {
+export function serializeCustomScriptUpdate(
+  scriptId: string,
+  name: string,
+  category: number,
+  template: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + binarySizeOfString(name) + 4 + binarySizeOfString(template))
     .writeByte(MessageType.CustomScriptUpdate)
     .writeUuid(messageId)
     .writeUuid(scriptId)
     .writeString(name)
     .writeInt32(category)
-    .writeString(template)
-    .buffer;
+    .writeString(template).buffer;
 }
 
 export function serializeCustomScriptDelete(scriptId: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + 16)
     .writeByte(MessageType.CustomScriptDelete)
     .writeUuid(messageId)
-    .writeUuid(scriptId)
-    .buffer;
+    .writeUuid(scriptId).buffer;
 }
 
 export function serializeCustomScriptList(messageId: string): Uint8Array {
-  return new BinaryWriter(1 + 16)
-    .writeByte(MessageType.CustomScriptList)
-    .writeUuid(messageId)
+  return new BinaryWriter(1 + 16).writeByte(MessageType.CustomScriptList).writeUuid(messageId)
     .buffer;
 }
 

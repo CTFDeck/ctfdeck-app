@@ -1,8 +1,14 @@
 <hlm-menu-group>
-  <button hlmMenuItem (click)="projectsUi.openNewProject()">{{ 'menu.projects.new' | translate }}</button>
+  <button hlmMenuItem (click)="projectsUi.openNewProject()">
+    {{ 'menu.projects.new' | translate }}
+  </button>
 </hlm-menu-group>
 <hlm-menu-separator />
 <hlm-menu-group>
-  <button hlmMenuItem (click)="projectsUi.openImportProjects()">{{ 'menu.projects.import' | translate }}</button>
-  <button hlmMenuItem (click)="projectsUi.openExportProjects()">{{ 'menu.projects.export' | translate }}</button>
+  <button hlmMenuItem (click)="projectsUi.openImportProjects()">
+    {{ 'menu.projects.import' | translate }}
+  </button>
+  <button hlmMenuItem (click)="projectsUi.openExportProjects()">
+    {{ 'menu.projects.export' | translate }}
+  </button>
 </hlm-menu-group>

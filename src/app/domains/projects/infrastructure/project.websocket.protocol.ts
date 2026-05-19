@@ -21,21 +21,23 @@ export function isProjectResponse(type: number): boolean {
   );
 }
 
-export function serializeProjectCreate(name: string, description: string, messageId: string): Uint8Array {
+export function serializeProjectCreate(
+  name: string,
+  description: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + binarySizeOfStrings(name, description))
     .writeByte(MessageType.ProjectCreate)
     .writeUuid(messageId)
     .writeString(name)
-    .writeString(description)
-    .buffer;
+    .writeString(description).buffer;
 }
 
 export function serializeProjectLoad(projectId: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + 16)
     .writeByte(MessageType.ProjectLoad)
     .writeUuid(messageId)
-    .writeUuid(projectId)
-    .buffer;
+    .writeUuid(projectId).buffer;
 }
 
 export function serializeProjectList(offset: number, limit: number, messageId: string): Uint8Array {
@@ -43,55 +45,68 @@ export function serializeProjectList(offset: number, limit: number, messageId: s
     .writeByte(MessageType.ProjectList)
     .writeUuid(messageId)
     .writeInt32(offset)
-    .writeInt32(limit)
-    .buffer;
+    .writeInt32(limit).buffer;
 }
 
-export function serializeProjectUpdate(projectId: string, name: string, description: string, messageId: string): Uint8Array {
+export function serializeProjectUpdate(
+  projectId: string,
+  name: string,
+  description: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + binarySizeOfStrings(name, description))
     .writeByte(MessageType.ProjectUpdate)
     .writeUuid(messageId)
     .writeUuid(projectId)
     .writeString(name)
-    .writeString(description)
-    .buffer;
+    .writeString(description).buffer;
 }
 
 export function serializeProjectDelete(projectId: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + 16)
     .writeByte(MessageType.ProjectDelete)
     .writeUuid(messageId)
-    .writeUuid(projectId)
-    .buffer;
+    .writeUuid(projectId).buffer;
 }
 
-export function serializeProjectAddFolder(projectId: string, name: string, parentId: string | null, messageId: string): Uint8Array {
+export function serializeProjectAddFolder(
+  projectId: string,
+  name: string,
+  parentId: string | null,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + 16 + binarySizeOfString(name))
     .writeByte(MessageType.ProjectAddFolder)
     .writeUuid(messageId)
     .writeUuid(projectId)
     .writeNullableUuid(parentId)
-    .writeString(name)
-    .buffer;
+    .writeString(name).buffer;
 }
 
-export function serializeProjectDeleteFolder(projectId: string, folderId: string, messageId: string): Uint8Array {
+export function serializeProjectDeleteFolder(
+  projectId: string,
+  folderId: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + 16)
     .writeByte(MessageType.ProjectDeleteFolder)
     .writeUuid(messageId)
     .writeUuid(projectId)
-    .writeUuid(folderId)
-    .buffer;
+    .writeUuid(folderId).buffer;
 }
 
-export function serializeProjectRenameFolder(projectId: string, folderId: string, name: string, messageId: string): Uint8Array {
+export function serializeProjectRenameFolder(
+  projectId: string,
+  folderId: string,
+  name: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + 16 + binarySizeOfString(name))
     .writeByte(MessageType.ProjectRenameFolder)
     .writeUuid(messageId)
     .writeUuid(projectId)
     .writeUuid(folderId)
-    .writeString(name)
-    .buffer;
+    .writeString(name).buffer;
 }
 
 export function serializeProjectAssignSession(
@@ -105,8 +120,7 @@ export function serializeProjectAssignSession(
     .writeUuid(messageId)
     .writeUuid(projectId)
     .writeNullableUuid(folderId)
-    .writeUuid(sessionId)
-    .buffer;
+    .writeUuid(sessionId).buffer;
 }
 
 export function serializeProjectExport(
@@ -120,22 +134,18 @@ export function serializeProjectExport(
     .writeUuid(messageId)
     .writeUuid(projectId)
     .writeString(path)
-    .writeByte(flags)
-    .buffer;
+    .writeByte(flags).buffer;
 }
 
 export function serializeProjectImport(path: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + binarySizeOfString(path))
     .writeByte(MessageType.ProjectImport)
     .writeUuid(messageId)
-    .writeString(path)
-    .buffer;
+    .writeString(path).buffer;
 }
 
 export function serializeProjectListExports(messageId: string): Uint8Array {
-  return new BinaryWriter(1 + 16)
-    .writeByte(MessageType.ProjectListExports)
-    .writeUuid(messageId)
+  return new BinaryWriter(1 + 16).writeByte(MessageType.ProjectListExports).writeUuid(messageId)
     .buffer;
 }
 

@@ -55,10 +55,7 @@
                 [name]="isProjectExpanded(p.id) ? 'lucideChevronDown' : 'lucideChevronRight'"
                 class="text-foreground w-3.5 h-3.5 pointer-events-none"
               />
-              <ng-icon
-                name="lucideLayoutGrid"
-                class="text-primary w-4 h-4 pointer-events-none"
-              />
+              <ng-icon name="lucideLayoutGrid" class="text-primary w-4 h-4 pointer-events-none" />
               <span class="text-sm font-medium truncate flex-1 pointer-events-none">
                 {{ p.name }}
               </span>
@@ -67,7 +64,10 @@
                 <button
                   type="button"
                   class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
-                  (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: p.id, parentId: null })"
+                  (click)="
+                    $event.stopPropagation();
+                    openCreateFolder.emit({ projectId: p.id, parentId: null })
+                  "
                   [hlmTooltipTrigger]="'sidebar.folder.add' | translate"
                   [attr.aria-label]="'sidebar.folder.add' | translate"
                 >
@@ -78,7 +78,10 @@
                 <button
                   type="button"
                   class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
-                  (click)="$event.stopPropagation(); openRenameFolder.emit({ projectId: p.id, folderId: null, name: p.name })"
+                  (click)="
+                    $event.stopPropagation();
+                    openRenameFolder.emit({ projectId: p.id, folderId: null, name: p.name })
+                  "
                   [hlmTooltipTrigger]="'sidebar.folder.rename' | translate"
                   [attr.aria-label]="'sidebar.project.renameAria' | translate"
                 >
@@ -89,7 +92,10 @@
                 <button
                   type="button"
                   class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
-                  (click)="$event.stopPropagation(); openDeleteFolder.emit({ projectId: p.id, folderId: null, name: p.name })"
+                  (click)="
+                    $event.stopPropagation();
+                    openDeleteFolder.emit({ projectId: p.id, folderId: null, name: p.name })
+                  "
                   [hlmTooltipTrigger]="'sidebar.folder.delete' | translate"
                   [attr.aria-label]="'sidebar.project.deleteAria' | translate"
                 >
@@ -102,12 +108,14 @@
             @if (isProjectExpanded(p.id)) {
               <div
                 class="ml-4 pl-2 border-l border-border flex flex-col gap-1 mt-1 ctf-folder-content relative"
-                [class.ctf-content-drop-hover]="isDragging && hoveredContentKey() === ('project:' + p.id)"
+                [class.ctf-content-drop-hover]="
+                  isDragging && hoveredContentKey() === 'project:' + p.id
+                "
                 (dragover)="onContentDragOver($event, p.id, null, 'project:' + p.id)"
                 (dragleave)="onContentDragLeave($event, 'project:' + p.id)"
                 (drop)="onDrop($event, p.id, null)"
               >
-                @if (isDragging && hoveredContentKey() === ('project:' + p.id)) {
+                @if (isDragging && hoveredContentKey() === 'project:' + p.id) {
                   <div class="ctf-content-drop-ghost"></div>
                 }
                 <ng-container
@@ -124,7 +132,7 @@
     }
   }
 
-  @if ((((hierarchy$ | async)?.length || 0) < ((totalProjectsCount$ | async) || 0)) && !isCollapsed) {
+  @if (((hierarchy$ | async)?.length || 0) < ((totalProjectsCount$ | async) || 0) && !isCollapsed) {
     <button
       type="button"
       class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
@@ -152,9 +160,7 @@
         [attr.aria-expanded]="isFolderExpanded(f.id)"
       >
         @if (isDragging && hoveredFolderId() === f.id && !isFolderExpanded(f.id)) {
-          <div
-            class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"
-          ></div>
+          <div class="absolute bottom-0 left-0 h-[2px] bg-primary animate-folder-progress"></div>
         }
         @if (isDragging && hoveredFolderId() === f.id) {
           <div class="ctf-drop-ghost"></div>
@@ -175,7 +181,10 @@
             <button
               type="button"
               class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
-              (click)="$event.stopPropagation(); openCreateFolder.emit({ projectId: projectId, parentId: f.id })"
+              (click)="
+                $event.stopPropagation();
+                openCreateFolder.emit({ projectId: projectId, parentId: f.id })
+              "
               [hlmTooltipTrigger]="'sidebar.folder.addSub' | translate"
               [attr.aria-label]="'sidebar.folder.addSub' | translate"
             >
@@ -187,7 +196,10 @@
             <button
               type="button"
               class="h-6 w-6 hover:bg-background/50 rounded flex items-center justify-center active:scale-95 transition-transform"
-              (click)="$event.stopPropagation(); openRenameFolder.emit({ projectId: projectId, folderId: f.id, name: f.name })"
+              (click)="
+                $event.stopPropagation();
+                openRenameFolder.emit({ projectId: projectId, folderId: f.id, name: f.name })
+              "
               [hlmTooltipTrigger]="'sidebar.folder.rename' | translate"
               [attr.aria-label]="'sidebar.folder.renameAria' | translate"
             >
@@ -199,7 +211,10 @@
             <button
               type="button"
               class="h-6 w-6 text-destructive hover:bg-destructive/10 rounded flex items-center justify-center active:scale-95 transition-transform"
-              (click)="$event.stopPropagation(); openDeleteFolder.emit({ projectId: projectId, folderId: f.id, name: f.name })"
+              (click)="
+                $event.stopPropagation();
+                openDeleteFolder.emit({ projectId: projectId, folderId: f.id, name: f.name })
+              "
               [hlmTooltipTrigger]="'sidebar.folder.delete' | translate"
               [attr.aria-label]="'sidebar.folder.deleteAria' | translate"
             >
@@ -213,12 +228,12 @@
       @if (isFolderExpanded(f.id)) {
         <div
           class="ml-4 pl-2 border-l border-border flex flex-col gap-0.5 mt-0.5 ctf-folder-content relative"
-          [class.ctf-content-drop-hover]="isDragging && hoveredContentKey() === ('folder:' + f.id)"
+          [class.ctf-content-drop-hover]="isDragging && hoveredContentKey() === 'folder:' + f.id"
           (dragover)="onContentDragOver($event, projectId, f.id, 'folder:' + f.id)"
           (dragleave)="onContentDragLeave($event, 'folder:' + f.id)"
           (drop)="onDrop($event, projectId, f.id)"
         >
-          @if (isDragging && hoveredContentKey() === ('folder:' + f.id)) {
+          @if (isDragging && hoveredContentKey() === 'folder:' + f.id) {
             <div class="ctf-content-drop-ghost"></div>
           }
           <ng-container

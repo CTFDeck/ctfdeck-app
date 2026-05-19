@@ -21,7 +21,9 @@
       [attr.aria-label]="'app.ariaCloseTargetManager' | translate"
       (click)="$event.target === $event.currentTarget && closeTargetManager()"
     >
-      <div class="bg-slate-900 border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl h-[95dvh] sm:h-[90vh] max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+      <div
+        class="bg-slate-900 border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl h-[95dvh] sm:h-[90vh] max-h-[95dvh] sm:max-h-[90vh] overflow-hidden flex flex-col"
+      >
         <app-target-manager
           #targetManager
           class="flex-1 min-h-0"
@@ -38,7 +40,9 @@
       [attr.aria-label]="'app.ariaCloseCommandRunner' | translate"
       (click)="$event.target === $event.currentTarget && closeCommandRunner()"
     >
-      <div class="bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-5xl h-[90dvh] sm:h-[84vh] max-h-[90dvh] sm:max-h-[84vh] overflow-hidden flex flex-col">
+      <div
+        class="bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-5xl h-[90dvh] sm:h-[84vh] max-h-[90dvh] sm:max-h-[84vh] overflow-hidden flex flex-col"
+      >
         <app-command-runner
           [initialToolId]="selectedToolId"
           (closeEvent)="closeCommandRunner()"

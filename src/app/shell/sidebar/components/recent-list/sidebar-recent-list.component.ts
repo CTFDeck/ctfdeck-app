@@ -47,10 +47,18 @@ export class SidebarRecentListComponent {
   @Output() deleteChat = new EventEmitter<SessionMetadata>();
   @Output() renameWriteUp = new EventEmitter<WriteUpMetadata>();
   @Output() deleteWriteUp = new EventEmitter<WriteUpMetadata>();
-  @Output() dragStarted = new EventEmitter<{ event: DragEvent; type: 'session' | 'writeup'; id: string }>();
+  @Output() dragStarted = new EventEmitter<{
+    event: DragEvent;
+    type: 'session' | 'writeup';
+    id: string;
+  }>();
   @Output() dragEnded = new EventEmitter<void>();
   @Output() dragOver = new EventEmitter<DragEvent>();
-  @Output() dropped = new EventEmitter<{ event: DragEvent; projectId: string; folderId: string | null }>();
+  @Output() dropped = new EventEmitter<{
+    event: DragEvent;
+    projectId: string;
+    folderId: string | null;
+  }>();
 
   private sessionStore = inject(SessionStore);
   private writeUpStore = inject(WriteUpStore);
@@ -88,12 +96,21 @@ export class SidebarRecentListComponent {
 
   async loadMoreSessions(): Promise<void> {
     this.sessionsDisplayLimit.update((count) => count + 6);
-    this.sessionStore.refreshSessions(true, (await this.sessionStore.unassignedSessions$.toPromise() || []).length, 12, true);
+    this.sessionStore.refreshSessions(
+      true,
+      ((await this.sessionStore.unassignedSessions$.toPromise()) || []).length,
+      12,
+      true,
+    );
   }
 
   async loadMoreWriteUps(): Promise<void> {
     this.writeUpsDisplayLimit.update((count) => count + 6);
-    this.writeUpStore.refreshAllWriteUps((await this.writeUpStore.unassignedWriteUps$.toPromise() || []).length, 12, true);
+    this.writeUpStore.refreshAllWriteUps(
+      ((await this.writeUpStore.unassignedWriteUps$.toPromise()) || []).length,
+      12,
+      true,
+    );
   }
 
   filteredChats(sessions: SessionMetadata[]): SessionMetadata[] {
@@ -103,7 +120,10 @@ export class SidebarRecentListComponent {
       : sessions;
 
     const limit = this.sessionsDisplayLimit();
-    if (filtered.length < limit && sessions.length < (this.sessionStore.getTotalSessions(true) || 0)) {
+    if (
+      filtered.length < limit &&
+      sessions.length < (this.sessionStore.getTotalSessions(true) || 0)
+    ) {
       void this.sessionStore.refreshSessions(true, sessions.length, 12, true);
     }
     return filtered.slice(0, limit);
@@ -116,7 +136,10 @@ export class SidebarRecentListComponent {
       : writeUps;
 
     const limit = this.writeUpsDisplayLimit();
-    if (filtered.length < limit && writeUps.length < (this.writeUpStore.getTotalWriteUps(true) || 0)) {
+    if (
+      filtered.length < limit &&
+      writeUps.length < (this.writeUpStore.getTotalWriteUps(true) || 0)
+    ) {
       void this.writeUpStore.refreshAllWriteUps(writeUps.length, 12, true);
     }
     return filtered.slice(0, limit);

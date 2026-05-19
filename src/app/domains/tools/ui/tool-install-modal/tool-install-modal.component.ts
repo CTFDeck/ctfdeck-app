@@ -1,5 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  OnDestroy,
+  OnInit,
+  Output,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, distinctUntilChanged, filter } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -40,7 +49,15 @@ import { I18nService } from '../../../../shell/menubar/i18n.service';
 @Component({
   selector: 'app-tool-install-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, HlmSpinner, HlmIcon, TranslatePipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    NgIcon,
+    HlmButtonImports,
+    HlmSpinner,
+    HlmIcon,
+    TranslatePipe,
+  ],
   providers: [
     provideIcons({
       lucideWrench,

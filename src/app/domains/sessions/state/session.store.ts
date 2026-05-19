@@ -380,7 +380,11 @@ export class SessionStore implements OnDestroy {
   private showError(title: string, error: unknown): void {
     toast.error(title, {
       description:
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error',
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'Unknown error',
     });
   }
 }

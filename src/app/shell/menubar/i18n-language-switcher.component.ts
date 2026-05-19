@@ -16,15 +16,17 @@ import { I18nService, type SupportedLang } from './i18n.service';
     type: 'button',
     'aria-label': 'Select language',
   },
-  styles: [`
-    :host {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      color: var(--sidebar-foreground);
-    }
-  `],
+  styles: [
+    `
+      :host {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        color: var(--sidebar-foreground);
+      }
+    `,
+  ],
   template: `
     <span [brnMenuTriggerFor]="languageMenu">{{ currentFlag }}</span>
 

@@ -129,8 +129,12 @@
           [activeWriteUpId]="activeWriteUpId$ | async"
           (openCreateFolder)="openCreateFolderDialog($event.projectId, $event.parentId)"
           (openExportProject)="openExportProject($event.projectId, $event.name)"
-          (openRenameFolder)="openRenameFolderDialog($event.projectId, $event.folderId, $event.name)"
-          (openDeleteFolder)="openDeleteFolderDialog($event.projectId, $event.folderId, $event.name)"
+          (openRenameFolder)="
+            openRenameFolderDialog($event.projectId, $event.folderId, $event.name)
+          "
+          (openDeleteFolder)="
+            openDeleteFolderDialog($event.projectId, $event.folderId, $event.name)
+          "
           (openChat)="openChat($event)"
           (openWriteUp)="openWriteUp($event)"
           (openRenameChat)="openRenameDialog($event)"
@@ -187,7 +191,9 @@
   }
   <!-- Dialog: New Folder -->
   <hlm-dialog>
-    <button #createFolderTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openCreateFolder' | translate }}</button>
+    <button #createFolderTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openCreateFolder' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -199,11 +205,19 @@
       <div class="grid gap-4 py-4">
         <div class="grid gap-2">
           <label hlmLabel for="fname">{{ 'sidebar.dialog.newFolder.label' | translate }}</label>
-          <input hlmInput id="fname" [(ngModel)]="createFolderDraft.name" [placeholder]="'sidebar.dialog.newFolder.placeholder' | translate" (keyup.enter)="addFolder(ctx)" />
+          <input
+            hlmInput
+            id="fname"
+            [(ngModel)]="createFolderDraft.name"
+            [placeholder]="'sidebar.dialog.newFolder.placeholder' | translate"
+            (keyup.enter)="addFolder(ctx)"
+          />
         </div>
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" (click)="addFolder(ctx)">
           <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> {{ 'dialog.createFolder' | translate }}
         </button>
@@ -213,54 +227,79 @@
 
   <!-- Dialog: Rename Folder -->
   <hlm-dialog>
-    <button #renameFolderTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openRenameFolder' | translate }}</button>
+    <button #renameFolderTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openRenameFolder' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
           <ng-icon name="lucidePencil" class="text-primary h-5 w-5" />
-          <span>{{ (folderToRenameDraft.folderId ? 'sidebar.dialog.renameFolder.title' : 'sidebar.project.renameAria') | translate }}</span>
+          <span>{{
+            (folderToRenameDraft.folderId
+              ? 'sidebar.dialog.renameFolder.title'
+              : 'sidebar.project.renameAria'
+            ) | translate
+          }}</span>
         </h2>
       </hlm-dialog-header>
       <div class="grid gap-4 py-4">
         <div class="grid gap-2">
           <label hlmLabel for="rfname">{{ 'sidebar.dialog.renameFolder.label' | translate }}</label>
-          <input hlmInput id="rfname" [(ngModel)]="folderToRenameDraft.name" (keyup.enter)="renameFolder(ctx)" />
+          <input
+            hlmInput
+            id="rfname"
+            [(ngModel)]="folderToRenameDraft.name"
+            (keyup.enter)="renameFolder(ctx)"
+          />
         </div>
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" (click)="renameFolder(ctx)">
           <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> {{ 'dialog.save' | translate }}
         </button>
       </hlm-dialog-footer>
     </hlm-dialog-content>
   </hlm-dialog>
- 
+
   <!-- Dialog: Delete Folder -->
   <hlm-dialog>
-    <button #deleteFolderTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openDeleteFolder' | translate }}</button>
+    <button #deleteFolderTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openDeleteFolder' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
           <ng-icon name="lucideTrash2" class="text-destructive h-5 w-5" />
-          <span>{{ (folderToDeleteDraft.folderId ? 'sidebar.dialog.deleteFolder.title' : 'sidebar.project.deleteAria') | translate }}</span>
+          <span>{{
+            (folderToDeleteDraft.folderId
+              ? 'sidebar.dialog.deleteFolder.title'
+              : 'sidebar.project.deleteAria'
+            ) | translate
+          }}</span>
         </h2>
         <p hlmDialogDescription>
           {{ 'sidebar.dialog.deleteFolder.confirm' | translate }}
-          <strong>{{ folderToDeleteDraft.name }}</strong>?
+          <strong>{{ folderToDeleteDraft.name }}</strong
+          >?
           @if (folderToDeleteDraft.folderId) {
             {{ 'sidebar.dialog.deleteFolder.description' | translate }}
           }
         </p>
       </hlm-dialog-header>
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" variant="destructive" (click)="deleteFolder(ctx)">
           <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" />
           {{
             (folderToDeleteDraft.folderId
               ? 'sidebar.dialog.deleteFolder.actionFolder'
-              : 'sidebar.dialog.deleteFolder.actionProject') | translate
+              : 'sidebar.dialog.deleteFolder.actionProject'
+            ) | translate
           }}
         </button>
       </hlm-dialog-footer>
@@ -269,7 +308,9 @@
 
   <!-- Dialog: Rename Session -->
   <hlm-dialog>
-    <button #renameTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openRenameSession' | translate }}</button>
+    <button #renameTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openRenameSession' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -280,13 +321,22 @@
       @if (sessionToRename) {
         <div class="grid gap-4 py-4">
           <div class="grid gap-2">
-            <label hlmLabel for="sname">{{ 'sidebar.dialog.renameSession.label' | translate }}</label>
-            <input hlmInput id="sname" [(ngModel)]="renameDraftById[sessionToRename.id]" (keyup.enter)="renameSession(ctx)" />
+            <label hlmLabel for="sname">{{
+              'sidebar.dialog.renameSession.label' | translate
+            }}</label>
+            <input
+              hlmInput
+              id="sname"
+              [(ngModel)]="renameDraftById[sessionToRename.id]"
+              (keyup.enter)="renameSession(ctx)"
+            />
           </div>
         </div>
       }
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" (click)="renameSession(ctx)">
           <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> {{ 'dialog.save' | translate }}
         </button>
@@ -296,7 +346,9 @@
 
   <!-- Dialog: Delete Session -->
   <hlm-dialog>
-    <button #deleteTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openDeleteSession' | translate }}</button>
+    <button #deleteTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openDeleteSession' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -306,9 +358,12 @@
         <p hlmDialogDescription>{{ 'sidebar.dialog.deleteSession.description' | translate }}</p>
       </hlm-dialog-header>
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" variant="destructive" (click)="deleteSession(ctx)">
-          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> {{ 'dialog.deleteSession' | translate }}
+          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" />
+          {{ 'dialog.deleteSession' | translate }}
         </button>
       </hlm-dialog-footer>
     </hlm-dialog-content>
@@ -316,7 +371,9 @@
 
   <!-- Dialog: Rename WriteUp -->
   <hlm-dialog>
-    <button #renameWriteUpTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openRenameWriteUp' | translate }}</button>
+    <button #renameWriteUpTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openRenameWriteUp' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -327,13 +384,22 @@
       @if (writeUpToRename) {
         <div class="grid gap-4 py-4">
           <div class="grid gap-2">
-            <label hlmLabel for="wname">{{ 'sidebar.dialog.renameWriteUp.label' | translate }}</label>
-            <input hlmInput id="wname" [(ngModel)]="renameDraftById[writeUpToRename.id]" (keyup.enter)="renameWriteUp(ctx)" />
+            <label hlmLabel for="wname">{{
+              'sidebar.dialog.renameWriteUp.label' | translate
+            }}</label>
+            <input
+              hlmInput
+              id="wname"
+              [(ngModel)]="renameDraftById[writeUpToRename.id]"
+              (keyup.enter)="renameWriteUp(ctx)"
+            />
           </div>
         </div>
       }
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" (click)="renameWriteUp(ctx)">
           <ng-icon name="lucideCheck" class="mr-2 h-4 w-4" /> {{ 'dialog.save' | translate }}
         </button>
@@ -343,7 +409,9 @@
 
   <!-- Dialog: Delete WriteUp -->
   <hlm-dialog>
-    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openDeleteWriteUp' | translate }}</button>
+    <button #deleteWriteUpTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openDeleteWriteUp' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -353,9 +421,12 @@
         <p hlmDialogDescription>{{ 'sidebar.dialog.deleteWriteUp.description' | translate }}</p>
       </hlm-dialog-header>
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" variant="destructive" (click)="deleteWriteUp(ctx)">
-          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" /> {{ 'dialog.deleteWriteUp' | translate }}
+          <ng-icon name="lucideTrash2" class="mr-2 h-4 w-4 text-white" />
+          {{ 'dialog.deleteWriteUp' | translate }}
         </button>
       </hlm-dialog-footer>
     </hlm-dialog-content>
@@ -363,7 +434,9 @@
 
   <!-- Dialog: New Item (Chat ou WriteUp) -->
   <hlm-dialog>
-    <button #newItemTrigger brnDialogTrigger class="hidden" type="button">{{ 'sidebar.dialog.trigger.openNewItem' | translate }}</button>
+    <button #newItemTrigger brnDialogTrigger class="hidden" type="button">
+      {{ 'sidebar.dialog.trigger.openNewItem' | translate }}
+    </button>
     <hlm-dialog-content *brnDialogContent="let ctx" class="max-w-[400px]">
       <hlm-dialog-header>
         <h2 hlmDialogTitle class="flex items-center gap-2">
@@ -374,14 +447,18 @@
           <span>{{
             (newItemDraft.type === 'session'
               ? 'sidebar.dialog.newItem.titleChat'
-              : 'sidebar.dialog.newItem.titleWriteUp') | translate
+              : 'sidebar.dialog.newItem.titleWriteUp'
+            ) | translate
           }}</span>
         </h2>
-        <p hlmDialogDescription>{{
-          (newItemDraft.type === 'session'
-            ? 'sidebar.dialog.newItem.descriptionChat'
-            : 'sidebar.dialog.newItem.descriptionWriteUp') | translate
-        }}</p>
+        <p hlmDialogDescription>
+          {{
+            (newItemDraft.type === 'session'
+              ? 'sidebar.dialog.newItem.descriptionChat'
+              : 'sidebar.dialog.newItem.descriptionWriteUp'
+            ) | translate
+          }}
+        </p>
       </hlm-dialog-header>
       <div class="grid gap-4 py-4">
         <div class="grid gap-2">
@@ -390,13 +467,20 @@
             hlmInput
             id="itemname"
             [(ngModel)]="newItemDraft.name"
-            [placeholder]="(newItemDraft.type === 'session' ? 'sidebar.dialog.newItem.placeholderChat' : 'sidebar.dialog.newItem.placeholderWriteUp') | translate"
+            [placeholder]="
+              (newItemDraft.type === 'session'
+                ? 'sidebar.dialog.newItem.placeholderChat'
+                : 'sidebar.dialog.newItem.placeholderWriteUp'
+              ) | translate
+            "
             (keyup.enter)="confirmCreateItem(ctx)"
           />
         </div>
       </div>
       <hlm-dialog-footer>
-        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">{{ 'dialog.cancel' | translate }}</button>
+        <button hlmBtn type="button" variant="ghost" (click)="ctx.close()">
+          {{ 'dialog.cancel' | translate }}
+        </button>
         <button hlmBtn type="button" (click)="confirmCreateItem(ctx)">
           <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" /> {{ 'dialog.create' | translate }}
         </button>
@@ -404,4 +488,3 @@
     </hlm-dialog-content>
   </hlm-dialog>
 </hlm-sidebar>
-

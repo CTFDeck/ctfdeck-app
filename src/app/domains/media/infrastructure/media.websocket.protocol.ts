@@ -23,36 +23,32 @@ export function serializeMediaUpload(
   fileData: Uint8Array,
   messageId: string,
 ): Uint8Array {
-  return new BinaryWriter(1 + 16 + binarySizeOfString(fileName) + binarySizeOfString(mimeType) + 4 + fileData.length)
+  return new BinaryWriter(
+    1 + 16 + binarySizeOfString(fileName) + binarySizeOfString(mimeType) + 4 + fileData.length,
+  )
     .writeByte(MessageType.MediaUpload)
     .writeUuid(messageId)
     .writeString(fileName)
     .writeString(mimeType)
-    .writeBytes(fileData)
-    .buffer;
+    .writeBytes(fileData).buffer;
 }
 
 export function serializeMediaLoad(mediaId: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + 16)
     .writeByte(MessageType.MediaLoad)
     .writeUuid(messageId)
-    .writeUuid(mediaId)
-    .buffer;
+    .writeUuid(mediaId).buffer;
 }
 
 export function serializeMediaDelete(mediaId: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + 16)
     .writeByte(MessageType.MediaDelete)
     .writeUuid(messageId)
-    .writeUuid(mediaId)
-    .buffer;
+    .writeUuid(mediaId).buffer;
 }
 
 export function serializeMediaList(messageId: string): Uint8Array {
-  return new BinaryWriter(1 + 16)
-    .writeByte(MessageType.MediaList)
-    .writeUuid(messageId)
-    .buffer;
+  return new BinaryWriter(1 + 16).writeByte(MessageType.MediaList).writeUuid(messageId).buffer;
 }
 
 export function deserializeMediaUploadResult(data: Uint8Array): {
@@ -89,7 +85,9 @@ export function deserializeMediaLoadResult(data: Uint8Array): {
   const start = reader.currentOffset;
   const end = start + dataLen;
   if (end > data.length) {
-    throw new Error(`Truncated media payload: expected ${dataLen} bytes, have ${data.length - start}`);
+    throw new Error(
+      `Truncated media payload: expected ${dataLen} bytes, have ${data.length - start}`,
+    );
   }
 
   const mediaData = data.subarray(start, end);
@@ -98,7 +96,13 @@ export function deserializeMediaLoadResult(data: Uint8Array): {
     messageId,
     success,
     // MediaLoadResult currently does not include filename/mimetype metadata.
-    media: { id, fileName: id, mimeType: 'application/octet-stream', data: mediaData, createdAt: new Date() },
+    media: {
+      id,
+      fileName: id,
+      mimeType: 'application/octet-stream',
+      data: mediaData,
+      createdAt: new Date(),
+    },
   };
 }
 

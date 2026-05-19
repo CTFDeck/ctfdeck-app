@@ -20,9 +20,7 @@ export function getInstallableVisibleTools(
 }
 
 export function buildVisibleToolIds(tools: ToolStatus[]): Set<string> {
-  return new Set(
-    tools.filter((tool) => tool.kind === 'binary').map((tool) => tool.id),
-  );
+  return new Set(tools.filter((tool) => tool.kind === 'binary').map((tool) => tool.id));
 }
 
 export function computeInstallingState(
@@ -34,7 +32,10 @@ export function computeInstallingState(
   );
 }
 
-export function getToolInstallStateLabel(state: ToolInstallState, translate: (key: string) => string,): string {
+export function getToolInstallStateLabel(
+  state: ToolInstallState,
+  translate: (key: string) => string,
+): string {
   switch (state) {
     case ToolInstallState.Pending:
       return 'Pending';

@@ -2,7 +2,7 @@
 import { MessageType } from './websocket-message-type.enum';
 import { bytesToUuid, uuidToBytes } from './websocket-uuid.utils';
 import { BinaryReader, toUint8Array } from './websocket-protocol.utils';
- 
+
 export enum CommandSignalKind {
   Interrupt = 0,
   Eof = 1,
@@ -120,10 +120,21 @@ function deserializeCompleteResponse(u8: Uint8Array): CommandResponse {
   const workingDirectory = reader.readString();
   const messageId = bytesToUuid(u8.slice(reader.currentOffset, reader.currentOffset + 16));
 
-  return { type: MessageType.CompleteResponse, exitCode, commandOutput, output: commandOutput, error, workingDirectory, messageId };
+  return {
+    type: MessageType.CompleteResponse,
+    exitCode,
+    commandOutput,
+    output: commandOutput,
+    error,
+    workingDirectory,
+    messageId,
+  };
 }
 
-function deserializeStreamChunk(u8: Uint8Array, type: MessageType.StreamOutput | MessageType.StreamError): StreamChunk {
+function deserializeStreamChunk(
+  u8: Uint8Array,
+  type: MessageType.StreamOutput | MessageType.StreamError,
+): StreamChunk {
   const reader = new BinaryReader(u8, 1);
   const messageId = reader.readUuid();
   const data = reader.readString();

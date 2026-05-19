@@ -168,9 +168,12 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       },
       link: ({ href, title, text }: Tokens.Link) => {
         let resolvedHref = href;
-        const hasProtocol = /^(?:[a-z0-9+.-]+:)?\/\//i.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
+        const hasProtocol =
+          /^(?:[a-z0-9+.-]+:)?\/\//i.test(href) ||
+          href.startsWith('mailto:') ||
+          href.startsWith('tel:');
         const isRelativeOrAnchor = href.startsWith('/') || href.startsWith('#');
-        
+
         if (!hasProtocol && !isRelativeOrAnchor) {
           resolvedHref = `https://${href}`;
         }
@@ -404,7 +407,10 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     for (const [id, file] of mediaFiles) {
       const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      exportedContent = exportedContent.replace(new RegExp(id.replace(/-/g, '\\-'), 'g'), `./media/${safeName}`);
+      exportedContent = exportedContent.replace(
+        new RegExp(id.replace(/-/g, '\\-'), 'g'),
+        `./media/${safeName}`,
+      );
     }
 
     const zip = new JSZip();
@@ -431,7 +437,11 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(anchor);
 
-    toast.success(this.i18n.translate('writeup.toast.export.success').replace('{count}', String(mediaFiles.size)));
+    toast.success(
+      this.i18n
+        .translate('writeup.toast.export.success')
+        .replace('{count}', String(mediaFiles.size)),
+    );
   }
 
   setMode(mode: 'edit' | 'preview' | 'split'): void {
@@ -453,7 +463,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
 
-    this.splitMoveHandler = (moveEvent: MouseEvent | TouchEvent) => this.onSplitResizeMove(moveEvent);
+    this.splitMoveHandler = (moveEvent: MouseEvent | TouchEvent) =>
+      this.onSplitResizeMove(moveEvent);
     this.splitUpHandler = () => this.onSplitResizeEnd();
 
     window.addEventListener('mousemove', this.splitMoveHandler);
@@ -518,7 +529,10 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if ((event.ctrlKey || event.metaKey) && (event.key === 'y' || (event.shiftKey && event.key === 'z'))) {
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      (event.key === 'y' || (event.shiftKey && event.key === 'z'))
+    ) {
       event.preventDefault();
       this.redo();
       return;
@@ -560,7 +574,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     const isLineEmpty = currentLine.trim() === marker.trim();
     if (isLineEmpty) {
       // Clear the bullet marker and just insert a newline (exit the list)
-      this.content = textBeforeCursor.substring(0, lineStart) + '\n' + this.content.substring(cursorPos);
+      this.content =
+        textBeforeCursor.substring(0, lineStart) + '\n' + this.content.substring(cursorPos);
       setTimeout(() => {
         const newPos = lineStart + 1;
         textarea.selectionStart = newPos;
@@ -815,13 +830,27 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     const rawHtml = this.markedInstance.parse(contentWithPrefixes) as string;
 
-    const processedHtml = rawHtml.replace(/<(video|source)[^>]+src="([^"]+)"/g, (match, _tag, mediaId) => {
-      return match.replace(mediaId, this.resolveMedia(mediaId));
-    });
+    const processedHtml = rawHtml.replace(
+      /<(video|source)[^>]+src="([^"]+)"/g,
+      (match, _tag, mediaId) => {
+        return match.replace(mediaId, this.resolveMedia(mediaId));
+      },
+    );
 
     const sanitized = DOMPurify.sanitize(processedHtml, {
       ADD_TAGS: ['video', 'source', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-      ADD_ATTR: ['controls', 'autoplay', 'loop', 'muted', 'playsinline', 'src', 'type', 'style', 'target', 'rel'],
+      ADD_ATTR: [
+        'controls',
+        'autoplay',
+        'loop',
+        'muted',
+        'playsinline',
+        'src',
+        'type',
+        'style',
+        'target',
+        'rel',
+      ],
       ALLOWED_URI_REGEXP:
         /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data|blob|media):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
     });
@@ -1004,7 +1033,10 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       trimmedLine +
       this.content.substring(endOfLine);
 
-    const newStart = Math.max(lineStart + prefix.length, start - leadingSpacesCount + prefix.length);
+    const newStart = Math.max(
+      lineStart + prefix.length,
+      start - leadingSpacesCount + prefix.length,
+    );
     this.restoreEditorSelection(textarea.scrollTop, newStart, newStart, true);
   }
 
@@ -1111,7 +1143,11 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     this.applyHistoryState(nextState);
   }
 
-  private applyHistoryState(state: { content: string; selectionStart: number; selectionEnd: number }): void {
+  private applyHistoryState(state: {
+    content: string;
+    selectionStart: number;
+    selectionEnd: number;
+  }): void {
     this.isApplyingHistoryState = true;
     this.content = state.content;
     this.onContentChange();

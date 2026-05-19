@@ -43,7 +43,9 @@ export class WriteUpStore implements OnDestroy {
     this.subscriptions.add(
       this.sessionStore.activeSessionId$.pipe(distinctUntilChanged()).subscribe((sessionId) => {
         if (sessionId) {
-          this.refreshWriteUps(sessionId).then(() => {/* Ignore */});
+          this.refreshWriteUps(sessionId).then(() => {
+            /* Ignore */
+          });
           return;
         }
 
@@ -91,11 +93,7 @@ export class WriteUpStore implements OnDestroy {
     }
   }
 
-  async refreshAllWriteUps(
-    offset = 0,
-    limit = 6,
-    unassignedOnly = false,
-  ): Promise<void> {
+  async refreshAllWriteUps(offset = 0, limit = 6, unassignedOnly = false): Promise<void> {
     try {
       const result = await this.writeUpClient.list(ALL_SESSIONS_ID, offset, limit, unassignedOnly);
 

@@ -358,7 +358,7 @@ export class ProjectStore implements OnDestroy {
 
   async importProjects(paths: string[]): Promise<boolean> {
     if (paths.length === 0) return true;
-    
+
     let allSuccess = true;
     for (const path of paths) {
       try {
@@ -376,15 +376,18 @@ export class ProjectStore implements OnDestroy {
     }
 
     if (allSuccess) {
-      toast.success(paths.length > 1 ? `Successfully imported ${paths.length} projects` : 'Project imported');
+      toast.success(
+        paths.length > 1 ? `Successfully imported ${paths.length} projects` : 'Project imported',
+      );
     }
-    
+
     await this.loadProjects();
     return allSuccess;
   }
 
   private showError(title: string, error: unknown): void {
-    const message = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error';
+    const message =
+      error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error';
     const isConflict = message.toLowerCase().includes('already exists');
 
     if (isConflict) {

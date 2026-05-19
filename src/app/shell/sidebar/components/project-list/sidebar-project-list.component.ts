@@ -1,5 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  inject,
+  signal,
+} from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideChevronDown,
@@ -51,26 +60,47 @@ export class SidebarProjectListComponent {
 
   @Output() openCreateFolder = new EventEmitter<{ projectId: string; parentId: string | null }>();
   @Output() openExportProject = new EventEmitter<{ projectId: string; name: string }>();
-  @Output() openRenameFolder = new EventEmitter<{ projectId: string; folderId: string | null; name: string; description?: string }>();
-  @Output() openDeleteFolder = new EventEmitter<{ projectId: string; folderId: string | null; name: string }>();
+  @Output() openRenameFolder = new EventEmitter<{
+    projectId: string;
+    folderId: string | null;
+    name: string;
+    description?: string;
+  }>();
+  @Output() openDeleteFolder = new EventEmitter<{
+    projectId: string;
+    folderId: string | null;
+    name: string;
+  }>();
   @Output() openChat = new EventEmitter<any>();
   @Output() openWriteUp = new EventEmitter<any>();
   @Output() openRenameChat = new EventEmitter<any>();
   @Output() openDeleteChat = new EventEmitter<any>();
   @Output() openRenameWriteUp = new EventEmitter<any>();
   @Output() openDeleteWriteUp = new EventEmitter<any>();
-  
-  @Output() dragStarted = new EventEmitter<{ event: DragEvent; type: 'session' | 'writeup'; id: string }>();
+
+  @Output() dragStarted = new EventEmitter<{
+    event: DragEvent;
+    type: 'session' | 'writeup';
+    id: string;
+  }>();
   @Output() dragEnded = new EventEmitter<void>();
-  @Output() folderDragOver = new EventEmitter<{ event: DragEvent; id: string; type: 'project' | 'folder' }>();
+  @Output() folderDragOver = new EventEmitter<{
+    event: DragEvent;
+    id: string;
+    type: 'project' | 'folder';
+  }>();
   @Output() folderDragLeave = new EventEmitter<DragEvent>();
-  @Output() itemDropped = new EventEmitter<{ event: DragEvent; projectId: string; folderId: string | null }>();
+  @Output() itemDropped = new EventEmitter<{
+    event: DragEvent;
+    projectId: string;
+    folderId: string | null;
+  }>();
 
   protected readonly projectStore = inject(ProjectStore);
-  
+
   hierarchy$: Observable<ProjectHierarchy[]>;
   totalProjectsCount$: Observable<number>;
-  
+
   expandedProjectIds = signal<Set<string>>(new Set());
   expandedFolderIds = signal<Set<string>>(new Set());
   hoveredFolderId = signal<string | null>(null);
@@ -184,7 +214,11 @@ export class SidebarProjectListComponent {
     this.clearFolderExpandTimer();
     this.hoveredFolderId.set(folderId ?? projectId);
     this.hoveredContentKey.set(contentKey);
-    this.folderDragOver.emit({ event, id: folderId ?? projectId, type: folderId ? 'folder' : 'project' });
+    this.folderDragOver.emit({
+      event,
+      id: folderId ?? projectId,
+      type: folderId ? 'folder' : 'project',
+    });
   }
 
   onContentDragLeave(event: DragEvent, contentKey: string): void {
