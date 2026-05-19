@@ -167,7 +167,15 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
         return `<blockquote title="Type: Blockquote">${content}</blockquote>`;
       },
       link: ({ href, title, text }: Tokens.Link) => {
-        return `<a href="${href}" title="Type: Link${title ? ' - ' + title : ''}">${text}</a>`;
+        let resolvedHref = href;
+        const hasProtocol = /^(?:[a-z0-9+.-]+:)?\/\//i.test(href) || href.startsWith('mailto:') || href.startsWith('tel:');
+        const isRelativeOrAnchor = href.startsWith('/') || href.startsWith('#');
+        
+        if (!hasProtocol && !isRelativeOrAnchor) {
+          resolvedHref = `https://${href}`;
+        }
+
+        return `<a href="${resolvedHref}" target="_blank" rel="noopener noreferrer" title="Type: Link${title ? ' - ' + title : ''}">${text}</a>`;
       },
       codespan: ({ text }: Tokens.Codespan) => {
         return `<code title="Type: Inline Code">${text}</code>`;
@@ -539,14 +547,29 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     const lineStart = textBeforeCursor.lastIndexOf('\n') + 1;
     const currentLine = textBeforeCursor.substring(lineStart);
 
-    const bulletMatch = currentLine.match(/^(\s*)([-*+]|\d+\.?)(\s*)/);
+    const bulletMatch = currentLine.match(/^(\s*)([-*+]|\d+\.?)(\s+|$)/);
     if (!bulletMatch) {
       return;
     }
 
     event.preventDefault();
 
-    const [, indent, marker] = bulletMatch;
+    const [, indent, marker, trailingSpace] = bulletMatch;
+
+    // Check if the list item is empty (contains nothing but the marker and spaces)
+    const isLineEmpty = currentLine.trim() === marker.trim();
+    if (isLineEmpty) {
+      // Clear the bullet marker and just insert a newline (exit the list)
+      this.content = textBeforeCursor.substring(0, lineStart) + '\n' + this.content.substring(cursorPos);
+      setTimeout(() => {
+        const newPos = lineStart + 1;
+        textarea.selectionStart = newPos;
+        textarea.selectionEnd = newPos;
+        this.onContentChange();
+      });
+      return;
+    }
+
     let newMarker: string;
 
     if (/^\d+\.?$/.test(marker)) {
@@ -556,7 +579,8 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       newMarker = marker;
     }
 
-    const insertText = `\n${indent}${newMarker} `;
+    const spaceToInsert = trailingSpace || ' ';
+    const insertText = `\n${indent}${newMarker}${spaceToInsert}`;
     this.content = textBeforeCursor + insertText + this.content.substring(cursorPos);
 
     setTimeout(() => {
@@ -797,7 +821,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
 
     const sanitized = DOMPurify.sanitize(processedHtml, {
       ADD_TAGS: ['video', 'source', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-      ADD_ATTR: ['controls', 'autoplay', 'loop', 'muted', 'playsinline', 'src', 'type', 'style'],
+      ADD_ATTR: ['controls', 'autoplay', 'loop', 'muted', 'playsinline', 'src', 'type', 'style', 'target', 'rel'],
       ALLOWED_URI_REGEXP:
         /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data|blob|media):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
     });
