@@ -125,6 +125,35 @@
             hlmBtn
             size="sm"
             variant="ghost"
+            (click)="undo()"
+            [disabled]="undoStack.length <= 1"
+            class="h-8 w-8 p-0 hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
+            [hlmTooltipTrigger]="'writeup.toolbar.undo' | translate"
+          >
+            <ng-icon name="lucideUndo" class="text-base" />
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            size="sm"
+            variant="ghost"
+            (click)="redo()"
+            [disabled]="redoStack.length === 0"
+            class="h-8 w-8 p-0 hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
+            [hlmTooltipTrigger]="'writeup.toolbar.redo' | translate"
+          >
+            <ng-icon name="lucideRedo" class="text-base" />
+          </button>
+        </div>
+
+        <div class="w-[1px] h-5 bg-border/40 mx-1"></div>
+
+        <div class="flex items-center gap-0.5">
+          <button
+            type="button"
+            hlmBtn
+            size="sm"
+            variant="ghost"
             (click)="addHeading(1)"
             class="h-8 w-8 p-0 hover:bg-muted"
             [hlmTooltipTrigger]="'writeup.toolbar.heading1' | translate"

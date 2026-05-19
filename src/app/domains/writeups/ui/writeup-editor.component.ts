@@ -40,6 +40,8 @@ import {
   lucideTrash2,
   lucideVideo,
   lucideX,
+  lucideUndo,
+  lucideRedo,
 } from '@ng-icons/lucide';
 import { toast } from 'ngx-sonner';
 import { DEFAULT_WRITEUP_NAME } from '../../../shared/constants/default-item-names.constants';
@@ -89,6 +91,8 @@ import { WriteUpStore } from '../state/writeup.store';
       lucideQuote,
       lucideCode,
       lucideFileText,
+      lucideUndo,
+      lucideRedo,
     }),
   ],
   templateUrl: './writeup-editor.component.html',
@@ -133,7 +137,12 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   private autoSave$ = new Subject<void>();
   private render$ = new Subject<void>();
   private subscriptions = new Subscription();
+  undoStack: { content: string; selectionStart: number; selectionEnd: number }[] = [];
+  redoStack: { content: string; selectionStart: number; selectionEnd: number }[] = [];
+  private isApplyingHistoryState = false;
+  private typingHistorySubject = new Subject<void>();
   private writeUpId: string | null = null;
+  private currentLoadedWriteUpId: string | null = null;
   private autoTitleEnabled = false;
   private suppressNameChangeHandler = false;
   private markedInstance = new Marked({ breaks: true });
@@ -220,11 +229,34 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.content = writeUp.content;
+        const isNewWriteup = this.currentLoadedWriteUpId !== writeUp.id;
+        this.currentLoadedWriteUpId = writeUp.id;
+
+        if (isNewWriteup) {
+          this.content = writeUp.content;
+          this.undoStack = [];
+          this.redoStack = [];
+          setTimeout(() => {
+            this.saveStateToHistory();
+          }, 100);
+        } else {
+          const localNormalized = this.content.replace(/\r\n/g, '\n');
+          const remoteNormalized = writeUp.content.replace(/\r\n/g, '\n');
+          if (localNormalized !== remoteNormalized) {
+            this.content = writeUp.content;
+          }
+        }
+
         this.name = writeUp.name;
         this.autoTitleEnabled = this.isDefaultWriteUpName(writeUp.name);
         this.isInitialLoad.set(false);
         this.updatePreview();
+      }),
+    );
+
+    this.subscriptions.add(
+      this.typingHistorySubject.pipe(debounceTime(400)).subscribe(() => {
+        this.saveStateToHistory();
       }),
     );
 
@@ -282,6 +314,9 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
     }
 
     this.autoSave$.next();
+    if (!this.isApplyingHistoryState) {
+      this.typingHistorySubject.next();
+    }
   }
 
   onNameChange(): void {
@@ -469,12 +504,29 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   onEditorKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+      event.preventDefault();
+      this.undo();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && (event.key === 'y' || (event.shiftKey && event.key === 'z'))) {
+      event.preventDefault();
+      this.redo();
+      return;
+    }
+
     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
       event.preventDefault();
       this.save().then(() => {
         // Ignore
       });
       return;
+    }
+
+    const isWordBoundary = /^[\s.,!?;:'"()\[\]{}<>\n]$/.test(event.key);
+    if (isWordBoundary || event.key === 'Enter') {
+      this.saveStateToHistory();
     }
 
     if (event.key !== 'Enter') {
@@ -862,6 +914,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   private insertAtCursor(text: string): void {
+    this.saveStateToHistory();
     const textarea = this.editor.nativeElement;
     const scrollTop = textarea.scrollTop;
     const start = textarea.selectionStart;
@@ -874,6 +927,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   private wrapSelection(prefix: string, suffix: string, emptyCursorOffset: number): void {
+    this.saveStateToHistory();
     const textarea = this.editor.nativeElement;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -909,6 +963,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   private insertLinePrefix(prefix: string): void {
+    this.saveStateToHistory();
     const textarea = this.editor.nativeElement;
     const start = textarea.selectionStart;
     const lineStart = this.content.lastIndexOf('\n', start - 1) + 1;
@@ -930,6 +985,7 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
   }
 
   private replaceSelection(text: string, selectionStart: number, selectionEnd: number): void {
+    this.saveStateToHistory();
     const textarea = this.editor.nativeElement;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -952,6 +1008,95 @@ export class WriteUpEditorComponent implements OnInit, OnDestroy {
       if (updatePreview) {
         this.onContentChange();
       }
+    });
+  }
+
+  private saveStateToHistory(): void {
+    if (this.isApplyingHistoryState) {
+      return;
+    }
+
+    const textarea = this.editor?.nativeElement;
+    if (!textarea) {
+      return;
+    }
+
+    const currentState = {
+      content: this.content,
+      selectionStart: textarea.selectionStart,
+      selectionEnd: textarea.selectionEnd,
+    };
+
+    const lastState = this.undoStack[this.undoStack.length - 1];
+    if (lastState && lastState.content === currentState.content) {
+      return;
+    }
+
+    this.undoStack.push(currentState);
+    if (this.undoStack.length > 100) {
+      this.undoStack.shift();
+    }
+
+    this.redoStack = [];
+  }
+
+  undo(): void {
+    if (this.undoStack.length <= 1) {
+      return;
+    }
+
+    const textarea = this.editor?.nativeElement;
+    if (!textarea) {
+      return;
+    }
+
+    const currentState = {
+      content: this.content,
+      selectionStart: textarea.selectionStart,
+      selectionEnd: textarea.selectionEnd,
+    };
+    this.redoStack.push(currentState);
+
+    const previousState = this.undoStack.pop()!;
+    if (previousState.content === this.content && this.undoStack.length > 0) {
+      const nextPreviousState = this.undoStack.pop()!;
+      this.applyHistoryState(nextPreviousState);
+    } else {
+      this.applyHistoryState(previousState);
+    }
+  }
+
+  redo(): void {
+    if (this.redoStack.length === 0) {
+      return;
+    }
+
+    const textarea = this.editor?.nativeElement;
+    if (!textarea) {
+      return;
+    }
+
+    const currentState = {
+      content: this.content,
+      selectionStart: textarea.selectionStart,
+      selectionEnd: textarea.selectionEnd,
+    };
+    this.undoStack.push(currentState);
+
+    const nextState = this.redoStack.pop()!;
+    this.applyHistoryState(nextState);
+  }
+
+  private applyHistoryState(state: { content: string; selectionStart: number; selectionEnd: number }): void {
+    this.isApplyingHistoryState = true;
+    this.content = state.content;
+    this.onContentChange();
+
+    setTimeout(() => {
+      const textarea = this.editor.nativeElement;
+      textarea.selectionStart = state.selectionStart;
+      textarea.selectionEnd = state.selectionEnd;
+      this.isApplyingHistoryState = false;
     });
   }
 }
