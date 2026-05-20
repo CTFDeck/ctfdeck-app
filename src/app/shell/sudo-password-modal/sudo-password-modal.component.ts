@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
 import { HlmInputImports } from '@ctfdeck/helm/input';
 import { HlmLabelImports } from '@ctfdeck/helm/label';
@@ -17,6 +17,12 @@ import { TranslatePipe } from '../menubar/translate.pipe';
 export class SudoPasswordModalComponent {
   readonly password = signal('');
   readonly modal = inject(SudoPasswordModalStore);
+
+  @ViewChild('passwordInput') set passwordInput(element: ElementRef<HTMLInputElement> | undefined) {
+    if (element) {
+      setTimeout(() => element.nativeElement.focus(), 50);
+    }
+  }
 
   submit(): void {
     const password = this.password();
