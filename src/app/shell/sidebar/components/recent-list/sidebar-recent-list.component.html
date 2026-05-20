@@ -87,7 +87,7 @@
     }
   </div>
 
-  @if ((((sessions$ | async)?.length || 0) < ((totalSessions$ | async) || 0)) && !isCollapsed) {
+  @if (((sessions$ | async)?.length || 0) < ((totalSessions$ | async) || 0) && !isCollapsed) {
     <button
       type="button"
       class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"
@@ -187,7 +187,7 @@
     }
   </div>
 
-  @if ((((writeUps$ | async)?.length || 0) < ((totalWriteUps$ | async) || 0)) && !isCollapsed) {
+  @if (((writeUps$ | async)?.length || 0) < ((totalWriteUps$ | async) || 0) && !isCollapsed) {
     <button
       type="button"
       class="text-xs text-muted-foreground mt-2 hover:text-foreground hover:underline transition-colors w-full text-center py-1"

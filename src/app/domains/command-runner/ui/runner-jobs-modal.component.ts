@@ -33,7 +33,7 @@ import { HlmIconImports } from '@ctfdeck/helm/icon';
 import { RunnerJobStore } from '../../scripts/state/runner-job.store';
 import type { RunnerJob } from '../models/runner-job.model';
 import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
- 
+
 @Component({
   selector: 'app-runner-jobs-modal',
   standalone: true,
@@ -57,55 +57,55 @@ import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
 export class RunnerJobsModalComponent implements OnInit, OnDestroy, OnChanges {
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
- 
+
   @ViewChildren('jobOutput') private jobOutputRefs!: QueryList<ElementRef>;
- 
+
   private readonly jobStore = inject(RunnerJobStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly subscriptions = new Subscription();
- 
+
   jobs: RunnerJob[] = [];
   selectedJobId: string | null = null;
- 
+
   ngOnInit(): void {
     this.subscriptions.add(
       this.jobStore.jobs$.subscribe((jobs) => {
         const wasEmpty = this.jobs.length === 0;
         this.jobs = jobs;
- 
+
         if (wasEmpty && jobs.length > 0) {
           this.selectedJobId = jobs[jobs.length - 1].id;
         }
- 
+
         if (this.selectedJobId && !jobs.find((j) => j.id === this.selectedJobId)) {
           this.selectedJobId = jobs.length > 0 ? jobs[jobs.length - 1].id : null;
         }
- 
+
         this.cdr.markForCheck();
         this.scrollSelectedToBottom();
       }),
     );
   }
- 
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['visible']?.currentValue === true && this.jobs.length > 0 && !this.selectedJobId) {
       this.selectedJobId = this.jobs[this.jobs.length - 1].id;
     }
   }
- 
+
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
- 
+
   get selectedJob(): RunnerJob | undefined {
     return this.jobs.find((j) => j.id === this.selectedJobId);
   }
- 
+
   selectJob(jobId: string): void {
     this.selectedJobId = jobId;
     this.scrollSelectedToBottom();
   }
- 
+
   stopJob(jobId: string): void {
     this.jobStore.stop(jobId);
   }
@@ -117,19 +117,19 @@ export class RunnerJobsModalComponent implements OnInit, OnDestroy, OnChanges {
       this.scrollSelectedToBottom();
     }
   }
- 
+
   removeJob(jobId: string): void {
     this.jobStore.remove(jobId);
   }
- 
+
   clearCompleted(): void {
     this.jobStore.clearCompleted();
   }
- 
+
   close(): void {
     this.visibleChange.emit(false);
   }
- 
+
   statusIcon(status: RunnerJob['status']): string {
     switch (status) {
       case 'running':
@@ -142,7 +142,7 @@ export class RunnerJobsModalComponent implements OnInit, OnDestroy, OnChanges {
         return 'lucideCircleX';
     }
   }
- 
+
   statusClass(status: RunnerJob['status']): string {
     switch (status) {
       case 'running':
@@ -155,7 +155,7 @@ export class RunnerJobsModalComponent implements OnInit, OnDestroy, OnChanges {
         return 'text-red-400';
     }
   }
- 
+
   statusBadgeClass(status: RunnerJob['status']): string {
     switch (status) {
       case 'running':
@@ -168,30 +168,30 @@ export class RunnerJobsModalComponent implements OnInit, OnDestroy, OnChanges {
         return 'bg-red-500/20 text-red-300 border-red-500/30';
     }
   }
- 
+
   duration(job: RunnerJob): string {
     const end = job.endedAt ?? new Date();
     const ms = end.getTime() - job.startedAt.getTime();
     const s = Math.floor(ms / 1000);
- 
+
     if (s < 60) {
       return `${s}s`;
     }
- 
+
     return `${Math.floor(s / 60)}m ${s % 60}s`;
   }
- 
+
   trackByJobId(_: number, job: RunnerJob): string {
     return job.id;
   }
- 
+
   private scrollSelectedToBottom(): void {
     setTimeout(() => {
       const ref = this.jobOutputRefs?.find((_, i) => {
         const job = this.jobs[i];
         return job?.id === this.selectedJobId;
       });
- 
+
       if (ref) {
         ref.nativeElement.scrollTop = ref.nativeElement.scrollHeight;
       }

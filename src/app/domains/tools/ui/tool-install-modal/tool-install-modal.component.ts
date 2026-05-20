@@ -1,5 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  OnDestroy,
+  OnInit,
+  Output,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, distinctUntilChanged, filter } from 'rxjs';
 import { HlmButtonImports } from '@ctfdeck/helm/button';
@@ -12,11 +21,13 @@ import {
   lucideLoaderCircle,
   lucidePackageSearch,
   lucideRefreshCw,
+  lucideTrash2,
   lucideWrench,
   lucideX,
 } from '@ng-icons/lucide';
 import { HlmSpinner } from '@ctfdeck/helm/spinner';
 
+import { MessageType } from '../../../../infrastructure/transport/websocket/websocket-message-type.enum';
 import { WebSocketService } from '../../../../infrastructure/transport/websocket/websocket.service';
 import type { ToolInstallProgress } from '../../models/tool-install-progress.model';
 import { ToolInstallState } from '../../models/tool-install-state.enum';
@@ -38,7 +49,15 @@ import { I18nService } from '../../../../shell/menubar/i18n.service';
 @Component({
   selector: 'app-tool-install-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgIcon, HlmButtonImports, HlmSpinner, HlmIcon, TranslatePipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    NgIcon,
+    HlmButtonImports,
+    HlmSpinner,
+    HlmIcon,
+    TranslatePipe,
+  ],
   providers: [
     provideIcons({
       lucideWrench,
@@ -50,6 +69,7 @@ import { I18nService } from '../../../../shell/menubar/i18n.service';
       lucideCheckCheck,
       lucideListX,
       lucideClock3,
+      lucideTrash2,
     }),
   ],
   templateUrl: './tool-install-modal.component.html',
@@ -109,12 +129,16 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
         }
 
         const wasVisible = this.visible;
-        const isDismissed = localStorage.getItem(TOOL_INSTALL_DISMISSED_STORAGE_KEY) === 'true';
-
-        this.visible = !isDismissed && hasMissingInstallableTools(tools);
+        if (!wasVisible) {
+          const isDismissed = localStorage.getItem(TOOL_INSTALL_DISMISSED_STORAGE_KEY) === 'true';
+          this.visible = !isDismissed && hasMissingInstallableTools(tools);
+        } else {
+          this.visible = true;
+        }
 
         if (!wasVisible && this.visible) {
           this.visibleToolIds = buildVisibleToolIds(tools);
+          this.refresh();
         }
 
         this.installing = computeInstallingState(this.progressByToolId);
@@ -169,6 +193,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
   forceOpen(): void {
     this.visibleToolIds = buildVisibleToolIds(this.tools);
     this.visible = true;
+    this.refresh();
     this.cdr.markForCheck();
   }
 
@@ -188,6 +213,7 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
 
   refresh(): void {
     this.errorMessage = null;
+    this.progressByToolId = {};
     this.toolsStore.refresh();
   }
 
@@ -205,6 +231,32 @@ export class ToolInstallModalComponent implements OnInit, OnDestroy {
     }
 
     this.toolsStore.installTools(selectedToolIds);
+  }
+
+  uninstallTool(toolId: string): void {
+    this.errorMessage = null;
+
+    this.progressByToolId[toolId] = {
+      type: MessageType.ToolInstallProgress,
+      messageId: '',
+      toolId: toolId,
+      state: ToolInstallState.Uninstalling,
+      message: 'Requesting uninstallation...',
+      progressPercent: null,
+      installedPath: null,
+      error: null,
+    };
+
+    this.toolsStore.uninstallTools([toolId]);
+  }
+
+  shouldShowProgress(tool: ToolStatus): ToolInstallProgress | null {
+    const progress = this.progressByToolId[tool.id];
+    if (!progress) {
+      return null;
+    }
+
+    return progress.state !== ToolInstallState.Success ? progress : null;
   }
 
   toggleAll(select: boolean): void {

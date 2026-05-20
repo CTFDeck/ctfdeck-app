@@ -24,6 +24,7 @@ import { I18nLanguageSwitcherComponent } from './i18n-language-switcher.componen
 import { TranslatePipe } from './translate.pipe';
 import { ProjectsDialogHostComponent } from './components/projects/projects-dialog-host.component';
 import { ProjectsMenuComponent } from './components/projects/projects-menu.component';
+import { HlmTooltipImports } from '@ctfdeck/helm/tooltip';
 
 @Component({
   // eslint-disable-next-line @angular-eslint/component-selector
@@ -47,6 +48,7 @@ import { ProjectsMenuComponent } from './components/projects/projects-menu.compo
     TranslatePipe,
     ProjectsMenuComponent,
     ProjectsDialogHostComponent,
+    ...HlmTooltipImports,
   ],
   providers: [
     provideIcons({

@@ -138,7 +138,13 @@ export class ProjectsUiService {
   updateExportDraft(next: {
     projectId: string;
     filename: string;
-    options: { history: boolean; targets: boolean; writeups: boolean; media: boolean; scripts: boolean };
+    options: {
+      history: boolean;
+      targets: boolean;
+      writeups: boolean;
+      media: boolean;
+      scripts: boolean;
+    };
   }): void {
     this.exportDraft.set(next);
   }
@@ -153,7 +159,11 @@ export class ProjectsUiService {
     }
 
     try {
-      await this.projectStore.exportProject(draft.projectId, `${sanitizedName}.json`, draft.options);
+      await this.projectStore.exportProject(
+        draft.projectId,
+        `${sanitizedName}.json`,
+        draft.options,
+      );
     } catch (error) {
       console.error('[ProjectsUiService] Export failed:', error);
     }
@@ -161,7 +171,13 @@ export class ProjectsUiService {
 
   updateGlobalExportDraft(next: {
     suffix: string;
-    options: { history: boolean; targets: boolean; writeups: boolean; media: boolean; scripts: boolean };
+    options: {
+      history: boolean;
+      targets: boolean;
+      writeups: boolean;
+      media: boolean;
+      scripts: boolean;
+    };
   }): void {
     this.globalExportDraft.set(next);
   }
@@ -219,11 +235,13 @@ export class ProjectsUiService {
     let successCount = 0;
 
     for (const project of selectedProjects) {
-      const baseName = project.name.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_') || 'project';
+      const baseName =
+        project.name.trim().replace(this.FILENAME_SANITIZATION_REGEX, '_') || 'project';
       const filenameBase = suffix ? `${baseName}_${suffix}` : baseName;
       const duplicateIndex = (usedNames.get(filenameBase) ?? 0) + 1;
       usedNames.set(filenameBase, duplicateIndex);
-      const uniqueFilenameBase = duplicateIndex > 1 ? `${filenameBase}_${duplicateIndex}` : filenameBase;
+      const uniqueFilenameBase =
+        duplicateIndex > 1 ? `${filenameBase}_${duplicateIndex}` : filenameBase;
 
       const success = await this.projectStore.exportProject(
         project.id,
@@ -249,7 +267,9 @@ export class ProjectsUiService {
       return;
     }
 
-    toast.warning(`Export completed with partial success (${successCount}/${selectedProjects.length})`);
+    toast.warning(
+      `Export completed with partial success (${successCount}/${selectedProjects.length})`,
+    );
   }
 
   formatSize(bytes: number): string {

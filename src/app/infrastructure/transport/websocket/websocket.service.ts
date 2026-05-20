@@ -138,7 +138,9 @@ export class WebSocketService {
     if (this.ws) {
       try {
         this.ws.close();
-      } catch { /*Ignore*/ }
+      } catch {
+        /*Ignore*/
+      }
 
       this.ws = null;
     }
@@ -288,7 +290,9 @@ export class WebSocketService {
         this.handleMessage(event.data as ArrayBuffer);
       };
 
-      ws.onerror = () => { /* Ignore */ };
+      ws.onerror = () => {
+        /* Ignore */
+      };
 
       ws.onclose = () => {
         this.zone.run(() => {
@@ -316,7 +320,9 @@ export class WebSocketService {
       this.ws.onerror = null;
       this.ws.onmessage = null;
       this.ws.close();
-    } catch { /* Ignore */ }
+    } catch {
+      /* Ignore */
+    }
 
     this.ws = null;
   }
@@ -384,12 +390,16 @@ export class WebSocketService {
       return;
     }
 
-    this.zone.run(async () => {
-      const password = await this.sudoModal.requestPassword(message.messageId, message.prompt);
+    this.zone
+      .run(async () => {
+        const password = await this.sudoModal.requestPassword(message.messageId, message.prompt);
 
-      const payload = serializePasswordProvide(message.messageId, password ?? '');
-      this.sendBinary(payload);
-    }).then(() => {/* Ignore */});
+        const payload = serializePasswordProvide(message.messageId, password ?? '');
+        this.sendBinary(payload);
+      })
+      .then(() => {
+        /* Ignore */
+      });
   }
 
   private handleCommandMessage(data: Uint8Array): void {
@@ -469,7 +479,9 @@ export class WebSocketService {
 
       try {
         pendingRequest.reject(error);
-      } catch { /* Ignore */ }
+      } catch {
+        /* Ignore */
+      }
     }
 
     this.pending.clear();

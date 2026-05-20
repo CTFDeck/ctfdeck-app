@@ -1,7 +1,7 @@
 import { SafeHtml } from '@angular/platform-browser';
- 
+
 export type JobStatus = 'running' | 'completed' | 'stopped' | 'error';
- 
+
 export interface RunnerJob {
   id: string;
   command: string;
@@ -13,4 +13,3 @@ export interface RunnerJob {
   endedAt?: Date;
   wsMessageId?: string;
 }
- 

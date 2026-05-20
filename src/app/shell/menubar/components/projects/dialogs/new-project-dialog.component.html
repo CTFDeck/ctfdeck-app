@@ -8,7 +8,9 @@
 
 <div class="grid gap-4 py-4">
   <div class="grid gap-2">
-    <label hlmLabel for="new-project-name">{{ 'sidebar.dialog.newProject.label' | translate }}</label>
+    <label hlmLabel for="new-project-name">{{
+      'sidebar.dialog.newProject.label' | translate
+    }}</label>
     <input
       hlmInput
       id="new-project-name"
@@ -19,7 +21,9 @@
   </div>
 
   <div class="grid gap-2">
-    <label hlmLabel for="new-project-description">{{ 'sidebar.dialog.newProject.descriptionLabel' | translate }}</label>
+    <label hlmLabel for="new-project-description">{{
+      'sidebar.dialog.newProject.descriptionLabel' | translate
+    }}</label>
     <textarea
       hlmInput
       id="new-project-description"
@@ -30,7 +34,9 @@
 </div>
 
 <hlm-dialog-footer>
-  <button hlmBtn type="button" variant="ghost" (click)="dialogCtx.close()">{{ 'dialog.cancel' | translate }}</button>
+  <button hlmBtn type="button" variant="ghost" (click)="dialogCtx.close()">
+    {{ 'dialog.cancel' | translate }}
+  </button>
   <button hlmBtn type="button" (click)="createProject()">
     <ng-icon name="lucidePlus" class="mr-2 h-4 w-4" />
     {{ 'dialog.createProject' | translate }}

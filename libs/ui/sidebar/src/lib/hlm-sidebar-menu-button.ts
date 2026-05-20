@@ -33,7 +33,7 @@ const sidebarMenuButtonVariants = cva(
 	selector: 'button[hlmSidebarMenuButton], a[hlmSidebarMenuButton]',
 	providers: [
 		provideBrnTooltipDefaultOptions({
-			showDelay: 150,
+			showDelay: 500,
 			hideDelay: 0,
 			exitAnimationDuration: 150,
 			tooltipContentClasses: DEFAULT_TOOLTIP_CONTENT_CLASSES,

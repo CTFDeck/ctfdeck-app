@@ -385,7 +385,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
         }
 
         if (result.exitCode !== 0 && !errorBuffer) {
-          this.addLine('error', this.i18n.translate('terminal.log.programExited', { code: result.exitCode }));
+          this.addLine(
+            'error',
+            this.i18n.translate('terminal.log.programExited', { code: result.exitCode }),
+          );
         }
 
         if (looksLikeDirectoryChange(cmd)) {
@@ -490,9 +493,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
   onGlobalKeyDown(event: KeyboardEvent): void {
     if (event.ctrlKey && (event.key === 'd' || event.key === 'D')) {
       const activeEl = document.activeElement;
-      const isInsideTerminal = this.commandInput?.nativeElement?.contains(activeEl) || 
-                               (activeEl instanceof HTMLElement && activeEl.closest('.terminal-container'));
-      
+      const isInsideTerminal =
+        this.commandInput?.nativeElement?.contains(activeEl) ||
+        (activeEl instanceof HTMLElement && activeEl.closest('.terminal-container'));
+
       if (isInsideTerminal) {
         this.onKeyDown(event);
       }
@@ -631,8 +635,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
         try {
           const internals = this.selectionTrigger as unknown as BrnMenuTriggerInternals;
-          const trigger =
-            internals._cdkTrigger || internals.menuTrigger || internals._menuTrigger;
+          const trigger = internals._cdkTrigger || internals.menuTrigger || internals._menuTrigger;
 
           if (trigger) {
             trigger.open();
@@ -656,7 +659,9 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
     try {
       window.getSelection()?.removeAllRanges();
-    } catch { /* Ignore */ }
+    } catch {
+      /* Ignore */
+    }
   }
 
   copySelection(): void {
@@ -664,7 +669,9 @@ export class TerminalComponent implements OnInit, OnDestroy {
       return;
     }
 
-    navigator.clipboard.writeText(this.selectedText).then(() => { /* Ignore */ });
+    navigator.clipboard.writeText(this.selectedText).then(() => {
+      /* Ignore */
+    });
     toast.success('Copied to clipboard');
     this.dismissSelection();
   }
@@ -690,7 +697,9 @@ export class TerminalComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const created = await this.createQuickWriteUp(this.i18n.translate('terminal.writeup.quick.recentName'));
+    const created = await this.createQuickWriteUp(
+      this.i18n.translate('terminal.writeup.quick.recentName'),
+    );
     if (created) {
       await this.appendSelectionToWriteUpById(created.id, created.name);
     }
@@ -713,7 +722,9 @@ export class TerminalComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const created = await this.createQuickWriteUp(this.i18n.translate('terminal.writeup.quick.projectName'));
+    const created = await this.createQuickWriteUp(
+      this.i18n.translate('terminal.writeup.quick.projectName'),
+    );
     if (created) {
       await this.appendSelectionToWriteUpById(created.id, created.name);
     }
@@ -750,8 +761,12 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.wsService
       .executeCommandStreaming(
         'pwd',
-        () => { /* Ignore */ },
-        () => { /* Ignore */ },
+        () => {
+          /* Ignore */
+        },
+        () => {
+          /* Ignore */
+        },
       )
       .promise.then((result) => {
         if (result.workingDirectory) {
@@ -759,7 +774,9 @@ export class TerminalComponent implements OnInit, OnDestroy {
         }
         this.refreshAutocompleteCache();
       })
-      .catch(() => { /* Ignore */ });
+      .catch(() => {
+        /* Ignore */
+      });
   }
 
   private renderOutputBuffer(lineIndex: number, buffer: string): void {
@@ -791,15 +808,21 @@ export class TerminalComponent implements OnInit, OnDestroy {
     this.wsService
       .executeCommandStreaming(
         'ls',
-        (data) => { output += data; },
-        () => { /* Ignore */ },
+        (data) => {
+          output += data;
+        },
+        () => {
+          /* Ignore */
+        },
       )
       .promise.then(() => {
         if (output) {
           this.updateLsCache(output);
         }
       })
-      .catch(() => { /* Ignore */ });
+      .catch(() => {
+        /* Ignore */
+      });
   }
 
   private updatePwd(workingDirectory: string): void {
@@ -967,13 +990,17 @@ export class TerminalComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    return Boolean(target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'));
+    return Boolean(
+      target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]'),
+    );
   }
 
   private scrollToBottom(): void {
     try {
       this.commandInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } catch { /* Ignore */ }
+    } catch {
+      /* Ignore */
+    }
   }
 
   private scheduleChatRename(): void {
@@ -1018,7 +1045,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
     return `${prefix}-${this.lineCounter}`;
   }
 
-  private async appendSelectionToWriteUpById(writeUpId: string, writeUpName: string): Promise<void> {
+  private async appendSelectionToWriteUpById(
+    writeUpId: string,
+    writeUpName: string,
+  ): Promise<void> {
     const selectedText = this.selectedText;
     if (!selectedText) {
       return;
@@ -1036,7 +1066,11 @@ export class TerminalComponent implements OnInit, OnDestroy {
 
       const appended = `\n\n\`\`\`bash\n${selectedText}\n\`\`\`\n`;
       const newContent = fullWriteUp.content + appended;
-      const updated = await this.writeUpClientService.update(writeUpId, fullWriteUp.name, newContent);
+      const updated = await this.writeUpClientService.update(
+        writeUpId,
+        fullWriteUp.name,
+        newContent,
+      );
 
       if (!updated) {
         toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
@@ -1052,7 +1086,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
       this.dismissSelection();
       this.selectedText = '';
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : this.i18n.translate('terminal.writeup.quick.unknown');
+      const message =
+        error instanceof Error
+          ? error.message
+          : this.i18n.translate('terminal.writeup.quick.unknown');
       toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
         description: message,
       });
@@ -1064,17 +1101,20 @@ export class TerminalComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    return [...writeUps].sort((a, b) => {
-      const aTime = new Date(a.updatedAt).getTime();
-      const bTime = new Date(b.updatedAt).getTime();
-      return bTime - aTime;
-    })[0] ?? null;
+    return (
+      [...writeUps].sort((a, b) => {
+        const aTime = new Date(a.updatedAt).getTime();
+        const bTime = new Date(b.updatedAt).getTime();
+        return bTime - aTime;
+      })[0] ?? null
+    );
   }
 
   private async createQuickWriteUp(name: string): Promise<{ id: string; name: string } | null> {
     try {
       const sessionId = await this.sessionStore.ensureActiveSession();
-      const safeName = name.trim().slice(0, 32) || this.i18n.translate('terminal.writeup.quick.defaultName');
+      const safeName =
+        name.trim().slice(0, 32) || this.i18n.translate('terminal.writeup.quick.defaultName');
       const created = await this.writeUpClientService.create(sessionId, safeName);
 
       if (!created.success || !created.writeUpId) {
@@ -1087,7 +1127,10 @@ export class TerminalComponent implements OnInit, OnDestroy {
       await this.writeUpStore.refreshAllWriteUps(0, 6, false);
       return { id: created.writeUpId, name: safeName };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : this.i18n.translate('terminal.writeup.quick.unknown');
+      const message =
+        error instanceof Error
+          ? error.message
+          : this.i18n.translate('terminal.writeup.quick.unknown');
       toast.error(this.i18n.translate('terminal.writeup.quick.error'), {
         description: message,
       });

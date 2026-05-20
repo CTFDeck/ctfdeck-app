@@ -25,7 +25,11 @@ import { HlmSelectImports } from '@ctfdeck/helm/select/src';
 import { HlmButtonGroupImports } from '@ctfdeck/helm/button-group';
 import { BrnDialogContent, BrnDialogImports, BrnDialogTrigger } from '@spartan-ng/brain/dialog';
 import { HlmDialogImports } from '@ctfdeck/helm/dialog';
-import { BrnAlertDialogContent, BrnAlertDialogImports, BrnAlertDialogTrigger } from '@spartan-ng/brain/alert-dialog';
+import {
+  BrnAlertDialogContent,
+  BrnAlertDialogImports,
+  BrnAlertDialogTrigger,
+} from '@spartan-ng/brain/alert-dialog';
 import { HlmAlertDialogImports } from '@ctfdeck/helm/alert-dialog/src';
 
 import { HlmIcon } from '@ctfdeck/helm/icon';
@@ -61,7 +65,6 @@ import {
 } from '../utils/target-manager.utils';
 import { SessionMetadata } from '../../sessions/models/session-metadata.model';
 import { TranslatePipe } from '../../../shell/menubar/translate.pipe';
-
 
 @Component({
   selector: 'app-target-manager',
@@ -147,7 +150,9 @@ export class TargetManagerComponent implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
 
   ngOnInit(): void {
-    this.sessionStore.refreshSessions().then(() => { /* Ignore */ });
+    this.sessionStore.refreshSessions().then(() => {
+      /* Ignore */
+    });
 
     this.subscriptions.add(
       this.sessionStore.activeSession$.subscribe((session) => {

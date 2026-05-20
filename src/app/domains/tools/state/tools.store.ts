@@ -8,9 +8,12 @@ import {
   deserializeToolInstallProgress,
   deserializeToolInventoryResult,
   deserializeToolOperationError,
+  deserializeToolUninstallAccepted,
   serializeToolInstallRequest,
   serializeToolInventoryRequest,
+  serializeToolUninstallRequest,
   type ToolInstallAccepted,
+  type ToolUninstallAccepted,
 } from '../infrastructure/tools.websocket.protocol';
 import type { ToolInstallProgress } from '../models/tool-install-progress.model';
 import { ToolInstallState } from '../models/tool-install-state.enum';
@@ -26,6 +29,7 @@ export class ToolsStore implements OnDestroy {
   readonly tools$ = this.toolsSubject.asObservable();
 
   private readonly installAcceptedSubject = new Subject<ToolInstallAccepted>();
+  private readonly uninstallAcceptedSubject = new Subject<ToolUninstallAccepted>();
 
   private readonly progressSubject = new Subject<ToolInstallProgress>();
   readonly progress$ = this.progressSubject.asObservable();
@@ -67,6 +71,19 @@ export class ToolsStore implements OnDestroy {
     return messageId;
   }
 
+  uninstallTools(toolIds: string[]): string {
+    const sanitized = toolIds.map((id) => id.trim()).filter((id) => id.length > 0);
+
+    if (sanitized.length === 0) {
+      throw new Error('No tool selected for uninstallation');
+    }
+
+    const messageId = generateUUID();
+    this.installingSubject.next(true);
+    this.webSocketService.sendBinary(serializeToolUninstallRequest(sanitized, messageId));
+    return messageId;
+  }
+
   refresh(): void {
     this.requestInventory();
   }
@@ -99,6 +116,17 @@ export class ToolsStore implements OnDestroy {
           return true;
         }
 
+        case MessageType.ToolUninstallAccepted: {
+          const result = deserializeToolUninstallAccepted(data);
+          this.uninstallAcceptedSubject.next(result);
+
+          if (!result.success) {
+            this.installingSubject.next(false);
+          }
+
+          return true;
+        }
+
         case MessageType.ToolInstallProgress: {
           const result = deserializeToolInstallProgress(data);
           this.progressSubject.next(result);
@@ -106,7 +134,9 @@ export class ToolsStore implements OnDestroy {
           if (
             result.state === ToolInstallState.Failed ||
             result.state === ToolInstallState.Success
-          ) { /*Ignore*/ }
+          ) {
+            /*Ignore*/
+          }
 
           return true;
         }

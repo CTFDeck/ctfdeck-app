@@ -211,14 +211,24 @@ export class ProjectClientService {
     );
   }
 
-  export(projectId: string, path: string, options: { history: boolean; targets: boolean; writeups: boolean; media: boolean; scripts: boolean }): Promise<boolean> {
+  export(
+    projectId: string,
+    path: string,
+    options: {
+      history: boolean;
+      targets: boolean;
+      writeups: boolean;
+      media: boolean;
+      scripts: boolean;
+    },
+  ): Promise<boolean> {
     const messageId = generateUUID();
-    const flags = 
-        (options.history ? 1 : 0) |
-        (options.targets ? 2 : 0) |
-        (options.writeups ? 4 : 0) |
-        (options.media ? 8 : 0) |
-        (options.scripts ? 16 : 0);
+    const flags =
+      (options.history ? 1 : 0) |
+      (options.targets ? 2 : 0) |
+      (options.writeups ? 4 : 0) |
+      (options.media ? 8 : 0) |
+      (options.scripts ? 16 : 0);
 
     return createWebSocketRequest(
       this.pending,

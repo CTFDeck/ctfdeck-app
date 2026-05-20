@@ -144,8 +144,13 @@ export class WorkspaceSidebarComponent {
   @ViewChild('newItemTrigger') newItemTrigger!: ElementRef<HTMLButtonElement>;
 
   createFolderDraft = { projectId: '', parentId: null as string | null, name: '' };
-  folderToRenameDraft = { projectId: '', folderId: '', name: '', description: '' };
-  folderToDeleteDraft = { projectId: '', folderId: '', name: '' };
+  folderToRenameDraft = {
+    projectId: '',
+    folderId: null as string | null,
+    name: '',
+    description: '',
+  };
+  folderToDeleteDraft = { projectId: '', folderId: null as string | null, name: '' };
   newItemDraft = { name: '', type: 'session' as 'session' | 'writeup' };
   successfullyDroppedId = signal<string | null>(null);
   isDragging = signal(false);
@@ -371,7 +376,7 @@ export class WorkspaceSidebarComponent {
 
   openRenameFolderDialog(
     projectId: string,
-    folderId: string,
+    folderId: string | null,
     currentName: string,
     description = '',
   ): void {
@@ -394,7 +399,7 @@ export class WorkspaceSidebarComponent {
     }
   }
 
-  openDeleteFolderDialog(projectId: string, folderId: string, name: string): void {
+  openDeleteFolderDialog(projectId: string, folderId: string | null, name: string): void {
     this.folderToDeleteDraft = { projectId, folderId, name };
     setTimeout(() => this.deleteFolderTrigger.nativeElement.click());
   }

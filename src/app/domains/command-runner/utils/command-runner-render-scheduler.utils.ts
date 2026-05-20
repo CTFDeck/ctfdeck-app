@@ -2,10 +2,7 @@ export interface RenderScheduler {
   schedule: () => void;
 }
 
-export function createRenderScheduler(
-  render: () => void,
-  minRenderInterval = 16,
-): RenderScheduler {
+export function createRenderScheduler(render: () => void, minRenderInterval = 16): RenderScheduler {
   let pendingRender = false;
   let lastRenderTime = 0;
 

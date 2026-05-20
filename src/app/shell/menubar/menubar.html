@@ -5,20 +5,25 @@
 
   <div class="ctf-menu-center">
     <hlm-menu-bar class="w-fit border-none">
-      <button hlmMenuBarItem [brnMenuTriggerFor]="projects">{{ 'menu.projects' | translate }}</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="projects">
+        {{ 'menu.projects' | translate }}
+      </button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="target">{{ 'menu.target' | translate }}</button>
       <button hlmMenuBarItem [brnMenuTriggerFor]="scripts">{{ 'menu.scripts' | translate }}</button>
-      <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">{{ 'menu.documentation' | translate }}</button>
+      <button hlmMenuBarItem [brnMenuTriggerFor]="documentation">
+        {{ 'menu.documentation' | translate }}
+      </button>
     </hlm-menu-bar>
 
     @if (hasMissingTools) {
       <button
         type="button"
-        class="flex items-center gap-2 rounded-md border border-orange-500/30 bg-orange-500/15 px-3 py-1.5 text-xs font-semibold text-orange-400 transition-colors hover:bg-orange-500/25"
+        class="flex items-center justify-center rounded-md border border-orange-500/30 bg-orange-500/15 text-orange-400 transition-colors hover:bg-orange-500/25 h-8 w-8 p-0 shrink-0"
         (click)="openMissingTools()"
+        [hlmTooltipTrigger]="'menu.warning.missingTools' | translate"
       >
-        <ng-icon hlm name="lucideTriangleAlert" class="h-3.5 w-3.5" />
-        {{ 'menu.warning.missingTools' | translate }}
+        <ng-icon hlm size="sm" name="lucideTriangleAlert" />
+        <span class="sr-only">{{ 'menu.warning.missingTools' | translate }}</span>
       </button>
     }
   </div>
@@ -37,9 +42,15 @@
   <ng-template #target>
     <hlm-menu variant="menubar" class="w-56">
       <hlm-menu-group>
-        <button hlmMenuItem (click)="openTargetManager('view')">{{ 'menu.target.configuration' | translate }}</button>
-        <button hlmMenuItem (click)="openTargetManager('add')">{{ 'menu.target.add' | translate }}</button>
-        <button hlmMenuItem (click)="openTargetManager('delete')">{{ 'menu.target.remove' | translate }}</button>
+        <button hlmMenuItem (click)="openTargetManager('view')">
+          {{ 'menu.target.configuration' | translate }}
+        </button>
+        <button hlmMenuItem (click)="openTargetManager('add')">
+          {{ 'menu.target.add' | translate }}
+        </button>
+        <button hlmMenuItem (click)="openTargetManager('delete')">
+          {{ 'menu.target.remove' | translate }}
+        </button>
       </hlm-menu-group>
     </hlm-menu>
   </ng-template>
@@ -219,7 +230,9 @@
       @if (recentCustomScripts.length > 0) {
         <hlm-menu-separator />
       }
-      <button hlmMenuItem (click)="manageCustomScripts()">{{ 'menu.scripts.customScripts.manage' | translate }}</button>
+      <button hlmMenuItem (click)="manageCustomScripts()">
+        {{ 'menu.scripts.customScripts.manage' | translate }}
+      </button>
     </hlm-sub-menu>
   </ng-template>
   <ng-template>

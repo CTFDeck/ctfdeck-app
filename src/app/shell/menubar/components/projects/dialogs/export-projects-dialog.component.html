@@ -1,7 +1,12 @@
 <hlm-dialog-header>
   <h2 hlmDialogTitle class="flex items-center gap-2">
     <ng-icon name="lucideDownload" class="text-primary h-5 w-5" />
-    <span>{{ (isSingleMode() ? 'projects.dialog.export.single.title' : 'projects.dialog.export.global.title') | translate }}</span>
+    <span>{{
+      (isSingleMode()
+        ? 'projects.dialog.export.single.title'
+        : 'projects.dialog.export.global.title'
+      ) | translate
+    }}</span>
   </h2>
   <p hlmDialogDescription>
     {{
@@ -14,79 +19,123 @@
 
 @if (isSingleMode()) {
   <div class="overflow-y-scroll [scrollbar-gutter:stable] flex-1 min-h-0 py-4 pr-2 space-y-4">
-      <div class="grid gap-2">
-        <label hlmLabel for="single-export-filename">{{ 'projects.dialog.export.single.filename.label' | translate }}</label>
-        <input hlmInput id="single-export-filename" [(ngModel)]="singleExportDraft.filename" [placeholder]="'projects.dialog.export.single.filename.placeholder' | translate" />
+    <div class="grid gap-2">
+      <label hlmLabel for="single-export-filename">{{
+        'projects.dialog.export.single.filename.label' | translate
+      }}</label>
+      <input
+        hlmInput
+        id="single-export-filename"
+        [(ngModel)]="singleExportDraft.filename"
+        [placeholder]="'projects.dialog.export.single.filename.placeholder' | translate"
+      />
+    </div>
+
+    <div class="grid gap-4 border rounded-lg p-4 bg-muted/30">
+      <h3 class="text-sm font-semibold">
+        {{ 'projects.dialog.export.options.title' | translate }}
+      </h3>
+
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="single-export-history" [(ngModel)]="singleExportDraft.options.history" />
+        <label hlmLabel for="single-export-history" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.history' | translate
+        }}</label>
       </div>
 
-      <div class="grid gap-4 border rounded-lg p-4 bg-muted/30">
-        <h3 class="text-sm font-semibold">{{ 'projects.dialog.export.options.title' | translate }}</h3>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="single-export-history" [(ngModel)]="singleExportDraft.options.history" />
-          <label hlmLabel for="single-export-history" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.history' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="single-export-targets" [(ngModel)]="singleExportDraft.options.targets" />
-          <label hlmLabel for="single-export-targets" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.targets' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="single-export-writeups" [(ngModel)]="singleExportDraft.options.writeups" />
-          <label hlmLabel for="single-export-writeups" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.writeups' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="single-export-media" [(ngModel)]="singleExportDraft.options.media" />
-          <label hlmLabel for="single-export-media" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.media' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="single-export-scripts" [(ngModel)]="singleExportDraft.options.scripts" />
-          <label hlmLabel for="single-export-scripts" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.scripts' | translate }}</label>
-        </div>
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="single-export-targets" [(ngModel)]="singleExportDraft.options.targets" />
+        <label hlmLabel for="single-export-targets" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.targets' | translate
+        }}</label>
       </div>
+
+      <div class="flex items-center gap-3">
+        <hlm-checkbox
+          id="single-export-writeups"
+          [(ngModel)]="singleExportDraft.options.writeups"
+        />
+        <label hlmLabel for="single-export-writeups" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.writeups' | translate
+        }}</label>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="single-export-media" [(ngModel)]="singleExportDraft.options.media" />
+        <label hlmLabel for="single-export-media" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.media' | translate
+        }}</label>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="single-export-scripts" [(ngModel)]="singleExportDraft.options.scripts" />
+        <label hlmLabel for="single-export-scripts" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.scripts' | translate
+        }}</label>
+      </div>
+    </div>
   </div>
 } @else {
   <div class="overflow-y-scroll [scrollbar-gutter:stable] flex-1 min-h-0 py-4 pr-2 pb-8 space-y-4">
-      <div class="grid gap-2">
-        <label hlmLabel for="global-export-suffix">{{ 'projects.dialog.export.global.suffix.label' | translate }}</label>
-        <input hlmInput id="global-export-suffix" [(ngModel)]="globalExportDraft.suffix" [placeholder]="'projects.dialog.export.global.suffix.placeholder' | translate" />
+    <div class="grid gap-2">
+      <label hlmLabel for="global-export-suffix">{{
+        'projects.dialog.export.global.suffix.label' | translate
+      }}</label>
+      <input
+        hlmInput
+        id="global-export-suffix"
+        [(ngModel)]="globalExportDraft.suffix"
+        [placeholder]="'projects.dialog.export.global.suffix.placeholder' | translate"
+      />
+    </div>
+
+    <div class="grid gap-4 border rounded-lg p-4 bg-muted/30">
+      <h3 class="text-sm font-semibold">
+        {{ 'projects.dialog.export.options.title' | translate }}
+      </h3>
+
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="global-export-history" [(ngModel)]="globalExportDraft.options.history" />
+        <label hlmLabel for="global-export-history" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.history' | translate
+        }}</label>
       </div>
 
-      <div class="grid gap-4 border rounded-lg p-4 bg-muted/30">
-        <h3 class="text-sm font-semibold">{{ 'projects.dialog.export.options.title' | translate }}</h3>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="global-export-history" [(ngModel)]="globalExportDraft.options.history" />
-          <label hlmLabel for="global-export-history" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.history' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="global-export-targets" [(ngModel)]="globalExportDraft.options.targets" />
-          <label hlmLabel for="global-export-targets" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.targets' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="global-export-writeups" [(ngModel)]="globalExportDraft.options.writeups" />
-          <label hlmLabel for="global-export-writeups" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.writeups' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="global-export-media" [(ngModel)]="globalExportDraft.options.media" />
-          <label hlmLabel for="global-export-media" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.media' | translate }}</label>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <hlm-checkbox id="global-export-scripts" [(ngModel)]="globalExportDraft.options.scripts" />
-          <label hlmLabel for="global-export-scripts" class="text-sm font-normal cursor-pointer">{{ 'projects.dialog.export.options.scripts' | translate }}</label>
-        </div>
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="global-export-targets" [(ngModel)]="globalExportDraft.options.targets" />
+        <label hlmLabel for="global-export-targets" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.targets' | translate
+        }}</label>
       </div>
 
-      <div class="grid gap-2">
-        <label hlmLabel class="text-xs font-semibold">{{ 'sidebar.projects' | translate }}</label>
-        <div class="rounded-md border bg-muted/10 overflow-hidden">
+      <div class="flex items-center gap-3">
+        <hlm-checkbox
+          id="global-export-writeups"
+          [(ngModel)]="globalExportDraft.options.writeups"
+        />
+        <label hlmLabel for="global-export-writeups" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.writeups' | translate
+        }}</label>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="global-export-media" [(ngModel)]="globalExportDraft.options.media" />
+        <label hlmLabel for="global-export-media" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.media' | translate
+        }}</label>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <hlm-checkbox id="global-export-scripts" [(ngModel)]="globalExportDraft.options.scripts" />
+        <label hlmLabel for="global-export-scripts" class="text-sm font-normal cursor-pointer">{{
+          'projects.dialog.export.options.scripts' | translate
+        }}</label>
+      </div>
+    </div>
+
+    <div class="grid gap-2">
+      <label hlmLabel class="text-xs font-semibold">{{ 'sidebar.projects' | translate }}</label>
+      <div class="rounded-md border bg-muted/10 overflow-hidden">
         @if (sortedProjectsForExport$ | async; as projects) {
           @if (projects.length > 0) {
             <table hlmTable class="w-full border-none">
@@ -98,9 +147,18 @@
                       (changed)="toggleAllProjectSelections(projectIds(projects))"
                     />
                   </th>
-                  <th hlmTh class="text-[10px] uppercase font-bold tracking-tight">{{ 'projects.dialog.table.projectName' | translate }}</th>
-                  <th hlmTh class="w-20 text-center text-[10px] uppercase font-bold tracking-tight">{{ 'projects.dialog.table.folders' | translate }}</th>
-                  <th hlmTh class="w-28 text-right text-[10px] uppercase font-bold tracking-tight px-4">{{ 'projects.dialog.table.lastChanged' | translate }}</th>
+                  <th hlmTh class="text-[10px] uppercase font-bold tracking-tight">
+                    {{ 'projects.dialog.table.projectName' | translate }}
+                  </th>
+                  <th hlmTh class="w-20 text-center text-[10px] uppercase font-bold tracking-tight">
+                    {{ 'projects.dialog.table.folders' | translate }}
+                  </th>
+                  <th
+                    hlmTh
+                    class="w-28 text-right text-[10px] uppercase font-bold tracking-tight px-4"
+                  >
+                    {{ 'projects.dialog.table.lastChanged' | translate }}
+                  </th>
                 </tr>
               </thead>
               <tbody hlmTBody>
@@ -111,37 +169,57 @@
                     (click)="toggleProjectSelection(project.id)"
                   >
                     <td hlmTd class="w-10 px-2" (click)="$event.stopPropagation()">
-                      <hlm-checkbox [checked]="isSelected(project.id)" (changed)="toggleProjectSelection(project.id)" />
+                      <hlm-checkbox
+                        [checked]="isSelected(project.id)"
+                        (changed)="toggleProjectSelection(project.id)"
+                      />
                     </td>
                     <td hlmTd class="truncate">
                       <span class="font-medium text-xs">{{ project.name }}</span>
                     </td>
-                    <td hlmTd class="w-20 text-center text-[10px] text-muted-foreground">{{ project.folderCount }}</td>
-                    <td hlmTd class="w-28 text-right text-[9px] text-muted-foreground leading-tight px-4">{{ project.updatedAt | date:'MM/dd HH:mm' }}</td>
+                    <td hlmTd class="w-20 text-center text-[10px] text-muted-foreground">
+                      {{ project.folderCount }}
+                    </td>
+                    <td
+                      hlmTd
+                      class="w-28 text-right text-[9px] text-muted-foreground leading-tight px-4"
+                    >
+                      {{ project.updatedAt | date: 'MM/dd HH:mm' }}
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
           } @else {
-            <div class="py-20 text-center text-muted-foreground text-sm flex flex-col items-center gap-2">
+            <div
+              class="py-20 text-center text-muted-foreground text-sm flex flex-col items-center gap-2"
+            >
               <ng-icon name="lucideLayoutGrid" class="h-8 w-8 opacity-20" />
               <span>{{ 'projects.dialog.export.global.empty' | translate }}</span>
             </div>
           }
         }
-        </div>
       </div>
+    </div>
   </div>
 }
 
 <hlm-dialog-footer class="flex-shrink-0 relative z-10 bg-background/95 backdrop-blur-sm">
-  <button hlmBtn type="button" variant="ghost" (click)="dialogCtx.close()">{{ 'dialog.cancel' | translate }}</button>
-  <button hlmBtn type="button" (click)="confirmExport()" [disabled]="!isSingleMode() && projectsUi.exportSelection().size === 0">
+  <button hlmBtn type="button" variant="ghost" (click)="dialogCtx.close()">
+    {{ 'dialog.cancel' | translate }}
+  </button>
+  <button
+    hlmBtn
+    type="button"
+    (click)="confirmExport()"
+    [disabled]="!isSingleMode() && projectsUi.exportSelection().size === 0"
+  >
     <ng-icon name="lucideDownload" class="mr-2 h-4 w-4" />
     @if (isSingleMode()) {
       {{ 'projects.dialog.export.confirm' | translate }}
     } @else {
-      {{ 'projects.dialog.export.confirm' | translate }} {{ projectsUi.exportSelection().size ? '(' + projectsUi.exportSelection().size + ')' : '' }}
+      {{ 'projects.dialog.export.confirm' | translate }}
+      {{ projectsUi.exportSelection().size ? '(' + projectsUi.exportSelection().size + ')' : '' }}
     }
   </button>
 </hlm-dialog-footer>

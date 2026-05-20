@@ -1,7 +1,10 @@
 import { Injectable, NgZone, inject } from '@angular/core';
 import { WebSocketService } from '../../../infrastructure/transport/websocket/websocket.service';
 import { MessageType } from '../../../infrastructure/transport/websocket/websocket-message-type.enum';
-import { bytesToUuid, generateUUID } from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
+import {
+  bytesToUuid,
+  generateUUID,
+} from '../../../infrastructure/transport/websocket/websocket-uuid.utils';
 import {
   PendingMap,
   createWebSocketRequest,
@@ -75,10 +78,14 @@ export class MediaClientService {
       if (data.length >= 17) {
         try {
           const parsedMessageId = bytesToUuid(data.subarray(1, 17));
-          resolvePendingWebSocketResult(this.pending, {
-            messageId: parsedMessageId,
-            error: `Malformed media response (type ${type})`,
-          }, this.zone);
+          resolvePendingWebSocketResult(
+            this.pending,
+            {
+              messageId: parsedMessageId,
+              error: `Malformed media response (type ${type})`,
+            },
+            this.zone,
+          );
         } catch {
           // Ignore messageId extraction failures.
         }

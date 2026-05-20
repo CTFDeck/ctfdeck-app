@@ -19,7 +19,9 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <div class="flex items-center bg-muted/40 rounded-lg border border-border/40 backdrop-blur-sm h-9 p-1 gap-1">
+      <div
+        class="flex items-center bg-muted/40 rounded-lg border border-border/40 backdrop-blur-sm h-9 p-1 gap-1"
+      >
         <button
           hlmBtn
           size="sm"
@@ -119,6 +121,35 @@
         class="toolbar flex items-center gap-1 px-4 py-2 border-b border-border/30 bg-background/95 sticky top-0 z-20 backdrop-blur-sm"
         [class.hidden]="mode() === 'preview'"
       >
+        <div class="flex items-center gap-0.5">
+          <button
+            type="button"
+            hlmBtn
+            size="sm"
+            variant="ghost"
+            (click)="undo()"
+            [disabled]="undoStack.length <= 1"
+            class="h-8 w-8 p-0 hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
+            [hlmTooltipTrigger]="'writeup.toolbar.undo' | translate"
+          >
+            <ng-icon name="lucideUndo" class="text-base" />
+          </button>
+          <button
+            type="button"
+            hlmBtn
+            size="sm"
+            variant="ghost"
+            (click)="redo()"
+            [disabled]="redoStack.length === 0"
+            class="h-8 w-8 p-0 hover:bg-muted disabled:opacity-40 disabled:pointer-events-none"
+            [hlmTooltipTrigger]="'writeup.toolbar.redo' | translate"
+          >
+            <ng-icon name="lucideRedo" class="text-base" />
+          </button>
+        </div>
+
+        <div class="w-[1px] h-5 bg-border/40 mx-1"></div>
+
         <div class="flex items-center gap-0.5">
           <button
             type="button"
@@ -327,7 +358,9 @@
       ></div>
 
       @if (!content) {
-        <div class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none">
+        <div
+          class="h-full flex flex-col items-center justify-center text-muted-foreground opacity-30 select-none"
+        >
           <ng-icon name="lucideFileText" class="text-64 mb-4" />
           <p>{{ 'writeup.preview.empty' | translate }}</p>
         </div>
@@ -342,25 +375,33 @@
         @case ('saving') {
           <div class="flex items-center gap-2 text-primary">
             <ng-icon name="lucideCloudUpload" class="text-base animate-bounce" />
-            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saving' | translate }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{
+              'writeup.sync.saving' | translate
+            }}</span>
           </div>
         }
         @case ('saved') {
           <div class="flex items-center gap-2 text-green-500">
             <ng-icon name="lucideCheckCircle2" class="text-base" />
-            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{ 'writeup.sync.saved' | translate }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">{{
+              'writeup.sync.saved' | translate
+            }}</span>
           </div>
         }
         @case ('unsaved') {
           <div class="flex items-center gap-2 text-muted-foreground">
             <ng-icon name="lucideCloud" class="text-base opacity-40" />
-            <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">{{ 'writeup.sync.unsaved' | translate }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">{{
+              'writeup.sync.unsaved' | translate
+            }}</span>
           </div>
         }
         @case ('error') {
           <div class="flex items-center gap-2 text-destructive">
             <ng-icon name="lucideAlertCircle" class="text-base" />
-            <span class="text-[10px] font-bold uppercase tracking-widest">{{ 'writeup.sync.error' | translate }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest">{{
+              'writeup.sync.error' | translate
+            }}</span>
           </div>
         }
       }
@@ -394,7 +435,9 @@
         class="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-20 transition-all duration-300"
       >
         <div class="flex flex-col items-center gap-4">
-          <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <div
+            class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"
+          ></div>
           <span class="text-sm font-medium">{{ 'writeup.loading' | translate }}</span>
         </div>
       </div>
@@ -416,7 +459,9 @@
           tabindex="-1"
         >
           <div class="flex items-center justify-between mb-4">
-            <h3 id="link-dialog-title" class="text-lg font-semibold">{{ 'writeup.linkDialog.title' | translate }}</h3>
+            <h3 id="link-dialog-title" class="text-lg font-semibold">
+              {{ 'writeup.linkDialog.title' | translate }}
+            </h3>
             <button
               type="button"
               hlmBtn
@@ -432,7 +477,9 @@
           </div>
           <div class="space-y-4">
             <div class="space-y-2">
-              <label hlmLabel for="linkText">{{ 'writeup.linkDialog.textLabel' | translate }}</label>
+              <label hlmLabel for="linkText">{{
+                'writeup.linkDialog.textLabel' | translate
+              }}</label>
               <input
                 id="linkText"
                 hlmInput
@@ -454,7 +501,9 @@
               />
             </div>
             <div class="flex justify-end gap-2 mt-6">
-              <button hlmBtn variant="outline" (click)="closeLinkDialog()">{{ 'dialog.cancel' | translate }}</button>
+              <button hlmBtn variant="outline" (click)="closeLinkDialog()">
+                {{ 'dialog.cancel' | translate }}
+              </button>
               <button hlmBtn (click)="insertLink()" [disabled]="!linkText || !linkUrl">
                 {{ 'writeup.linkDialog.insert' | translate }}
               </button>

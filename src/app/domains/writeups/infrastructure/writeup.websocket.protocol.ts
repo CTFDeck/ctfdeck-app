@@ -19,60 +19,74 @@ export function isWriteUpResponse(type: number): boolean {
   );
 }
 
-export function serializeWriteUpCreate(sessionId: string, name: string, messageId: string): Uint8Array {
+export function serializeWriteUpCreate(
+  sessionId: string,
+  name: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + binarySizeOfString(name))
     .writeByte(MessageType.WriteUpCreate)
     .writeUuid(messageId)
     .writeUuid(sessionId)
-    .writeString(name)
-    .buffer;
+    .writeString(name).buffer;
 }
 
-export function serializeWriteUpUpdate(writeUpId: string, name: string, content: string, messageId: string): Uint8Array {
+export function serializeWriteUpUpdate(
+  writeUpId: string,
+  name: string,
+  content: string,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + binarySizeOfStrings(name, content))
     .writeByte(MessageType.WriteUpUpdate)
     .writeUuid(messageId)
     .writeUuid(writeUpId)
     .writeString(name)
-    .writeString(content)
-    .buffer;
+    .writeString(content).buffer;
 }
 
 export function serializeWriteUpDelete(writeUpId: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + 16)
     .writeByte(MessageType.WriteUpDelete)
     .writeUuid(messageId)
-    .writeUuid(writeUpId)
-    .buffer;
+    .writeUuid(writeUpId).buffer;
 }
 
-export function serializeWriteUpList(sessionId: string, offset: number, limit: number, messageId: string, unassignedOnly = false): Uint8Array {
+export function serializeWriteUpList(
+  sessionId: string,
+  offset: number,
+  limit: number,
+  messageId: string,
+  unassignedOnly = false,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + 4 + 4 + 1)
     .writeByte(MessageType.WriteUpList)
     .writeUuid(messageId)
     .writeUuid(sessionId)
     .writeInt32(offset)
     .writeInt32(limit)
-    .writeBoolean(unassignedOnly)
-    .buffer;
+    .writeBoolean(unassignedOnly).buffer;
 }
 
 export function serializeWriteUpLoad(writeUpId: string, messageId: string): Uint8Array {
   return new BinaryWriter(1 + 16 + 16)
     .writeByte(MessageType.WriteUpLoad)
     .writeUuid(messageId)
-    .writeUuid(writeUpId)
-    .buffer;
+    .writeUuid(writeUpId).buffer;
 }
 
-export function serializeWriteUpMove(writeUpId: string, projectId: string | null, folderId: string | null, messageId: string): Uint8Array {
+export function serializeWriteUpMove(
+  writeUpId: string,
+  projectId: string | null,
+  folderId: string | null,
+  messageId: string,
+): Uint8Array {
   return new BinaryWriter(1 + 16 + 16 + 16 + 16)
     .writeByte(MessageType.WriteUpMove)
     .writeUuid(messageId)
     .writeUuid(writeUpId)
     .writeNullableUuid(projectId)
-    .writeNullableUuid(folderId)
-    .buffer;
+    .writeNullableUuid(folderId).buffer;
 }
 
 export function deserializeWriteUpCreateResult(data: Uint8Array): {
@@ -84,15 +98,24 @@ export function deserializeWriteUpCreateResult(data: Uint8Array): {
   return { messageId, success, writeUpId };
 }
 
-export function deserializeWriteUpUpdateResult(data: Uint8Array): { messageId: string; success: boolean } {
+export function deserializeWriteUpUpdateResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+} {
   return deserializeMessageIdSuccess(data);
 }
 
-export function deserializeWriteUpDeleteResult(data: Uint8Array): { messageId: string; success: boolean } {
+export function deserializeWriteUpDeleteResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+} {
   return deserializeMessageIdSuccess(data);
 }
 
-export function deserializeWriteUpMoveResult(data: Uint8Array): { messageId: string; success: boolean } {
+export function deserializeWriteUpMoveResult(data: Uint8Array): {
+  messageId: string;
+  success: boolean;
+} {
   return deserializeMessageIdSuccess(data);
 }
 
@@ -119,7 +142,9 @@ export function deserializeWriteUpListResult(data: Uint8Array): {
     const name = reader.readString();
 
     if (reader.currentOffset + 16 > data.byteLength) {
-      throw new Error(`WriteUpListResult too short for timestamps at item ${i}, offset=${reader.currentOffset}, length=${data.byteLength}`);
+      throw new Error(
+        `WriteUpListResult too short for timestamps at item ${i}, offset=${reader.currentOffset}, length=${data.byteLength}`,
+      );
     }
 
     const createdAt = ticksToDate(reader.readBigInt64());
@@ -151,7 +176,9 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
   const name = reader.readString();
 
   if (reader.currentOffset + 16 > data.byteLength) {
-    throw new Error(`WriteUpLoadResult too short for timestamps, offset=${reader.currentOffset}, length=${data.byteLength}`);
+    throw new Error(
+      `WriteUpLoadResult too short for timestamps, offset=${reader.currentOffset}, length=${data.byteLength}`,
+    );
   }
 
   const createdAt = ticksToDate(reader.readBigInt64());
@@ -165,6 +192,9 @@ export function deserializeWriteUpLoadResult(data: Uint8Array): {
   };
 }
 
-export function deserializeWriteUpOperationError(data: Uint8Array): { messageId: string; error: string } {
+export function deserializeWriteUpOperationError(data: Uint8Array): {
+  messageId: string;
+  error: string;
+} {
   return deserializeMessageIdError(data);
 }

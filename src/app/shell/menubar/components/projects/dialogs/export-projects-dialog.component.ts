@@ -43,7 +43,13 @@ export class ExportProjectsDialogComponent {
   set singleExportDraft(next: {
     projectId: string;
     filename: string;
-    options: { history: boolean; targets: boolean; writeups: boolean; media: boolean; scripts: boolean };
+    options: {
+      history: boolean;
+      targets: boolean;
+      writeups: boolean;
+      media: boolean;
+      scripts: boolean;
+    };
   }) {
     this.projectsUi.updateExportDraft(next);
   }
@@ -54,7 +60,13 @@ export class ExportProjectsDialogComponent {
 
   set globalExportDraft(next: {
     suffix: string;
-    options: { history: boolean; targets: boolean; writeups: boolean; media: boolean; scripts: boolean };
+    options: {
+      history: boolean;
+      targets: boolean;
+      writeups: boolean;
+      media: boolean;
+      scripts: boolean;
+    };
   }) {
     this.projectsUi.updateGlobalExportDraft(next);
   }
