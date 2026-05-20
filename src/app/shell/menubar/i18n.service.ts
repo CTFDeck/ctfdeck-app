@@ -433,6 +433,7 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.jobs.background': 'Commands run in the background.',
     'runner.jobs.open': 'Open jobs',
     'runner.jobs.description': 'to view their progress.',
+    'runner.jobs.started': 'Command started in Jobs.',
     //
     'terminal.header.jobs': 'Jobs',
     'terminal.signals.eofOnlyOnJobs': 'Ctrl+D is only available for active jobs.',
@@ -768,6 +769,7 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.jobs.background': 'Les commandes s’exécutent en arrière-plan.',
     'runner.jobs.open': 'Ouvrir les tâches',
     'runner.jobs.description': 'pour voir leur progression.',
+    'runner.jobs.started': 'Commande lancée dans les tâches.',
     //
     'sidebar.folder.renameAria': 'Renommer le dossier',
     'sidebar.folder.deleteAria': 'Supprimer le dossier',
@@ -1188,6 +1190,7 @@ const translations: Record<SupportedLang, Record<string, string>> = {
     'runner.jobs.background': 'Los comandos se ejecutan en segundo plano.',
     'runner.jobs.open': 'Abrir tareas',
     'runner.jobs.description': 'para ver su progreso.',
+    'runner.jobs.started': 'Comando iniciado en tareas.',
     //
     'terminal.header.jobs': 'Tareas',
     'terminal.signals.eofOnlyOnJobs': 'Ctrl+D solo está disponible para tareas activas.',

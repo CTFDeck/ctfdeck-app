@@ -335,7 +335,7 @@ export class CommandRunnerComponent implements OnInit, OnDestroy, OnChanges {
       this.currentCommand;
 
     this.runnerJobStore.run(this.currentCommand, label);
-    this.showJobsModal = true;
+    toast.info(this.i18n.translate('runner.jobs.started'));
   }
 
   openJobsModal(): void {

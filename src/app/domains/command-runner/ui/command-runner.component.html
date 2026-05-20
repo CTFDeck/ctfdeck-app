@@ -6,7 +6,14 @@
     </div>
 
     <!-- Jobs button with badge -->
-    <button hlmBtn variant="outline" size="sm" class="relative gap-2" (click)="openJobsModal()">
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      class="relative gap-2"
+      [class.jobs-button-active]="runningJobCount > 0"
+      (click)="openJobsModal()"
+    >
       <ng-icon hlm name="lucideActivity" size="sm" />
       <span class="hidden sm:inline">Jobs</span>
       @if (runningJobCount > 0) {

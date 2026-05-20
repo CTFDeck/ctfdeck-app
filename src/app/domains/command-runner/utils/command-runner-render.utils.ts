@@ -6,7 +6,7 @@ export function createAnsiConverter(): AnsiToHtml {
   return new AnsiToHtml({
     fg: '#d4d4d4',
     bg: '#1e1e1e',
-    newline: true,
+    newline: false,
     colors: {
       4: '#61afef',
       34: '#61afef',
@@ -23,8 +23,15 @@ export function ansiToSafeHtml(
   sanitizer: DomSanitizer,
   content: string,
 ): SafeHtml {
-  const html = converter.toHtml(content);
+  const html = converter.toHtml(normalizeTerminalOutput(content));
   return sanitizer.bypassSecurityTrustHtml(html);
+}
+
+export function normalizeTerminalOutput(content: string): string {
+  return content
+    .replace(/\r\n/g, '\n')
+    .replace(/\r(?!\n)/g, '\n')
+    .replace(/\u001b\][^\u0007]*(?:\u0007|\u001b\\)/g, '');
 }
 
 export function appendErrorToLastOutput(
@@ -39,7 +46,7 @@ export function appendErrorToLastOutput(
   const updated = [...outputLines];
   const lastLine = updated[updated.length - 1];
   const currentContent = sanitizer.sanitize(SecurityContext.HTML, lastLine) || '';
-  const newContent = currentContent + data;
+  const newContent = currentContent + normalizeTerminalOutput(data);
 
   updated[updated.length - 1] = sanitizer.bypassSecurityTrustHtml(
     `<span class="text-red-500">${newContent}</span>`,

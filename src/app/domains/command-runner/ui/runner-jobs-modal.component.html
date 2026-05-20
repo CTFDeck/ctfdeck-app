@@ -1,10 +1,10 @@
 @if (visible) {
   <div
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-start justify-center sm:pt-16 p-0 sm:p-4"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-start justify-center sm:pt-16 p-0 sm:p-4 animate-in fade-in-0 duration-150"
     (click)="$event.target === $event.currentTarget && close()"
   >
     <div
-      class="bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-4xl h-[92dvh] sm:h-[85vh] flex flex-col overflow-hidden"
+      class="bg-background border border-border rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-4xl h-[92dvh] sm:h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 sm:slide-in-from-top-2 zoom-in-95 duration-200"
     >
       <!-- Header -->
       <div
@@ -194,9 +194,12 @@
                 </div>
               </div>
 
-              <div #jobOutput class="flex-1 overflow-y-auto p-3 sm:p-4 font-mono text-sm bg-card">
+              <div
+                #jobOutput
+                class="flex-1 overflow-auto p-3 sm:p-4 font-mono text-sm bg-card"
+              >
                 @for (line of selectedJob.outputLines; track $index) {
-                  <div [innerHTML]="line" class="mb-0.5 break-all whitespace-pre-wrap"></div>
+                  <div [innerHTML]="line" class="mb-0.5 whitespace-pre min-w-max"></div>
                 }
               </div>
             </div>
