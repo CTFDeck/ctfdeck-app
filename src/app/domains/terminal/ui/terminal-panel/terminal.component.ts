@@ -257,6 +257,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
       this.addLine('output', this.currentCommand);
       this.currentCommand = '';
       this.scrollToBottom();
+      this.refocusCommandInput();
       return;
     }
 
@@ -351,6 +352,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
         }
 
         scheduleRender();
+        this.refocusCommandInputForActiveCommand();
 
         // Update Job Store
         if (jobOutputLineIndex === -1) {
@@ -363,12 +365,14 @@ export class TerminalComponent implements OnInit, OnDestroy {
         errorBuffer += data;
         this.appendToLastError(data);
         this.runnerJobStore.appendJobError(jobId, data);
+        this.refocusCommandInputForActiveCommand();
       },
     );
 
     this.activeMessageId = messageId;
     this.activeCommandName = cmd.split(' ')[0];
     this.runnerJobStore.createManualJob(jobId, cmd, cmd, messageId);
+    this.refocusCommandInput();
 
     promise
       .then((result) => {
@@ -408,6 +412,7 @@ export class TerminalComponent implements OnInit, OnDestroy {
           this.activeMessageId = null;
           this.activeCommandName = null;
         }
+        this.refocusCommandInput();
       });
   }
 
@@ -557,6 +562,38 @@ export class TerminalComponent implements OnInit, OnDestroy {
     }
 
     this.commandInput?.nativeElement?.focus();
+  }
+
+  private refocusCommandInput(): void {
+    setTimeout(() => {
+      this.commandInput?.nativeElement?.focus();
+    }, 0);
+  }
+
+  private refocusCommandInputForActiveCommand(): void {
+    if (!this.activeMessageId || !this.shouldKeepCommandInputFocused()) {
+      return;
+    }
+
+    this.refocusCommandInput();
+  }
+
+  private shouldKeepCommandInputFocused(): boolean {
+    const activeElement = document.activeElement;
+
+    if (!activeElement || activeElement === document.body) {
+      return true;
+    }
+
+    if (activeElement === this.commandInput?.nativeElement) {
+      return true;
+    }
+
+    if (!(activeElement instanceof HTMLElement)) {
+      return false;
+    }
+
+    return Boolean(activeElement.closest('.terminal-output'));
   }
 
   reconnect(): void {

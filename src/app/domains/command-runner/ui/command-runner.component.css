@@ -4,6 +4,14 @@
   min-height: 0;
 }
 
+.jobs-button-active {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+  transition:
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
 ::ng-deep [data-slot='dialog-close'] {
   display: none !important;
 }
